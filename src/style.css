@@ -320,6 +320,10 @@ select option{
   height: auto;
   display:block;
   border: 1px solid var(--border);
+  /* Mobile/tablet: allow drag/resize inside canvas without page scroll */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* True size: show canvas at real size, centered */

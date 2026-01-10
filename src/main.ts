@@ -1170,7 +1170,22 @@ function initCropEvents() {
   if (!refs) return;
   const { cropCanvas } = refs;
 
-  cropCanvas.addEventListener("mousemove", (e) => {
+  // Pointer events work for mouse + touch + pen.
+  // We also mark the listener as non-passive so we can prevent scrolling while dragging on mobile.
+  let activePointerId: number | null = null;
+
+  const getCanvasXY = (clientX: number, clientY: number) => {
+    const rect = cropCanvas.getBoundingClientRect();
+    const mxCss = clientX - rect.left;
+    const myCss = clientY - rect.top;
+    const mx = mxCss * (cropCanvas.width / rect.width);
+    const my = myCss * (cropCanvas.height / rect.height);
+    return { mx, my, rect };
+  };
+
+  // Desktop cursor feedback (only meaningful for mouse)
+  cropCanvas.addEventListener("pointermove", (e) => {
+    if ((e as PointerEvent).pointerType !== "mouse") return;
     if (!sourceImage || !cropRect || !refs?.useCropChk.checked) {
       cropCanvas.style.cursor = "default";
       return;
@@ -1180,13 +1195,7 @@ function initCropEvents() {
     rebuildDisplayCanvas();
     if (!displayCanvas) return;
 
-    const rect = cropCanvas.getBoundingClientRect();
-    const mxCss = e.clientX - rect.left;
-    const myCss = e.clientY - rect.top;
-
-    const mx = mxCss * (cropCanvas.width / rect.width);
-    const my = myCss * (cropCanvas.height / rect.height);
-
+    const { mx, my } = getCanvasXY((e as PointerEvent).clientX, (e as PointerEvent).clientY);
     const { rx, ry, rw, rh } = cropRectToCanvasRect(displayCanvas, cropRect, cropCanvas);
     const corner = hitCorner(mx, my, rx, ry, rw, rh);
 
@@ -1196,114 +1205,166 @@ function initCropEvents() {
     else cropCanvas.style.cursor = "default";
   });
 
-  cropCanvas.addEventListener("mousedown", (e) => {
-    if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
+  cropCanvas.addEventListener(
+    "pointerdown",
+    (e) => {
+      const pe = e as PointerEvent;
+      if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
+      // prevent page scrolling while dragging on touch devices
+      e.preventDefault();
 
-    rebuildDisplayCanvas();
-    if (!displayCanvas) return;
+      rebuildDisplayCanvas();
+      if (!displayCanvas) return;
 
-    const rect = cropCanvas.getBoundingClientRect();
-    const mxCss = e.clientX - rect.left;
-    const myCss = e.clientY - rect.top;
+      // Single active pointer (ignore extra fingers)
+      if (activePointerId !== null) return;
+      activePointerId = pe.pointerId;
+      try { cropCanvas.setPointerCapture(pe.pointerId); } catch {}
 
-    const mx = mxCss * (cropCanvas.width / rect.width);
-    const my = myCss * (cropCanvas.height / rect.height);
+      const { mx, my } = getCanvasXY(pe.clientX, pe.clientY);
+      const { rx, ry, rw, rh } = cropRectToCanvasRect(displayCanvas, cropRect, cropCanvas);
 
-    const { rx, ry, rw, rh } = cropRectToCanvasRect(displayCanvas, cropRect, cropCanvas);
+      const corner = hitCorner(mx, my, rx, ry, rw, rh);
+      if (corner) {
+        cropDragMode = corner;
+        const start = { x: cropRect.x, y: cropRect.y, w: cropRect.w, h: cropRect.h };
+        let ax = 0,
+          ay = 0;
+        if (corner === "nw") {
+          ax = start.x + start.w;
+          ay = start.y + start.h;
+        }
+        if (corner === "ne") {
+          ax = start.x;
+          ay = start.y + start.h;
+        }
+        if (corner === "sw") {
+          ax = start.x + start.w;
+          ay = start.y;
+        }
+        if (corner === "se") {
+          ax = start.x;
+          ay = start.y;
+        }
+        dragAnchor = { ax, ay, start };
+        return;
+      }
 
-    const corner = hitCorner(mx, my, rx, ry, rw, rh);
-    if (corner) {
-      cropDragMode = corner;
-      const start = { x: cropRect.x, y: cropRect.y, w: cropRect.w, h: cropRect.h };
-      let ax = 0, ay = 0;
-      if (corner === "nw") { ax = start.x + start.w; ay = start.y + start.h; }
-      if (corner === "ne") { ax = start.x;           ay = start.y + start.h; }
-      if (corner === "sw") { ax = start.x + start.w; ay = start.y; }
-      if (corner === "se") { ax = start.x;           ay = start.y; }
-      dragAnchor = { ax, ay, start };
-      return;
-    }
+      const inside = mx >= rx && mx <= rx + rw && my >= ry && my <= ry + rh;
+      if (!inside) {
+        // nothing grabbed
+        cropDragMode = "none";
+        return;
+      }
 
-    const inside = mx >= rx && mx <= rx + rw && my >= ry && my <= ry + rh;
-    if (!inside) return;
+      cropDragMode = "move";
+      dragStart = { mx, my, x: cropRect.x, y: cropRect.y };
+    },
+    { passive: false }
+  );
 
-    cropDragMode = "move";
-    dragStart = { mx, my, x: cropRect.x, y: cropRect.y };
-  });
+  const endDrag = (pe?: PointerEvent) => {
+    if (pe && activePointerId !== null && pe.pointerId !== activePointerId) return;
+    cropDragMode = "none";
+    activePointerId = null;
+  };
 
-  window.addEventListener("mouseup", () => { cropDragMode = "none"; });
+  window.addEventListener("pointerup", (e) => endDrag(e as PointerEvent));
+  window.addEventListener("pointercancel", (e) => endDrag(e as PointerEvent));
 
-  window.addEventListener("mousemove", (e) => {
-    if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
-    if (cropDragMode === "none") return;
+  window.addEventListener(
+    "pointermove",
+    (e) => {
+      const pe = e as PointerEvent;
+      if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
+      if (cropDragMode === "none") return;
+      if (activePointerId !== null && pe.pointerId !== activePointerId) return;
 
-    rebuildDisplayCanvas();
-    if (!displayCanvas) return;
-    const dc = displayCanvas;
+      // prevent scrolling while dragging on touch
+      if (pe.pointerType !== "mouse") e.preventDefault();
 
-      const rect = cropCanvas.getBoundingClientRect();
-      const mxCss = e.clientX - rect.left;
-      const myCss = e.clientY - rect.top;
+      rebuildDisplayCanvas();
+      if (!displayCanvas) return;
+      const dc = displayCanvas;
 
-      const mx = mxCss * (cropCanvas.width / rect.width);
-      const my = myCss * (cropCanvas.height / rect.height);
-
+      const { mx, my } = getCanvasXY(pe.clientX, pe.clientY);
       const { dx, dw, dy, dh } = getContainTransformForCropCanvas(dc, cropCanvas);
 
       const canvasToSrcX = (val: number) => (val / dw) * dc.width;
       const canvasToSrcY = (val: number) => (val / dh) * dc.height;
 
-    if (cropDragMode === "move") {
-      const deltaXCanvas = mx - dragStart.mx;
-      const deltaYCanvas = my - dragStart.my;
+      if (cropDragMode === "move") {
+        const deltaXCanvas = mx - dragStart.mx;
+        const deltaYCanvas = my - dragStart.my;
 
-      cropRect.x = dragStart.x + canvasToSrcX(deltaXCanvas);
-      cropRect.y = dragStart.y + canvasToSrcY(deltaYCanvas);
+        cropRect.x = dragStart.x + canvasToSrcX(deltaXCanvas);
+        cropRect.y = dragStart.y + canvasToSrcY(deltaYCanvas);
 
-      cropRect.x = clamp(cropRect.x, 0, displayCanvas.width - cropRect.w);
-      cropRect.y = clamp(cropRect.y, 0, displayCanvas.height - cropRect.h);
+        cropRect.x = clamp(cropRect.x, 0, displayCanvas.width - cropRect.w);
+        cropRect.y = clamp(cropRect.y, 0, displayCanvas.height - cropRect.h);
+
+        drawCropUI();
+        scheduleRecomputePreview(60);
+        return;
+      }
+
+      // resize corner while keeping 2:1
+      const nx = (mx - dx) / dw;
+      const ny = (my - dy) / dh;
+      const px = clamp(nx, 0, 1) * displayCanvas.width;
+      const py = clamp(ny, 0, 1) * displayCanvas.height;
+
+      const { ax, ay } = dragAnchor;
+
+      const dxAbs = Math.abs(px - ax);
+      const dyAbs = Math.abs(py - ay);
+
+      const wFromX = dxAbs;
+      const wFromY = 2 * dyAbs;
+
+      let w = Math.max(wFromX, wFromY);
+      const minW = 24;
+      w = Math.max(minW, w);
+      let h = w / 2;
+
+      if (w > displayCanvas.width) {
+        w = displayCanvas.width;
+        h = w / 2;
+      }
+      if (h > displayCanvas.height) {
+        h = displayCanvas.height;
+        w = h * 2;
+      }
+
+      let x = 0,
+        y = 0;
+      if (cropDragMode === "nw") {
+        x = ax - w;
+        y = ay - h;
+      } else if (cropDragMode === "ne") {
+        x = ax;
+        y = ay - h;
+      } else if (cropDragMode === "sw") {
+        x = ax - w;
+        y = ay;
+      } else {
+        x = ax;
+        y = ay;
+      }
+
+      x = clamp(x, 0, displayCanvas.width - w);
+      y = clamp(y, 0, displayCanvas.height - h);
+
+      cropRect.x = x;
+      cropRect.y = y;
+      cropRect.w = w;
+      cropRect.h = h;
 
       drawCropUI();
       scheduleRecomputePreview(60);
-      return;
-    }
-
-    // resize corner while keeping 2:1
-    const nx = (mx - dx) / dw;
-    const ny = (my - dy) / dh;
-    const px = clamp(nx, 0, 1) * displayCanvas.width;
-    const py = clamp(ny, 0, 1) * displayCanvas.height;
-
-    const { ax, ay } = dragAnchor;
-
-    const dxAbs = Math.abs(px - ax);
-    const dyAbs = Math.abs(py - ay);
-
-    const wFromX = dxAbs;
-    const wFromY = 2 * dyAbs;
-
-    let w = Math.max(wFromX, wFromY);
-    const minW = 24;
-    w = Math.max(minW, w);
-    let h = w / 2;
-
-    if (w > displayCanvas.width) { w = displayCanvas.width; h = w / 2; }
-    if (h > displayCanvas.height) { h = displayCanvas.height; w = h * 2; }
-
-    let x = 0, y = 0;
-    if (cropDragMode === "nw") { x = ax - w; y = ay - h; }
-    else if (cropDragMode === "ne") { x = ax; y = ay - h; }
-    else if (cropDragMode === "sw") { x = ax - w; y = ay; }
-    else { x = ax; y = ay; }
-
-    x = clamp(x, 0, displayCanvas.width - w);
-    y = clamp(y, 0, displayCanvas.height - h);
-
-    cropRect.x = x; cropRect.y = y; cropRect.w = w; cropRect.h = h;
-
-    drawCropUI();
-    scheduleRecomputePreview(60);
-  });
+    },
+    { passive: false }
+  );
 
   cropCanvas.addEventListener("wheel", (e) => {
     if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
