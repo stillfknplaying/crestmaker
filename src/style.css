@@ -160,17 +160,18 @@ select option{
   width: 44px;
   height: 24px;
   border-radius: 999px;
-  background: rgba(255,255,255,.10);
-  border:1px solid var(--border);
+  background: #e5e7eb;          /* было rgba(255,255,255,.10) */
+  border: 1px solid #cbd5e1;    /* явная граница */
   position: relative;
-  flex:0 0 auto;
+  flex: 0 0 auto;
 }
 .toggle .thumb{
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  background: rgba(255,255,255,.72);
-  position:absolute;
+  background: #ffffff;          /* чисто белый */
+  border: 1px solid #94a3b8;    /* контрастная обводка */
+  position: absolute;
   left: 3px;
   top: 50%;
   transform: translateY(-50%);
