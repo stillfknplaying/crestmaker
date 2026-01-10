@@ -125,7 +125,25 @@ function t(en: string, ru: string, ua: string) {
   return currentLang === "ru" ? ru : currentLang === "ua" ? ua : en;
 }
 
+function tipAttr(en: string, ru: string, ua: string) {
+  return `title="${escapeHtml(t(en, ru, ua))}"`;
+}
 
+function helpHtml(en: string, ru: string, ua: string) {
+  const msg = escapeHtml(t(en, ru, ua));
+  const label = escapeHtml(t("More info", "Подробнее", "Докладніше"));
+  // Inline help icon with tooltip (hover on desktop, tap on mobile)
+  return `
+    <span class="helpwrap">
+      <button type="button" class="helpbtn" aria-label="${label}">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-14.5a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5ZM10.75 10a1.25 1.25 0 0 1 2.5 0v7a1.25 1.25 0 0 1-2.5 0v-7Z"/>
+        </svg>
+      </button>
+      <span class="helptip" role="tooltip">${msg}</span>
+    </span>
+  `;
+}
 // -------------------- COOKIE CONSENT (beta 0.0.5) --------------------
 type ConsentState = {
   essential: true;
@@ -150,6 +168,37 @@ function getConsent(): ConsentState | null {
     return null;
   }
 }
+function initHelpTooltips() {
+  if ((window as any).__cmHelpTipsInit) return;
+  (window as any).__cmHelpTipsInit = true;
+
+  const closeAll = () => {
+    document.querySelectorAll<HTMLElement>(".helpwrap.open").forEach((el) => el.classList.remove("open"));
+  };
+
+  // Toggle on tap/click
+  document.addEventListener("click", (e) => {
+    const btn = (e.target as HTMLElement | null)?.closest?.(".helpbtn") as HTMLElement | null;
+    if (btn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const wrap = btn.closest(".helpwrap") as HTMLElement | null;
+      if (!wrap) return;
+      const isOpen = wrap.classList.contains("open");
+      closeAll();
+      if (!isOpen) wrap.classList.add("open");
+      return;
+    }
+    // Click outside closes
+    if (!(e.target as HTMLElement | null)?.closest?.(".helpwrap")) closeAll();
+  });
+
+  // ESC closes
+  document.addEventListener("keydown", (e) => {
+    if ((e as KeyboardEvent).key === "Escape") closeAll();
+  });
+}
+
 
 function setConsent(next: Omit<ConsentState, "updatedAt">) {
   const payload: ConsentState = { ...next, updatedAt: new Date().toISOString() };
@@ -351,100 +400,177 @@ function renderToolPage() {
     <section class="tool">
       <div class="toolbar">
         <label class="btn primary">
-          Upload image
+          ${escapeHtml(t("Upload image","Загрузить","Завантажити"))}
           <input id="file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
         </label>
 
-        <button id="download" class="btn primary" disabled>Download BMPs</button>
+        <button id="download" class="btn primary" disabled>${escapeHtml(t("Download BMPs","Скачать BMP","Завантажити BMP"))}</button>
 
         <div class="sep"></div>
 
-        <div class="select">
-          <span>Preset</span>
+        <div class="select" ${tipAttr("Quick settings for converting to a 24×12 BMP icon","Быстрые настройки конвертации в иконку BMP 24×12","Швидкі налаштування конвертації в іконку BMP 24×12")}>
+          <span>${escapeHtml(t("Preset","Пресет","Пресет"))}</span>
           <select id="preset">
-            <option value="logo">Logo / Crest</option>
-            <option value="art" selected>Art / Game</option>
-            <option value="photo">Photo</option>
+            <option value="logo">${escapeHtml(t("Simple logo","Простой логотип","Простий логотип"))}</option>
+            <option value="art" selected>${escapeHtml(t("Game-style art","Игровая картинка","Ігрова картинка"))}</option>
+            <option value="photo">${escapeHtml(t("Complex image","Сложная картинка","Складне зображення"))}</option>
           </select>
         </div>
 
-        <label class="toggle compact" title="Show full pipeline controls">
-          <span>Advanced settings</span>
+        <label class="toggle compact"  ${tipAttr("More conversion controls for 24×12 icons","Больше настроек конвертации для иконки 24×12","Більше налаштувань конвертації для іконки 24×12")}>
+          <span>${escapeHtml(t("Advanced settings","Расширенные настройки","Розширені налаштування"))}</span>
           <input id="advanced" type="checkbox" />
           <span class="track"><span class="thumb"></span></span>
         </label>
 
-        <button id="reset" class="btn" disabled>Reset</button>
+        <button id="reset" class="btn" disabled>${escapeHtml(t("Reset","Сброс","Скинути"))}</button>
+        <div class="toolbar-right">
+          <button class="btn ${currentLang === "en" ? "active" : ""}" data-lang="en">EN</button>
+          <button class="btn ${currentLang === "ru" ? "active" : ""}" data-lang="ru">RU</button>
+          <button class="btn ${currentLang === "ua" ? "active" : ""}" data-lang="ua">UA</button>
+        </div>
+
       </div>
 
       <div id="advancedPanel" class="advanced hidden">
-        <div class="advanced-row">
-          <div class="select">
-            <span>Dither</span>
-            <select id="dither">
-              <option value="none">None</option>
-              <option value="ordered4" selected>Ordered 4×4</option>
-              <option value="ordered8">Ordered 8×8</option>
-              <option value="atkinson">Atkinson</option>
-              <option value="floyd">Floyd–Steinberg</option>
-            </select>
-          </div>
-
-          <label class="toggle compact">
-            <span>Two-step downscale</span>
-            <input id="twoStep" type="checkbox" checked />
-            <span class="track"><span class="thumb"></span></span>
-          </label>
-
-          <label class="toggle compact">
-            <span>Center palette</span>
-            <input id="centerPalette" type="checkbox" checked />
-            <span class="track"><span class="thumb"></span></span>
-          </label>
-
-          <div class="range">
-            <span>Dither</span>
-            <input id="ditherAmt" type="range" min="0" max="100" value="55" />
-            <b><span id="ditherAmtVal">55</span>%</b>
-          </div>
-        </div>
-
-        <div class="advanced-row">
-          <label class="toggle compact" title="Perceptual color matching">
-            <span>OKLab</span>
-            <input id="oklab" type="checkbox" checked />
-            <span class="track"><span class="thumb"></span></span>
-          </label>
-
-          <label class="toggle compact" title="Less chessboard artifacts">
-            <span>Noise dither</span>
-            <input id="noiseDither" type="checkbox" checked />
-            <span class="track"><span class="thumb"></span></span>
-          </label>
-
-          <label class="toggle compact" title="Sharpen only edges (light)">
-            <span>Edge-sharpen</span>
-            <input id="edgeSharpen" type="checkbox" checked />
-            <span class="track"><span class="thumb"></span></span>
-          </label>
-
-          <label class="toggle compact" title="Cleanup isolated pixels after quantization">
-            <span>Cleanup</span>
-            <input id="cleanup" type="checkbox" checked />
-            <span class="track"><span class="thumb"></span></span>
-          </label>
-
-          <div class="sep mini"></div>
-
-          <div class="btn-group">
-            <button id="rotL" class="btn">Rotate ⟲</button>
-            <button id="rotR" class="btn">Rotate ⟳</button>
-            <button id="invert" class="btn">Invert</button>
-          </div>
-        </div>
+<div class="adv-grid">
+  <div class="adv-left">
+    <div class="adv-top">
+      <div class="select">
+        <span class="lbl">
+          ${escapeHtml(t("Color smoothing","Сглаживание цветов","Згладжування кольорів"))}
+          ${helpHtml(
+            "Adds a subtle pixel pattern to smooth color transitions in a 24×12 256-color BMP.",
+            "Добавляет лёгкий пиксельный узор, чтобы сгладить переходы цветов в BMP 256 (24×12).",
+            "Додає легкий піксельний візерунок, щоб згладити переходи кольорів у BMP 256 (24×12)."
+          )}
+        </span>
+        <select id="dither">
+          <option value="none">${escapeHtml(t("Off","Выкл","Вимк"))}</option>
+          <option value="ordered4" selected>${escapeHtml(t("Pattern 4×4","Шаблон 4×4","Візерунок 4×4"))}</option>
+          <option value="ordered8">${escapeHtml(t("Pattern 8×8","Шаблон 8×8","Візерунок 8×8"))}</option>
+          <option value="atkinson">${escapeHtml(t("Smooth (Atkinson)","Плавно (Atkinson)","Плавно (Atkinson)"))}</option>
+          <option value="floyd">${escapeHtml(t("Smooth (Floyd–Steinberg)","Плавно (Floyd–Steinberg)","Плавно (Floyd–Steinberg)"))}</option>
+        </select>
       </div>
 
-      <div class="grid">
+      <div class="range">
+        <span class="lbl">
+          ${escapeHtml(t("Strength","Сила","Сила"))}
+          ${helpHtml(
+            "Controls how strong the smoothing pattern is. Lower = cleaner pixels, higher = smoother gradients.",
+            "Насколько сильное сглаживание. Ниже = чище пиксели, выше = плавнее переходы.",
+            "Наскільки сильне згладжування. Нижче = чистіші пікселі, вище = плавніші переходи."
+          )}
+        </span>
+        <input id="ditherAmt" type="range" min="0" max="100" value="55" />
+        <b><span id="ditherAmtVal">55</span>%</b>
+      </div>
+    </div>
+
+    <div class="adv-toggles">
+      <div class="adv-opt">
+        <div class="opt-head">
+          <span class="opt-name">${escapeHtml(t("Smoother resize","Плавное уменьшение","Плавне зменшення"))}</span>
+          ${helpHtml(
+            "Resizes in two steps so the 24×12 icon keeps cleaner pixels.",
+            "Уменьшает в два шага — меньше артефактов на 24×12.",
+            "Зменшує у два кроки — менше артефактів на 24×12."
+          )}
+        </div>
+        <label class="toggle compact toggle-switch">
+          <input id="twoStep" type="checkbox" checked />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="adv-opt">
+        <div class="opt-head">
+          <span class="opt-name">${escapeHtml(t("Balance colors","Баланс цветов","Баланс кольорів"))}</span>
+          ${helpHtml(
+            "Keeps the icon from getting too dark or too pale after conversion.",
+            "Не даёт иконке стать слишком тёмной или слишком бледной после конвертации.",
+            "Не дає іконці стати надто темною або надто блідою після конвертації."
+          )}
+        </div>
+        <label class="toggle compact toggle-switch">
+          <input id="centerPalette" type="checkbox" checked />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="adv-opt">
+        <div class="opt-head">
+          <span class="opt-name">${escapeHtml(t("Better color match","Точнее цвета","Точніші кольори"))}</span>
+          ${helpHtml(
+            "Improves color matching for 256-color conversion (often looks cleaner on emblems).",
+            "Улучшает совпадение цветов при 256-цветной конвертации (часто выглядит чище на эмблемах).",
+            "Покращує співпадіння кольорів при 256-кольоровій конвертації (часто виглядає чистіше на емблемах)."
+          )}
+        </div>
+        <label class="toggle compact toggle-switch">
+          <input id="oklab" type="checkbox" checked />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="adv-opt">
+        <div class="opt-head">
+          <span class="opt-name">${escapeHtml(t("Subtle noise","Лёгкий шум","Легкий шум"))}</span>
+          ${helpHtml(
+            "Adds a tiny bit of noise to reduce visible patterns after smoothing.",
+            "Добавляет чуть-чуть шума, чтобы уменьшить заметные узоры после сглаживания.",
+            "Додає трішки шуму, щоб зменшити помітні візерунки після згладжування."
+          )}
+        </div>
+        <label class="toggle compact toggle-switch">
+          <input id="noiseDither" type="checkbox" checked />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="adv-opt">
+        <div class="opt-head">
+          <span class="opt-name">${escapeHtml(t("Sharpen edges","Чёткие границы","Чіткі межі"))}</span>
+          ${helpHtml(
+            "Slightly sharpens edges so the crest outline stays crisp at 24×12.",
+            "Слегка подчёркивает границы — контур герба остаётся чётким на 24×12.",
+            "Трохи підкреслює межі — контур герба лишається чітким на 24×12."
+          )}
+        </div>
+        <label class="toggle compact toggle-switch">
+          <input id="edgeSharpen" type="checkbox" checked />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="adv-opt">
+        <div class="opt-head">
+          <span class="opt-name">${escapeHtml(t("Cleanup pixels","Очистка пикселей","Очищення пікселів"))}</span>
+          ${helpHtml(
+            "Removes single stray pixels after conversion (good for tiny icons).",
+            "Убирает одиночные «лишние» пиксели после конвертации (полезно для маленьких иконок).",
+            "Прибирає поодинокі «зайві» пікселі після конвертації (корисно для маленьких іконок)."
+          )}
+        </div>
+        <label class="toggle compact toggle-switch">
+          <input id="cleanup" type="checkbox" checked />
+          <span class="track"><span class="thumb"></span></span>
+        </label>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="adv-right">
+    <button id="rotL" class="btn">Rotate ⟲</button>
+    <button id="rotR" class="btn">Rotate ⟳</button>
+    <button id="invert" class="btn">Invert</button>
+  </div>
+</div>
+</div>
+
+<div class="grid">
+
         <div class="card">
           <div class="card-head">
             <h3>Crop (2:1)</h3>
@@ -590,6 +716,9 @@ const GAME_TEMPLATE: GameTemplate = {
 };
 
 function initToolUI() {
+
+  // Help tooltips (desktop hover + mobile tap)
+  initHelpTooltips();
   // refs must be available only after tool HTML is rendered
   refs = {
     themeToggle: document.querySelector<HTMLInputElement>("#themeToggle")!,
@@ -635,6 +764,12 @@ function initToolUI() {
     confirmYes: document.querySelector<HTMLButtonElement>("#confirmYes")!,
     confirmNo: document.querySelector<HTMLButtonElement>("#confirmNo")!,
   };
+
+  // Language switcher (tool page)
+  document.querySelectorAll<HTMLButtonElement>(".toolbar-right button[data-lang]").forEach((btn) => {
+    btn.addEventListener("click", () => setLang(btn.dataset.lang as Lang));
+  });
+
 
   // theme
   refs.themeToggle.checked = false;

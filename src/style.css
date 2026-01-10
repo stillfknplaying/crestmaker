@@ -44,7 +44,7 @@ body{
   flex-direction: column;
 }
 
-#routeRoot{ flex: 1 0 auto; }
+#routeRoot{ flex: 1 0 auto; padding-bottom: 12px; }
 
 .footer{ margin-top: auto; }
 
@@ -82,6 +82,15 @@ body{
   margin-bottom: 12px;
   align-items:center;
 }
+
+
+.toolbar-right{
+  margin-left: auto;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
 
 .sep{
   width: 1px;
@@ -140,6 +149,8 @@ body{
   color: var(--muted);
   font-size: 12px;
 }
+
+.lbl{ display:inline-flex; align-items:center; gap:6px; }
 select{
   border: none;
   outline: none;
@@ -226,11 +237,44 @@ select option{
   box-shadow: var(--shadow);
   margin-bottom: 12px;
 }
-.advanced-row{
+.adv-grid{ display:grid; grid-template-columns: 1fr auto; gap:14px; align-items:start; }
+.adv-top{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.adv-toggles{ margin-top:10px; display:grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap:10px 12px; }
+
+.adv-opt{
   display:flex;
-  flex-wrap:wrap;
-  gap:10px;
   align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.opt-head{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+.opt-name{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.toggle-switch{
+  flex:0 0 auto;
+  gap:0;
+}
+.toggle-switch .track{
+  margin-left: 0;
+}
+
+.adv-right{ display:flex; gap:8px; align-items:center; justify-content:flex-end; white-space:nowrap; }
+
+@media (max-width: 860px){
+  .adv-grid{ grid-template-columns: 1fr; }
+  .adv-right{ justify-content:flex-start; }
+  .adv-toggles{ grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+}
+@media (max-width: 520px){
+  .adv-toggles{ grid-template-columns: 1fr; }
 }
 .btn-group{
   display:flex;
@@ -370,7 +414,7 @@ select option{
 
 /* ---------- FOOTER ---------- */
 .footer{
-  margin-top: 12px;
+  margin-top: auto;
   padding: 14px 12px;
   background: var(--panel2);
   border: 1px solid var(--border);
@@ -410,3 +454,65 @@ select option{
 
 /* toggle disabled */
 .toggle input:disabled + .track{ opacity: 0.6; cursor: not-allowed; }
+
+
+/* ---------- HELP TOOLTIP ( ? ) ---------- */
+
+/* ---------- HELP ICON TOOLTIP ---------- */
+.helpwrap{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.helpbtn{
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.06);
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: .85;
+}
+.helpbtn:hover{ opacity: 1; }
+.helpbtn:active{ transform: translateY(1px); }
+.helpbtn svg{
+  width: 10px;
+  height: 10px;
+  display: block;
+  fill: var(--muted);
+}
+.helptip{
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.25;
+  min-width: 220px;
+  max-width: 320px;
+  z-index: 50;
+  display: none;
+}
+.helpwrap:hover .helptip,
+.helpwrap:focus-within .helptip,
+.helpwrap.open .helptip{
+  display: block;
+}
+:root[data-theme="light"] .helpbtn{
+  border-color: rgba(16,24,40,.18);
+  background: rgba(16,24,40,.04);
+}
+:root[data-theme="light"] .helpbtn svg{ fill: rgba(16,24,40,.55); }
+:root[data-theme="light"] .helptip{ background: #ffffff; }
+
