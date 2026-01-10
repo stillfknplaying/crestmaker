@@ -317,6 +317,7 @@ select option{
 /* Crop canvas */
 #crop{
   width: 100%;
+  touch-action: none;
   height: auto;
   display:block;
   border: 1px solid var(--border);

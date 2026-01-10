@@ -1,8 +1,10 @@
 import "./style.css";
-import { buildPaletteSync, applyPaletteSync, utils } from "image-q";
+import { buildPaletteSync, utils } from "image-q";
 
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
-type Preset = "logo" | "art" | "photo";
+type ScanMode = "auto" | "serpentine" | "linear";
+// Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
+type Preset = "logo" | "balanced" | "art" | "smooth" | "photo" | "dark";
 type CropRect = { x: number; y: number; w: number; h: number }; // in source pixels; aspect controlled by UI
 type CropDragMode = "none" | "move" | "nw" | "ne" | "sw" | "se";
 
@@ -469,9 +471,13 @@ function renderToolPage() {
 <div class="select" ${tipAttr("Quick settings for converting to a 256-color BMP","Быстрые настройки конвертации в BMP 256 цветов","Швидкі налаштування конвертації в BMP 256 кольорів")}>
   <span>${escapeHtml(t("Preset","Пресет","Пресет"))}</span>
   <select id="preset">
+    
     <option value="logo">${escapeHtml(t("Simple logo","Простой логотип","Простий логотип"))}</option>
-    <option value="art" selected>${escapeHtml(t("Game-style art","Игровая картинка","Ігрова картинка"))}</option>
-    <option value="photo">${escapeHtml(t("Complex image","Сложная картинка","Складне зображення"))}</option>
+    <option value="balanced" selected>${escapeHtml(t("Balanced (recommended)","Баланс (рекомендуется)","Баланс (рекомендовано)"))}</option>
+    <option value="art">${escapeHtml(t("Game-style art","Игровая картинка","Ігрова картинка"))}</option>
+    <option value="smooth">${escapeHtml(t("Smooth gradients","Плавные градиенты","Плавні градієнти"))}</option>
+    <option value="photo">${escapeHtml(t("Photo / complex","Фото / сложная","Фото / складна"))}</option>
+    <option value="dark">${escapeHtml(t("Dark images","Тёмные картинки","Темні зображення"))}</option>
   </select>
 </div>
 
@@ -507,6 +513,23 @@ function renderToolPage() {
           <option value="ordered8">${escapeHtml(t("Pattern 8×8","Шаблон 8×8","Візерунок 8×8"))}</option>
           <option value="atkinson">${escapeHtml(t("Smooth (Atkinson)","Плавно (Atkinson)","Плавно (Atkinson)"))}</option>
           <option value="floyd">${escapeHtml(t("Smooth (Floyd–Steinberg)","Плавно (Floyd–Steinberg)","Плавно (Floyd–Steinberg)"))}</option>
+        </select>
+      </div>
+
+
+      <div class="select">
+        <span class="lbl">
+          ${escapeHtml(t("Scan","Сканирование","Сканування"))}
+          ${helpHtml(
+            "Controls scanning direction for error-diffusion dithering. Auto uses serpentine only when it helps.",
+            "Направление сканирования для error-diffusion. Auto включает serpentine только когда это помогает.",
+            "Напрям сканування для error-diffusion. Auto вмикає serpentine лише коли це допомагає."
+          )}
+        </span>
+        <select id="scan">
+          <option value="auto" selected>${escapeHtml(t("Auto","Авто","Авто"))}</option>
+          <option value="serpentine">${escapeHtml(t("Serpentine","Змейка","Змійка"))}</option>
+          <option value="linear">${escapeHtml(t("Linear","Линейно","Лінійно"))}</option>
         </select>
       </div>
 
@@ -699,6 +722,7 @@ type ToolRefs = {
   advancedPanel: HTMLDivElement;
 
   ditherSel: HTMLSelectElement;
+  scanSel: HTMLSelectElement;
   twoStepChk: HTMLInputElement;
   centerPaletteChk: HTMLInputElement;
   ditherAmt: HTMLInputElement;
@@ -818,6 +842,7 @@ function initToolUI() {
     advancedPanel: document.querySelector<HTMLDivElement>("#advancedPanel")!,
 
     ditherSel: document.querySelector<HTMLSelectElement>("#dither")!,
+    scanSel: document.querySelector<HTMLSelectElement>("#scan")!,
     twoStepChk: document.querySelector<HTMLInputElement>("#twoStep")!,
     centerPaletteChk: document.querySelector<HTMLInputElement>("#centerPalette")!,
     ditherAmt: document.querySelector<HTMLInputElement>("#ditherAmt")!,
@@ -999,7 +1024,7 @@ function initToolUI() {
 
   // live recompute for advanced controls
   const live: Array<HTMLElement> = [
-    refs.ditherSel, refs.twoStepChk, refs.centerPaletteChk,
+    refs.ditherSel, refs.scanSel, refs.twoStepChk, refs.centerPaletteChk,
     refs.oklabChk, refs.noiseDitherChk, refs.edgeSharpenChk, refs.cleanupChk,
     refs.useCropChk,
   ];
@@ -1039,37 +1064,77 @@ function initToolUI() {
 
 // -------------------- PRESET DEFAULTS --------------------
 function applyPresetDefaults(p: Preset) {
-  if (!refs) return;
-  if (p === "logo") {
-    refs.ditherSel.value = "none";
-    refs.ditherAmt.value = "25";
-    refs.ditherAmtVal.textContent = "25";
-    refs.twoStepChk.checked = true;
-    refs.centerPaletteChk.checked = true;
-    refs.oklabChk.checked = true;
-    refs.noiseDitherChk.checked = false;
-    refs.edgeSharpenChk.checked = true;
-    refs.cleanupChk.checked = true;
-  } else if (p === "art") {
-    refs.ditherSel.value = "ordered4";
-    refs.ditherAmt.value = "55";
-    refs.ditherAmtVal.textContent = "55";
-    refs.twoStepChk.checked = true;
-    refs.centerPaletteChk.checked = true;
-    refs.oklabChk.checked = true;
-    refs.noiseDitherChk.checked = true;
-    refs.edgeSharpenChk.checked = true;
-    refs.cleanupChk.checked = true;
-  } else {
-    refs.ditherSel.value = "floyd";
-    refs.ditherAmt.value = "35";
-    refs.ditherAmtVal.textContent = "35";
-    refs.twoStepChk.checked = true;
-    refs.centerPaletteChk.checked = false;
-    refs.oklabChk.checked = true;
-    refs.noiseDitherChk.checked = false;
-    refs.edgeSharpenChk.checked = false;
-    refs.cleanupChk.checked = true;
+  // `refs` is initialized after render; keep the function safe and TS-happy.
+  const r = refs;
+  if (!r) return;
+
+  // Helper to set Strength slider consistently
+  const setStrength = (val: number) => {
+    const v = String(Math.max(0, Math.min(100, Math.round(val))));
+    r.ditherAmt.value = v;
+    r.ditherAmtVal.textContent = v;
+  };
+
+  // Defaults that most presets share
+  r.oklabChk.checked = true;
+  r.cleanupChk.checked = true;
+  r.scanSel.value = "auto";
+
+  switch (p) {
+    case "logo":
+      r.ditherSel.value = "none";
+      setStrength(25);
+      r.twoStepChk.checked = true;
+      r.centerPaletteChk.checked = true;
+      r.noiseDitherChk.checked = false;
+      r.edgeSharpenChk.checked = true;
+      break;
+
+    case "balanced":
+      r.ditherSel.value = "ordered4";
+      setStrength(45);
+      r.twoStepChk.checked = true;
+      r.centerPaletteChk.checked = true; // "Balance colors"
+      r.noiseDitherChk.checked = true;
+      r.edgeSharpenChk.checked = true;
+      break;
+
+    case "art":
+      r.ditherSel.value = "ordered4";
+      setStrength(55);
+      r.twoStepChk.checked = true;
+      r.centerPaletteChk.checked = true;
+      r.noiseDitherChk.checked = true;
+      r.edgeSharpenChk.checked = true;
+      break;
+
+    case "smooth":
+      r.ditherSel.value = "atkinson";
+      setStrength(32);
+      r.twoStepChk.checked = true;
+      r.centerPaletteChk.checked = true;
+      r.noiseDitherChk.checked = false;
+      r.edgeSharpenChk.checked = false;
+      break;
+
+    case "dark":
+      r.ditherSel.value = "atkinson";
+      setStrength(28);
+      r.twoStepChk.checked = true;
+      r.centerPaletteChk.checked = true;
+      r.noiseDitherChk.checked = false;
+      r.edgeSharpenChk.checked = false;
+      break;
+
+    case "photo":
+    default:
+      r.ditherSel.value = "floyd";
+      setStrength(22);
+      r.twoStepChk.checked = true;
+      r.centerPaletteChk.checked = false;
+      r.noiseDitherChk.checked = false;
+      r.edgeSharpenChk.checked = false;
+      break;
   }
 }
 
@@ -1311,7 +1376,22 @@ function initCropEvents() {
   if (!refs) return;
   const { cropCanvas } = refs;
 
-  cropCanvas.addEventListener("mousemove", (e) => {
+  // Pointer-based interactions for mouse + touch (mobile crop fix)
+  type Pt = { x: number; y: number };
+  const pointers = new Map<number, Pt>();
+  let pinchStart: null | { dist: number; rect: CropRect; cx: number; cy: number } = null;
+
+  const getCanvasPoint = (e: PointerEvent): Pt => {
+    const rect = cropCanvas.getBoundingClientRect();
+    const mxCss = e.clientX - rect.left;
+    const myCss = e.clientY - rect.top;
+    return {
+      x: mxCss * (cropCanvas.width / rect.width),
+      y: myCss * (cropCanvas.height / rect.height),
+    };
+  };
+
+  const updateCursor = (mx: number, my: number) => {
     if (!sourceImage || !cropRect || !refs?.useCropChk.checked) {
       cropCanvas.style.cursor = "default";
       return;
@@ -1321,13 +1401,6 @@ function initCropEvents() {
     rebuildDisplayCanvas();
     if (!displayCanvas) return;
 
-    const rect = cropCanvas.getBoundingClientRect();
-    const mxCss = e.clientX - rect.left;
-    const myCss = e.clientY - rect.top;
-
-    const mx = mxCss * (cropCanvas.width / rect.width);
-    const my = myCss * (cropCanvas.height / rect.height);
-
     const { rx, ry, rw, rh } = cropRectToCanvasRect(displayCanvas, cropRect, cropCanvas);
     const corner = hitCorner(mx, my, rx, ry, rw, rh);
 
@@ -1335,24 +1408,43 @@ function initCropEvents() {
     else if (corner === "ne" || corner === "sw") cropCanvas.style.cursor = "nesw-resize";
     else if (mx >= rx && mx <= rx + rw && my >= ry && my <= ry + rh) cropCanvas.style.cursor = "move";
     else cropCanvas.style.cursor = "default";
-  });
+  };
 
-  cropCanvas.addEventListener("mousedown", (e) => {
+  cropCanvas.addEventListener("pointerdown", (e) => {
     if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
 
+    cropCanvas.setPointerCapture(e.pointerId);
+    const pt = getCanvasPoint(e);
+    pointers.set(e.pointerId, pt);
+
+    // Pinch start (2 fingers)
+    if (pointers.size === 2) {
+      const arr = Array.from(pointers.values());
+      const dx = arr[0].x - arr[1].x;
+      const dy = arr[0].y - arr[1].y;
+      const dist = Math.max(1, Math.hypot(dx, dy));
+
+      rebuildDisplayCanvas();
+      if (!displayCanvas) return;
+
+      pinchStart = {
+        dist,
+        rect: { x: cropRect.x, y: cropRect.y, w: cropRect.w, h: cropRect.h },
+        cx: cropRect.x + cropRect.w / 2,
+        cy: cropRect.y + cropRect.h / 2,
+      };
+
+      cropDragMode = "none";
+      return;
+    }
+
+    // Single-pointer drag (move/resize)
     rebuildDisplayCanvas();
     if (!displayCanvas) return;
 
-    const rect = cropCanvas.getBoundingClientRect();
-    const mxCss = e.clientX - rect.left;
-    const myCss = e.clientY - rect.top;
-
-    const mx = mxCss * (cropCanvas.width / rect.width);
-    const my = myCss * (cropCanvas.height / rect.height);
-
     const { rx, ry, rw, rh } = cropRectToCanvasRect(displayCanvas, cropRect, cropCanvas);
+    const corner = hitCorner(pt.x, pt.y, rx, ry, rw, rh);
 
-    const corner = hitCorner(mx, my, rx, ry, rw, rh);
     if (corner) {
       cropDragMode = corner;
       const start = { x: cropRect.x, y: cropRect.y, w: cropRect.w, h: cropRect.h };
@@ -1365,44 +1457,69 @@ function initCropEvents() {
       return;
     }
 
-    const inside = mx >= rx && mx <= rx + rw && my >= ry && my <= ry + rh;
+    const inside = pt.x >= rx && pt.x <= rx + rw && pt.y >= ry && pt.y <= ry + rh;
     if (!inside) return;
 
     cropDragMode = "move";
-    dragStart = { mx, my, x: cropRect.x, y: cropRect.y };
+    dragStart = { mx: pt.x, my: pt.y, x: cropRect.x, y: cropRect.y };
   });
 
-  window.addEventListener("mouseup", () => { cropDragMode = "none"; });
+  cropCanvas.addEventListener("pointermove", (e) => {
+    const pt = getCanvasPoint(e);
+    pointers.set(e.pointerId, pt);
 
-  window.addEventListener("mousemove", (e) => {
+    // Update cursor for mouse hover
+    if (e.pointerType === "mouse" && pointers.size === 1 && cropDragMode === "none") {
+      updateCursor(pt.x, pt.y);
+    }
+
     if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
-    if (cropDragMode === "none") return;
 
     rebuildDisplayCanvas();
     if (!displayCanvas) return;
     const dc = displayCanvas;
 
-      const rect = cropCanvas.getBoundingClientRect();
-      const mxCss = e.clientX - rect.left;
-      const myCss = e.clientY - rect.top;
+    // Pinch zoom (2 pointers)
+    if (pointers.size === 2 && pinchStart) {
+      const arr = Array.from(pointers.values());
+      const dx = arr[0].x - arr[1].x;
+      const dy = arr[0].y - arr[1].y;
+      const dist = Math.max(1, Math.hypot(dx, dy));
+      const ratio = dist / pinchStart.dist;
 
-      const mx = mxCss * (cropCanvas.width / rect.width);
-      const my = myCss * (cropCanvas.height / rect.height);
+      const r = aspectRatio(currentCropAspect);
 
-      const { dx, dw, dy, dh } = getContainTransformForCropCanvas(dc, cropCanvas);
+      let nw = pinchStart.rect.w / ratio; // pinch out -> ratio>1 -> nw smaller (zoom in)
+      nw = clamp(nw, 24, dc.width);
+      let nh = nw / r;
+      if (nh > dc.height) { nh = dc.height; nw = nh * r; }
 
-      const canvasToSrcX = (val: number) => (val / dw) * dc.width;
-      const canvasToSrcY = (val: number) => (val / dh) * dc.height;
+      cropRect.w = nw;
+      cropRect.h = nh;
+      cropRect.x = clamp(pinchStart.cx - nw / 2, 0, dc.width - nw);
+      cropRect.y = clamp(pinchStart.cy - nh / 2, 0, dc.height - nh);
+
+      drawCropUI();
+      scheduleRecomputePreview(60);
+      return;
+    }
+
+    if (cropDragMode === "none") return;
+
+    const { dx, dw, dy, dh } = getContainTransformForCropCanvas(dc, cropCanvas);
+
+    const canvasToSrcX = (val: number) => (val / dw) * dc.width;
+    const canvasToSrcY = (val: number) => (val / dh) * dc.height;
 
     if (cropDragMode === "move") {
-      const deltaXCanvas = mx - dragStart.mx;
-      const deltaYCanvas = my - dragStart.my;
+      const deltaXCanvas = pt.x - dragStart.mx;
+      const deltaYCanvas = pt.y - dragStart.my;
 
       cropRect.x = dragStart.x + canvasToSrcX(deltaXCanvas);
       cropRect.y = dragStart.y + canvasToSrcY(deltaYCanvas);
 
-      cropRect.x = clamp(cropRect.x, 0, displayCanvas.width - cropRect.w);
-      cropRect.y = clamp(cropRect.y, 0, displayCanvas.height - cropRect.h);
+      cropRect.x = clamp(cropRect.x, 0, dc.width - cropRect.w);
+      cropRect.y = clamp(cropRect.y, 0, dc.height - cropRect.h);
 
       drawCropUI();
       scheduleRecomputePreview(60);
@@ -1410,10 +1527,10 @@ function initCropEvents() {
     }
 
     // resize corner while keeping selected aspect
-    const nx = (mx - dx) / dw;
-    const ny = (my - dy) / dh;
-    const px = clamp(nx, 0, 1) * displayCanvas.width;
-    const py = clamp(ny, 0, 1) * displayCanvas.height;
+    const nx = (pt.x - dx) / dw;
+    const ny = (pt.y - dy) / dh;
+    const px = clamp(nx, 0, 1) * dc.width;
+    const py = clamp(ny, 0, 1) * dc.height;
 
     const { ax, ay } = dragAnchor;
 
@@ -1429,8 +1546,8 @@ function initCropEvents() {
     w = Math.max(minW, w);
     let h = w / r;
 
-    if (w > displayCanvas.width) { w = displayCanvas.width; h = w / r; }
-    if (h > displayCanvas.height) { h = displayCanvas.height; w = h * r; }
+    if (w > dc.width) { w = dc.width; h = w / r; }
+    if (h > dc.height) { h = dc.height; w = h * r; }
 
     let x = 0, y = 0;
     if (cropDragMode === "nw") { x = ax - w; y = ay - h; }
@@ -1438,8 +1555,8 @@ function initCropEvents() {
     else if (cropDragMode === "sw") { x = ax - w; y = ay; }
     else { x = ax; y = ay; }
 
-    x = clamp(x, 0, displayCanvas.width - w);
-    y = clamp(y, 0, displayCanvas.height - h);
+    x = clamp(x, 0, dc.width - w);
+    y = clamp(y, 0, dc.height - h);
 
     cropRect.x = x; cropRect.y = y; cropRect.w = w; cropRect.h = h;
 
@@ -1447,6 +1564,16 @@ function initCropEvents() {
     scheduleRecomputePreview(60);
   });
 
+  const endPointer = (e: PointerEvent) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinchStart = null;
+    if (pointers.size === 0) cropDragMode = "none";
+  };
+
+  cropCanvas.addEventListener("pointerup", endPointer);
+  cropCanvas.addEventListener("pointercancel", endPointer);
+
+  // Mouse wheel zoom (desktop)
   cropCanvas.addEventListener("wheel", (e) => {
     if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
     rebuildDisplayCanvas();
@@ -1604,6 +1731,69 @@ function edgeAwareSharpen(img: ImageData, amount = 0.9, edgeThreshold = 10) {
   img.data.set(out);
 }
 
+function presetLevelStrength(p: Preset): number {
+  switch (p) {
+    case "dark": return 0.26;
+    case "smooth": return 0.22;
+    case "balanced": return 0.18;
+    case "art": return 0.14;
+    case "photo": return 0.10;
+    case "logo": default: return 0.0;
+  }
+}
+
+// Very gentle levels normalization to avoid "too dark / too pale" after quantization.
+// Uses 2%–98% luma percentiles and blends with the original by strength.
+function softNormalizeLevels(img: ImageData, preset: Preset) {
+  const strength = presetLevelStrength(preset);
+  if (strength <= 0) return;
+
+  const data = img.data;
+  const hist = new Uint32Array(256);
+  let count = 0;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const a = data[i + 3];
+    if (a < 16) continue;
+    const l = Math.round(0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]);
+    hist[clamp(l, 0, 255)]++;
+    count++;
+  }
+  if (count < 10) return;
+
+  const lowTarget = Math.floor(count * 0.02);
+  const highTarget = Math.floor(count * 0.98);
+
+  let lo = 0, acc = 0;
+  for (let i = 0; i < 256; i++) {
+    acc += hist[i];
+    if (acc >= lowTarget) { lo = i; break; }
+  }
+  let hi = 255; acc = 0;
+  for (let i = 0; i < 256; i++) {
+    acc += hist[i];
+    if (acc >= highTarget) { hi = i; break; }
+  }
+
+  // Safety guards (avoid aggressive stretching)
+  lo = Math.min(lo, 80);
+  hi = Math.max(hi, 175);
+  if (hi - lo < 40) return;
+
+  const inv = 1 / (hi - lo);
+
+  for (let i = 0; i < data.length; i += 4) {
+    const a = data[i + 3];
+    if (a < 16) continue;
+
+    for (let c = 0; c < 3; c++) {
+      const v0 = data[i + c];
+      const v1 = clamp((v0 - lo) * inv * 255, 0, 255);
+      data[i + c] = clamp(v0 + (v1 - v0) * strength, 0, 255);
+    }
+  }
+}
+
 // -------------------- OKLAB --------------------
 function srgbToLinear(u8: number) {
   const u = u8 / 255;
@@ -1645,7 +1835,9 @@ function quantizeTo256(
   ditherStrength01: number,
   centerWeighted: boolean,
   useOKLab: boolean,
-  useNoiseOrdered: boolean
+  useNoiseOrdered: boolean,
+  scanMode: ScanMode,
+  preset: Preset
 ): { palette: Uint8Array; indices: Uint8Array } {
   const pcFull = utils.PointContainer.fromUint8Array(img24x12.data, img24x12.width, img24x12.height);
 
@@ -1738,72 +1930,85 @@ function quantizeTo256(
 
   const indices = new Uint8Array(img24x12.width * img24x12.height);
 
-  let rgba: Uint8Array | Uint8ClampedArray = img24x12.data;
-  if (ditherMode === "floyd") {
-    const outPC = applyPaletteSync(pcFull, paletteObj, {
-      colorDistanceFormula: "euclidean",
-      imageQuantization: "floyd-steinberg",
-    });
-    rgba = outPC.toUint8Array();
-  }
+  
+const rgba = img24x12.data;
 
-  // Atkinson error-diffusion dithering (palette-aware)
-  if (ditherMode === "atkinson") {
-    const w = img24x12.width;
-    const h = img24x12.height;
-    const errR = new Float32Array(w * h);
-    const errG = new Float32Array(w * h);
-    const errB = new Float32Array(w * h);
-
-    const indices = new Uint8Array(w * h);
-
-    const addErr = (x: number, y: number, r: number, g: number, b: number, wgt: number) => {
-      if (x < 0 || y < 0 || x >= w || y >= h) return;
-      const j = y * w + x;
-      errR[j] += r * wgt;
-      errG[j] += g * wgt;
-      errB[j] += b * wgt;
-    };
-
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const i = y * w + x;
-        const p = i * 4;
-        const r0 = rgba[p] + errR[i];
-        const g0 = rgba[p + 1] + errG[i];
-        const b0 = rgba[p + 2] + errB[i];
-
-        const r = clamp(r0, 0, 255);
-        const g = clamp(g0, 0, 255);
-        const b = clamp(b0, 0, 255);
-
-        const idx = nearestIndex(r, g, b);
-        indices[i] = idx;
-
-        const pr = palette[idx * 3];
-        const pg = palette[idx * 3 + 1];
-        const pb = palette[idx * 3 + 2];
-
-        const er = r - pr;
-        const eg = g - pg;
-        const eb = b - pb;
-
-        // Atkinson diffusion: distribute to 6 neighbors, each 1/8
-        const wgt = 1 / 8;
-        addErr(x + 1, y,     er, eg, eb, wgt);
-        addErr(x + 2, y,     er, eg, eb, wgt);
-        addErr(x - 1, y + 1, er, eg, eb, wgt);
-        addErr(x,     y + 1, er, eg, eb, wgt);
-        addErr(x + 1, y + 1, er, eg, eb, wgt);
-        addErr(x,     y + 2, er, eg, eb, wgt);
-      }
-    }
-
-    return { palette, indices };
-  }
-
+// Error-diffusion dithering (palette-aware) with optional serpentine scanning.
+// Strength is applied to the diffused error so tiny icons don't get "overcooked".
+if (ditherMode === "floyd" || ditherMode === "atkinson") {
   const w = img24x12.width;
   const h = img24x12.height;
+
+  const serpentine = resolveSerpentine(scanMode, preset, ditherMode);
+  const strength = clamp(ditherStrength01, 0, 1);
+
+  const errR = new Float32Array(w * h);
+  const errG = new Float32Array(w * h);
+  const errB = new Float32Array(w * h);
+
+  const addErr = (x: number, y: number, er: number, eg: number, eb: number, wgt: number) => {
+    if (x < 0 || y < 0 || x >= w || y >= h) return;
+    const j = y * w + x;
+    errR[j] += er * wgt;
+    errG[j] += eg * wgt;
+    errB[j] += eb * wgt;
+  };
+
+  for (let y = 0; y < h; y++) {
+    const rev = serpentine && (y % 2 === 1);
+    const xStart = rev ? (w - 1) : 0;
+    const xEnd = rev ? -1 : w;
+    const step = rev ? -1 : 1;
+
+    for (let x = xStart; x !== xEnd; x += step) {
+      const i = y * w + x;
+      const p = i * 4;
+
+      const r0 = rgba[p] + errR[i];
+      const g0 = rgba[p + 1] + errG[i];
+      const b0 = rgba[p + 2] + errB[i];
+
+      const r = clamp(r0, 0, 255);
+      const g = clamp(g0, 0, 255);
+      const b = clamp(b0, 0, 255);
+
+      const idx = nearestIndex(r, g, b);
+      indices[i] = idx;
+
+      const pr = palette[idx * 3];
+      const pg = palette[idx * 3 + 1];
+      const pb = palette[idx * 3 + 2];
+
+      const er = (r - pr) * strength;
+      const eg = (g - pg) * strength;
+      const eb = (b - pb) * strength;
+
+      if (ditherMode === "atkinson") {
+        // Atkinson diffusion: 6 neighbors, each 1/8
+        const s = rev ? -1 : 1; // mirror on serpentine rows
+        const wgt = 1 / 8;
+        addErr(x + 1 * s, y,     er, eg, eb, wgt);
+        addErr(x + 2 * s, y,     er, eg, eb, wgt);
+        addErr(x - 1 * s, y + 1, er, eg, eb, wgt);
+        addErr(x,         y + 1, er, eg, eb, wgt);
+        addErr(x + 1 * s, y + 1, er, eg, eb, wgt);
+        addErr(x,         y + 2, er, eg, eb, wgt);
+      } else {
+        // Floyd–Steinberg diffusion
+        const s = rev ? -1 : 1;
+        addErr(x + 1 * s, y,     er, eg, eb, 7 / 16);
+        addErr(x - 1 * s, y + 1, er, eg, eb, 3 / 16);
+        addErr(x,         y + 1, er, eg, eb, 5 / 16);
+        addErr(x + 1 * s, y + 1, er, eg, eb, 1 / 16);
+      }
+    }
+  }
+
+  return { palette, indices };
+}
+
+const w = img24x12.width;
+const h = img24x12.height;
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -2061,6 +2266,43 @@ function downloadBMPs(ally8: Uint8Array, clan16: Uint8Array, combined24: Uint8Ar
 }
 
 
+function clampDitherStrength(preset: Preset, mode: DitherMode, v01: number): number {
+  let v = clamp(v01, 0, 1);
+  if (mode === "none") return 0;
+
+  // Ordered patterns can tolerate a bit more; error-diffusion gets "fried" easily on tiny 24×12.
+  const capsOrdered: Record<Preset, number> = {
+    logo: 0.45,
+    balanced: 0.60,
+    art: 0.75,
+    smooth: 0.55,
+    photo: 0.45,
+    dark: 0.55,
+  };
+
+  const capsDiffusion: Record<Preset, number> = {
+    logo: 0.22,
+    balanced: 0.30,
+    art: 0.34,
+    smooth: 0.34,
+    photo: 0.26,
+    dark: 0.28,
+  };
+
+  if (mode === "ordered4" || mode === "ordered8") return Math.min(v, capsOrdered[preset]);
+  if (mode === "floyd" || mode === "atkinson") return Math.min(v, capsDiffusion[preset]);
+  return v;
+}
+
+function resolveSerpentine(scanMode: ScanMode, preset: Preset, dither: DitherMode): boolean {
+  if (scanMode === "serpentine") return true;
+  if (scanMode === "linear") return false;
+  // auto
+  if (dither !== "floyd" && dither !== "atkinson") return false;
+  // serpentine helps gradients/photos, but can add noise to simple logos
+  return preset !== "logo";
+}
+
 // -------------------- RECOMPUTE PIPELINE --------------------
 let previewTimer: number | null = null;
 
@@ -2080,7 +2322,9 @@ function recomputePreview() {
   const dither = refs.ditherSel.value as DitherMode;
   const useTwoStep = refs.twoStepChk.checked;
   const centerWeighted = refs.centerPaletteChk.checked;
-  const dAmt = Number(refs.ditherAmt.value) / 100;
+  const dAmtRaw = Number(refs.ditherAmt.value) / 100;
+  const scanMode = refs.scanSel.value as ScanMode;
+  const dAmt = clampDitherStrength(preset, dither, dAmtRaw);
 
   const useOKLab = refs.oklabChk.checked;
   const useNoiseOrdered = refs.noiseDitherChk.checked;
@@ -2108,15 +2352,29 @@ function recomputePreview() {
     }
   }
 
+  // balance colors (very gentle levels normalization)
+  if (centerWeighted) {
+    softNormalizeLevels(imgBase, preset);
+  }
+
   // edge-sharpen
   if (doEdgeSharpen) {
-    const amount = preset === "logo" ? 1.1 : 0.9;
-    const thr = preset === "logo" ? 8 : 12;
-    edgeAwareSharpen(imgBase, amount, thr);
+    // Safer sharpening tuned per preset (tiny icons "fry" easily)
+    let amount = 0.0;
+    let thr = 12;
+
+    if (preset === "logo") { amount = 1.05; thr = 9; }
+    else if (preset === "art") { amount = 0.95; thr = 11; }
+    else if (preset === "balanced") { amount = 0.85; thr = 11; }
+    else if (preset === "photo") { amount = 0.35; thr = 16; }
+    else if (preset === "smooth") { amount = 0.25; thr = 16; }
+    else if (preset === "dark") { amount = 0.25; thr = 15; }
+
+    if (amount > 0) edgeAwareSharpen(imgBase, amount, thr);
   }
 
   // Quantize
-  const q = quantizeTo256(imgBase, dither, dAmt, centerWeighted, useOKLab, useNoiseOrdered);
+  const q = quantizeTo256(imgBase, dither, dAmt, centerWeighted, useOKLab, useNoiseOrdered, scanMode, preset);
   palette256 = q.palette;
 
   if (baseW === 24) {
