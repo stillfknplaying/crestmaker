@@ -39,7 +39,14 @@ body{
   max-width: 1200px;
   margin: 0 auto;
   padding: 18px 14px 32px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
+
+#routeRoot{ flex: 1 0 auto; }
+
+.footer{ margin-top: auto; }
 
 .header{
   display:flex;
@@ -160,18 +167,18 @@ select option{
   width: 44px;
   height: 24px;
   border-radius: 999px;
-  background: #e5e7eb;          /* было rgba(255,255,255,.10) */
-  border: 1px solid #cbd5e1;    /* явная граница */
+  background: rgba(255,255,255,.10);
+  border:1px solid var(--border);
   position: relative;
-  flex: 0 0 auto;
+  flex:0 0 auto;
 }
 .toggle .thumb{
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  background: #ffffff;          /* чисто белый */
-  border: 1px solid #94a3b8;    /* контрастная обводка */
-  position: absolute;
+  background: rgba(255,255,255,.72);
+  border:1px solid rgba(255,255,255,.22);
+  position:absolute;
   left: 3px;
   top: 50%;
   transform: translateY(-50%);
@@ -184,8 +191,19 @@ select option{
 .toggle input:checked + .track .thumb{
   left: 23px;
   background: #22c55e;
+  border-color: rgba(0,0,0,.18);
 }
 
+
+/* Light theme: make OFF toggles visible on white backgrounds */
+:root[data-theme="light"] .toggle .track{
+  background: #e5e7eb;
+  border-color: #cbd5e1;
+}
+:root[data-theme="light"] .toggle .thumb{
+  background: #ffffff;
+  border-color: #94a3b8;
+}
 /* ---------- RANGE ---------- */
 .range{
   display:flex;
@@ -352,7 +370,7 @@ select option{
 
 /* ---------- FOOTER ---------- */
 .footer{
-  margin-top: 16px;
+  margin-top: 12px;
   padding: 14px 12px;
   background: var(--panel2);
   border: 1px solid var(--border);
@@ -388,3 +406,7 @@ select option{
   .sep{ display:none; }
   .range input[type="range"]{ width: 120px; }
 }
+
+
+/* toggle disabled */
+.toggle input:disabled + .track{ opacity: 0.6; cursor: not-allowed; }

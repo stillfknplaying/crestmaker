@@ -65,16 +65,12 @@ app.innerHTML = `
 
         <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
           <label class="toggle" style="justify-content:space-between;">
-            <span>
-            <b id="cookieEssentialTitle">Essential</b><br/>
-            <span class="muted" id="cookieEssentialDesc"></span>
-            </span>
-
+            <span><b id="cookieEssentialTitle">Essential</b><br/><span class="muted" id="cookieEssentialDesc"></span></span>
             <span style="display:flex; gap:8px; align-items:center;">
-             <span class="muted" id="cookieEssentialAlways">Always on</span>
-             <input id="cookieEssential" type="checkbox" checked disabled />
-             <span class="track"><span class="thumb"></span></span>
-             </span>
+              <span class="muted" id="cookieEssentialAlways">Always on</span>
+              <input id="cookieEssential" type="checkbox" checked disabled />
+              <span class="track"><span class="thumb"></span></span>
+            </span>
           </label>
 
           <label class="toggle" style="justify-content:space-between;">
@@ -130,7 +126,7 @@ function t(en: string, ru: string, ua: string) {
 }
 
 
-// -------------------- COOKIE CONSENT (beta 0.0.4) --------------------
+// -------------------- COOKIE CONSENT (beta 0.0.5) --------------------
 type ConsentState = {
   essential: true;
   analytics: boolean;
