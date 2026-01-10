@@ -660,7 +660,7 @@ function renderToolPage() {
         <div class="card full" id="previewCard">
           <div class="preview-head">
             <h3>Game preview</h3>
-            <div class="muted hidden">Template: <b>l2_nameplate_01.jpg</b> (2560×1440, UI=1280×720)</div>
+            <div class="muted hidden">Template: <b>${currentMode === "only_clan" ? "l2_nameplate_02.jpg" : "l2_nameplate_01.jpg"}</b> (2560×1440, UI=1280×720)</div>
           </div>
           <div class="preview-wrap">
             <canvas id="preview"></canvas>
@@ -771,8 +771,11 @@ let iconAlly8x12Indexed: Uint8Array | null = null;
 let palette256: Uint8Array | null = null;
 
 let gameTemplateImg: HTMLImageElement | null = null;
+let loadedTemplateSrc: string | null = null;
 
-const GAME_TEMPLATE: GameTemplate = {
+// Two templates: 24×12 uses the original, 16×12 uses the second one.
+// Slot coords are the same (both screenshots are the same resolution/UI).
+const GAME_TEMPLATE_24: GameTemplate = {
   src: "/templates/l2_nameplate_01.jpg",
   baseW: 2560,
   baseH: 1440,
@@ -782,6 +785,20 @@ const GAME_TEMPLATE: GameTemplate = {
   slotW: 48,
   slotH: 24,
 };
+
+const GAME_TEMPLATE_16: GameTemplate = {
+  src: "/templates/l2_nameplate_02.jpg",
+  baseW: 2560,
+  baseH: 1440,
+  slotX: 1164,
+  slotY: 218,
+  slotW: 36,
+  slotH: 24,
+};
+
+function getGameTemplate(): GameTemplate {
+  return currentMode === "only_clan" ? GAME_TEMPLATE_16 : GAME_TEMPLATE_24;
+}
 
 function initToolUI() {
 
@@ -846,13 +863,20 @@ function initToolUI() {
 
   // Mode + crop ratio
   refs.modeSel.addEventListener("change", () => {
-    currentMode = refs!.modeSel.value as any;
+    const nextMode = refs!.modeSel.value as CrestMode;
+    if (nextMode === currentMode) return;
+
+    currentMode = nextMode;
     setMode(currentMode);
-    // Suggested default: only clan -> 16×12 crop
-    if (currentMode === "only_clan" && currentCropAspect !== "16x12") {
-      currentCropAspect = "16x12";
-      setCropAspect(currentCropAspect);
-    }
+
+    // Crop aspect is locked to Mode (24×12 for full, 16×12 for clan)
+    const desired: CropAspect = currentMode === "only_clan" ? "16x12" : "24x12";
+    currentCropAspect = desired;
+    setCropAspect(currentCropAspect);
+
+    // Force immediate crop rect rebuild after re-render
+    cropRect = null;
+
     renderRoute();
   });
 
@@ -959,7 +983,17 @@ function initToolUI() {
 
   // download
   refs.downloadBtn.addEventListener("click", () => {
-    if (!palette256 || !iconCombined24x12Indexed || !iconClan16x12Indexed || !iconAlly8x12Indexed) return;
+    if (!palette256) return;
+    // In 16×12 mode user wants ONLY clan emblem.
+    if (currentMode === "only_clan") {
+      if (!iconClan16x12Indexed) return;
+      const clanBmp = makeBmp8bitIndexed(16, 12, palette256, iconClan16x12Indexed);
+      downloadBlob(clanBmp, "clan_16x12_256.bmp");
+      return;
+    }
+
+    // In 24×12 mode we export all three files.
+    if (!iconCombined24x12Indexed || !iconClan16x12Indexed || !iconAlly8x12Indexed) return;
     downloadBMPs(iconAlly8x12Indexed, iconClan16x12Indexed, iconCombined24x12Indexed, palette256);
   });
 
@@ -1063,11 +1097,21 @@ function loadImageFromUrl(url: string): Promise<HTMLImageElement> {
 }
 
 async function loadTemplate() {
+  const tpl = getGameTemplate();
+
+  // Avoid reloading the same template on every render
+  if (loadedTemplateSrc === tpl.src && gameTemplateImg) {
+    renderPreview();
+    return;
+  }
+
   try {
-    gameTemplateImg = await loadImageFromUrl(GAME_TEMPLATE.src);
+    gameTemplateImg = await loadImageFromUrl(tpl.src);
+    loadedTemplateSrc = tpl.src;
     renderPreview();
   } catch {
     gameTemplateImg = null;
+    loadedTemplateSrc = null;
     renderPreview();
   }
 }
@@ -1947,8 +1991,10 @@ function renderPreview() {
   const canvas = refs.previewCanvas;
   const ctx = refs.previewCtx;
 
-  const tw = GAME_TEMPLATE.baseW;
-  const th = GAME_TEMPLATE.baseH;
+  const tpl = getGameTemplate();
+
+  const tw = tpl.baseW;
+  const th = tpl.baseH;
 
   const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
   canvas.width = Math.round(tw * dpr);
@@ -1967,17 +2013,24 @@ function renderPreview() {
     ctx.fillRect(0, 0, tw, th);
     ctx.fillStyle = "#aaa";
     ctx.font = "28px system-ui, sans-serif";
-    ctx.fillText("Template not found. Put l2_nameplate_01.jpg in /public/templates/", 40, 70);
+    const name = tpl.src.split("/").pop() || tpl.src;
+    ctx.fillText(`Template not found. Put ${name} in /public/templates/`, 40, 70);
     return;
   }
 
-  if (!iconCombined24x12Indexed || !palette256) return;
+  // Pick the correct output for the current mode.
+  // IMPORTANT: in 16×12 mode we must NOT draw the padded 24×12 (it shows as a black 8×12 block).
+  if (!palette256) return;
+  const isClanOnly = currentMode === "only_clan";
+  const indices = isClanOnly ? iconClan16x12Indexed : iconCombined24x12Indexed;
+  const iw = isClanOnly ? 16 : 24;
+  const ih = 12;
+  if (!indices) return;
 
-  // build 24x12 RGBA image
-  const iw = 24, ih = 12;
+  // build RGBA image
   const img = ctx.createImageData(iw, ih);
   for (let i = 0; i < iw * ih; i++) {
-    const idx = iconCombined24x12Indexed[i];
+    const idx = indices[i];
     img.data[i * 4 + 0] = palette256[idx * 3 + 0];
     img.data[i * 4 + 1] = palette256[idx * 3 + 1];
     img.data[i * 4 + 2] = palette256[idx * 3 + 2];
@@ -1992,9 +2045,8 @@ function renderPreview() {
   // Emblem: scale with smoothing ON to feel closer to in-game UI scaling
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(tmp, GAME_TEMPLATE.slotX, GAME_TEMPLATE.slotY, GAME_TEMPLATE.slotW, GAME_TEMPLATE.slotH);
+  ctx.drawImage(tmp, tpl.slotX, tpl.slotY, tpl.slotW, tpl.slotH);
 }
-
 
 function downloadBMPs(ally8: Uint8Array, clan16: Uint8Array, combined24: Uint8Array, palette: Uint8Array) {
   const h = 12;
@@ -2118,10 +2170,10 @@ function recomputePreview() {
     }
   }
 
-  // Update game preview with current output
-  if (iconCombined24x12Indexed && palette256) renderGamePreviewWith(iconCombined24x12Indexed, palette256);
+  // Enable download depending on Mode
+  refs.downloadBtn.disabled = !(palette256 && (currentMode === "only_clan" ? !!iconClan16x12Indexed : !!iconCombined24x12Indexed));
 
-  refs.downloadBtn.disabled = !(iconCombined24x12Indexed && palette256);
+  // Update game preview with current output
   renderPreview();
 }
 
