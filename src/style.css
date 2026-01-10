@@ -237,9 +237,9 @@ select option{
   box-shadow: var(--shadow);
   margin-bottom: 12px;
 }
-.adv-grid{ display:grid; grid-template-columns: 1fr auto; gap:14px; align-items:start; }
+.adv-grid{ display:flex; gap:14px; align-items:start; flex-wrap:wrap; }
 .adv-top{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-.adv-actions{ margin-left: auto; }
+.adv-actions{ margin-left: 0; }
 .adv-toggles{ margin-top:10px; display:grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap:10px 12px; }
 
 .adv-opt{
@@ -268,7 +268,7 @@ select option{
   margin-left: 0;
 }
 
-.adv-right{ display:flex; gap:8px; align-items:center; justify-content:flex-end; white-space:nowrap; }
+.adv-right{ display:flex; gap:8px; align-items:center; justify-content:flex-start; white-space:nowrap; }
 
 @media (max-width: 860px){
   .adv-grid{ grid-template-columns: 1fr; }
