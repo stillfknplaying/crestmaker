@@ -3,7 +3,7 @@ import { buildPaletteSync, applyPaletteSync, utils } from "image-q";
 
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
 type Preset = "logo" | "art" | "photo";
-type CropRect = { x: number; y: number; w: number; h: number }; // in source pixels, w/h = 2
+type CropRect = { x: number; y: number; w: number; h: number }; // in source pixels; aspect controlled by UI
 type CropDragMode = "none" | "move" | "nw" | "ne" | "sw" | "se";
 
 type GameTemplate = {
@@ -22,6 +22,35 @@ const SITE_NAME = "CrestMaker";
 // Persist some UI state across language switches
 const ADV_OPEN_KEY = "cm_adv_open";
 let advancedOpen = localStorage.getItem(ADV_OPEN_KEY) === "1";
+
+
+// Persist mode + crop aspect
+const MODE_KEY = "cm_mode_v1";
+const CROP_ASPECT_KEY = "cm_crop_aspect_v1";
+
+type CrestMode = "ally_clan" | "only_clan";
+type CropAspect = "24x12" | "16x12";
+
+function getMode(): CrestMode {
+  const v = localStorage.getItem(MODE_KEY);
+  return v === "only_clan" ? "only_clan" : "ally_clan";
+}
+function setMode(m: CrestMode) {
+  localStorage.setItem(MODE_KEY, m);
+}
+function getCropAspect(): CropAspect {
+  const v = localStorage.getItem(CROP_ASPECT_KEY);
+  return v === "16x12" ? "16x12" : "24x12";
+}
+function setCropAspect(a: CropAspect) {
+  localStorage.setItem(CROP_ASPECT_KEY, a);
+}
+function aspectRatio(a: CropAspect): number {
+  return a === "16x12" ? (16 / 12) : 2;
+}
+
+let currentMode: CrestMode = getMode();
+let currentCropAspect: CropAspect = getCropAspect();
 
 document.documentElement.setAttribute("data-theme", "dark");
 
@@ -406,6 +435,16 @@ function renderPolicyPage(title: string, html: string) {
 }
 
 function renderToolPage() {
+  // Crop aspect is tied to Mode (no separate selector)
+  const desired: CropAspect = currentMode === "only_clan" ? "16x12" : "24x12";
+  if (currentCropAspect !== desired) {
+    currentCropAspect = desired;
+    setCropAspect(currentCropAspect);
+    if (displayCanvas) cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
+  }
+  const trueW = currentMode === "only_clan" ? 16 : 24;
+  const trueH = 12;
+  const cropLabel = currentCropAspect === "16x12" ? "16×12 (4:3)" : "24×12 (2:1)";
   routeRoot.innerHTML = `
     <section class="tool">
       <div class="toolbar">
@@ -418,14 +457,23 @@ function renderToolPage() {
 
         <div class="sep"></div>
 
-        <div class="select" ${tipAttr("Quick settings for converting to a 24×12 BMP icon","Быстрые настройки конвертации в иконку BMP 24×12","Швидкі налаштування конвертації в іконку BMP 24×12")}>
-          <span>${escapeHtml(t("Preset","Пресет","Пресет"))}</span>
-          <select id="preset">
-            <option value="logo">${escapeHtml(t("Simple logo","Простой логотип","Простий логотип"))}</option>
-            <option value="art" selected>${escapeHtml(t("Game-style art","Игровая картинка","Ігрова картинка"))}</option>
-            <option value="photo">${escapeHtml(t("Complex image","Сложная картинка","Складне зображення"))}</option>
-          </select>
-        </div>
+        <div class="select" ${tipAttr("Select output size: 24×12 (full) or 16×12 (clan only).","Выберите размер: 24×12 (полный) или 16×12 (только клан).","Оберіть розмір: 24×12 (повний) або 16×12 (лише клан).")}>
+  <span>${escapeHtml(t("Mode","Режим","Режим"))}</span>
+  <select id="mode">
+    <option value="ally_clan" ${currentMode==="ally_clan" ? "selected" : ""}>${escapeHtml(t("24×12","24×12","24×12"))}</option>
+    <option value="only_clan" ${currentMode==="only_clan" ? "selected" : ""}>${escapeHtml(t("16×12","16×12","16×12"))}</option>
+  </select>
+</div>
+
+
+<div class="select" ${tipAttr("Quick settings for converting to a 256-color BMP","Быстрые настройки конвертации в BMP 256 цветов","Швидкі налаштування конвертації в BMP 256 кольорів")}>
+  <span>${escapeHtml(t("Preset","Пресет","Пресет"))}</span>
+  <select id="preset">
+    <option value="logo">${escapeHtml(t("Simple logo","Простой логотип","Простий логотип"))}</option>
+    <option value="art" selected>${escapeHtml(t("Game-style art","Игровая картинка","Ігрова картинка"))}</option>
+    <option value="photo">${escapeHtml(t("Complex image","Сложная картинка","Складне зображення"))}</option>
+  </select>
+</div>
 
         <label class="toggle compact" ${tipAttr("More conversion controls for 24×12 icons","Больше настроек конвертации для иконки 24×12","Більше налаштувань конвертації для іконки 24×12")}>
           <span>${escapeHtml(t("Advanced settings","Расширенные настройки","Розширені налаштування"))}</span>
@@ -579,7 +627,7 @@ function renderToolPage() {
 
         <div class="card">
           <div class="card-head">
-            <h3>Crop (2:1)</h3>
+            <h3>${escapeHtml(t("Crop","Crop","Crop"))} (${cropLabel})</h3>
             <label class="toggle compact">
               <span>Use crop</span>
               <input id="useCrop" type="checkbox" checked />
@@ -591,15 +639,21 @@ function renderToolPage() {
         </div>
 
         <div class="card">
-          <h3>True size 24×12</h3>
+          <h3>${escapeHtml(t("True size","True size","True size"))} ${trueW}×${trueH}</h3>
           <div class="true-wrap">
-            <canvas id="dstTrue" width="24" height="12"></canvas>
+            <canvas id="dstTrue" width="${trueW}" height="${trueH}"></canvas>
           </div>
         </div>
 
-        <div class="card advanced-only hidden" id="debugCard">
+        <div class="card advanced-only ${advancedOpen && currentMode === "ally_clan" ? "" : "hidden"}" id="debugCard24">
           <h3>Result 24×12 (zoom)</h3>
-          <canvas id="dstZoom" width="240" height="120"></canvas>
+          <canvas id="dstZoom24" width="240" height="120"></canvas>
+          <p class="hint">Debug view.</p>
+        </div>
+
+        <div class="card advanced-only ${advancedOpen && currentMode === "only_clan" ? "" : "hidden"}" id="debugCard16">
+          <h3>Result 16×12 (zoom)</h3>
+          <canvas id="dstZoom16" width="160" height="120"></canvas>
           <p class="hint">Debug view.</p>
         </div>
 
@@ -637,6 +691,8 @@ type ToolRefs = {
   fileInput: HTMLInputElement;
   downloadBtn: HTMLButtonElement;
 
+  modeSel: HTMLSelectElement;
+
   presetSel: HTMLSelectElement;
   advancedChk: HTMLInputElement;
   resetBtn: HTMLButtonElement;
@@ -665,13 +721,17 @@ type ToolRefs = {
   dstTrueCanvas: HTMLCanvasElement;
   dstTrueCtx: CanvasRenderingContext2D;
 
-  dstZoomCanvas: HTMLCanvasElement;
-  dstZoomCtx: CanvasRenderingContext2D;
+  dstZoom24Canvas: HTMLCanvasElement;
+  dstZoom24Ctx: CanvasRenderingContext2D;
+
+  dstZoom16Canvas: HTMLCanvasElement;
+  dstZoom16Ctx: CanvasRenderingContext2D;
 
   previewCanvas: HTMLCanvasElement;
   previewCtx: CanvasRenderingContext2D;
 
-  debugCard: HTMLDivElement;
+  debugCard24: HTMLDivElement;
+  debugCard16: HTMLDivElement;
   confirmModal: HTMLDivElement;
   confirmYes: HTMLButtonElement;
   confirmNo: HTMLButtonElement;
@@ -705,7 +765,9 @@ let cropDragMode: CropDragMode = "none";
 let dragStart = { mx: 0, my: 0, x: 0, y: 0 };
 let dragAnchor = { ax: 0, ay: 0, start: { x: 0, y: 0, w: 0, h: 0 } };
 
-let icon24x12Indexed: Uint8Array | null = null;
+let iconCombined24x12Indexed: Uint8Array | null = null;
+let iconClan16x12Indexed: Uint8Array | null = null;
+let iconAlly8x12Indexed: Uint8Array | null = null;
 let palette256: Uint8Array | null = null;
 
 let gameTemplateImg: HTMLImageElement | null = null;
@@ -730,6 +792,8 @@ function initToolUI() {
     themeToggle: document.querySelector<HTMLInputElement>("#themeToggle")!,
     fileInput: document.querySelector<HTMLInputElement>("#file")!,
     downloadBtn: document.querySelector<HTMLButtonElement>("#download")!,
+
+    modeSel: document.querySelector<HTMLSelectElement>("#mode")!,
 
     presetSel: document.querySelector<HTMLSelectElement>("#preset")!,
     advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
@@ -759,13 +823,17 @@ function initToolUI() {
     dstTrueCanvas: document.querySelector<HTMLCanvasElement>("#dstTrue")!,
     dstTrueCtx: document.querySelector<HTMLCanvasElement>("#dstTrue")!.getContext("2d")!,
 
-    dstZoomCanvas: document.querySelector<HTMLCanvasElement>("#dstZoom")!,
-    dstZoomCtx: document.querySelector<HTMLCanvasElement>("#dstZoom")!.getContext("2d")!,
+    dstZoom24Canvas: document.querySelector<HTMLCanvasElement>("#dstZoom24")!,
+    dstZoom24Ctx: document.querySelector<HTMLCanvasElement>("#dstZoom24")!.getContext("2d")!,
+
+    dstZoom16Canvas: document.querySelector<HTMLCanvasElement>("#dstZoom16")!,
+    dstZoom16Ctx: document.querySelector<HTMLCanvasElement>("#dstZoom16")!.getContext("2d")!,
 
     previewCanvas: document.querySelector<HTMLCanvasElement>("#preview")!,
     previewCtx: document.querySelector<HTMLCanvasElement>("#preview")!.getContext("2d")!,
 
-    debugCard: document.querySelector<HTMLDivElement>("#debugCard")!,
+    debugCard24: document.querySelector<HTMLDivElement>("#debugCard24")!,
+    debugCard16: document.querySelector<HTMLDivElement>("#debugCard16")!,
     confirmModal: document.querySelector<HTMLDivElement>("#confirmModal")!,
     confirmYes: document.querySelector<HTMLButtonElement>("#confirmYes")!,
     confirmNo: document.querySelector<HTMLButtonElement>("#confirmNo")!,
@@ -774,6 +842,18 @@ function initToolUI() {
   // Language switcher (tool page)
   document.querySelectorAll<HTMLButtonElement>(".toolbar-right button[data-lang]").forEach((btn) => {
     btn.addEventListener("click", () => setLang(btn.dataset.lang as Lang));
+  });
+
+  // Mode + crop ratio
+  refs.modeSel.addEventListener("change", () => {
+    currentMode = refs!.modeSel.value as any;
+    setMode(currentMode);
+    // Suggested default: only clan -> 16×12 crop
+    if (currentMode === "only_clan" && currentCropAspect !== "16x12") {
+      currentCropAspect = "16x12";
+      setCropAspect(currentCropAspect);
+    }
+    renderRoute();
   });
 
 
@@ -788,7 +868,8 @@ function initToolUI() {
 
   // Restore advanced state on render
   refs.advancedPanel.classList.toggle("hidden", !refs.advancedChk.checked);
-  refs.debugCard.classList.toggle("hidden", !refs.advancedChk.checked);
+  refs.debugCard24.classList.toggle("hidden", !(refs.advancedChk.checked && currentMode === "ally_clan"));
+  refs.debugCard16.classList.toggle("hidden", !(refs.advancedChk.checked && currentMode === "only_clan"));
   refs.resetBtn.classList.toggle("hidden", !refs.advancedChk.checked);
 
   // advanced toggle
@@ -797,7 +878,8 @@ function initToolUI() {
     advancedOpen = on;
     localStorage.setItem(ADV_OPEN_KEY, advancedOpen ? "1" : "0");
     refs!.advancedPanel.classList.toggle("hidden", !on);
-    refs!.debugCard.classList.toggle("hidden", !on);
+    refs!.debugCard24.classList.toggle("hidden", !(on && currentMode === "ally_clan"));
+    refs!.debugCard16.classList.toggle("hidden", !(on && currentMode === "only_clan"));
     refs!.resetBtn.classList.toggle("hidden", !on);
     scheduleRecomputePreview(0);
   });
@@ -832,7 +914,7 @@ function initToolUI() {
     if (!sourceImage) return;
     rotation90 = ((rotation90 + 270) % 360) as any;
     rebuildDisplayCanvas();
-    if (displayCanvas) cropRect = initCrop2to1(displayCanvas);
+    if (displayCanvas) cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
     drawCropUI();
     scheduleRecomputePreview(0);
   });
@@ -841,7 +923,7 @@ function initToolUI() {
     if (!sourceImage) return;
     rotation90 = ((rotation90 + 90) % 360) as any;
     rebuildDisplayCanvas();
-    if (displayCanvas) cropRect = initCrop2to1(displayCanvas);
+    if (displayCanvas) cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
     drawCropUI();
     scheduleRecomputePreview(0);
   });
@@ -868,7 +950,7 @@ function initToolUI() {
     rebuildDisplayCanvas();
     if (!displayCanvas) return;
 
-    cropRect = initCrop2to1(displayCanvas);
+    cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
     drawCropUI();
 
     refs!.resetBtn.disabled = false;
@@ -877,8 +959,8 @@ function initToolUI() {
 
   // download
   refs.downloadBtn.addEventListener("click", () => {
-  if (!icon24x12Indexed || !palette256) return;
-  downloadBMP(icon24x12Indexed, palette256);
+    if (!palette256 || !iconCombined24x12Indexed || !iconClan16x12Indexed || !iconAlly8x12Indexed) return;
+    downloadBMPs(iconAlly8x12Indexed, iconClan16x12Indexed, iconCombined24x12Indexed, palette256);
   });
 
   // live recompute for advanced controls
@@ -901,9 +983,24 @@ function initToolUI() {
   // crop interactions
   initCropEvents();
 
-  // initial preview
-  renderPreview();
-  drawTrueSizeEmpty();
+// initial preview / restore state after re-render
+  const trueW = currentMode === "only_clan" ? 16 : 24;
+  const trueH = 12;
+
+  if (sourceImage) {
+    // restore invert UI
+    refs.invertBtn.classList.toggle("active", invertColors);
+
+    rebuildDisplayCanvas();
+    if (displayCanvas && !cropRect) cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
+    drawCropUI();
+
+    refs.resetBtn.disabled = false;
+    scheduleRecomputePreview(0);
+  } else {
+    renderPreview();
+    drawTrueSizeEmpty(trueW, trueH);
+  }
 }
 
 // -------------------- PRESET DEFAULTS --------------------
@@ -1012,9 +1109,8 @@ function clamp(v: number, a: number, b: number) {
   return Math.max(a, Math.min(b, v));
 }
 
-function initCrop2to1(img: { width: number; height: number }): CropRect {
+function initCropToAspect(img: { width: number; height: number }, targetR: number): CropRect {
   const iw = img.width, ih = img.height;
-  const targetR = 2;
   const r = iw / ih;
 
   let w = iw, h = ih;
@@ -1028,6 +1124,7 @@ function initCrop2to1(img: { width: number; height: number }): CropRect {
 
   return { x: (iw - w) / 2, y: (ih - h) / 2, w, h };
 }
+
 
 function getContainTransformForCropCanvas(img: { width: number; height: number }, canvas: HTMLCanvasElement) {
   const cw = canvas.width, ch = canvas.height;
@@ -1170,22 +1267,7 @@ function initCropEvents() {
   if (!refs) return;
   const { cropCanvas } = refs;
 
-  // Pointer events work for mouse + touch + pen.
-  // We also mark the listener as non-passive so we can prevent scrolling while dragging on mobile.
-  let activePointerId: number | null = null;
-
-  const getCanvasXY = (clientX: number, clientY: number) => {
-    const rect = cropCanvas.getBoundingClientRect();
-    const mxCss = clientX - rect.left;
-    const myCss = clientY - rect.top;
-    const mx = mxCss * (cropCanvas.width / rect.width);
-    const my = myCss * (cropCanvas.height / rect.height);
-    return { mx, my, rect };
-  };
-
-  // Desktop cursor feedback (only meaningful for mouse)
-  cropCanvas.addEventListener("pointermove", (e) => {
-    if ((e as PointerEvent).pointerType !== "mouse") return;
+  cropCanvas.addEventListener("mousemove", (e) => {
     if (!sourceImage || !cropRect || !refs?.useCropChk.checked) {
       cropCanvas.style.cursor = "default";
       return;
@@ -1195,7 +1277,13 @@ function initCropEvents() {
     rebuildDisplayCanvas();
     if (!displayCanvas) return;
 
-    const { mx, my } = getCanvasXY((e as PointerEvent).clientX, (e as PointerEvent).clientY);
+    const rect = cropCanvas.getBoundingClientRect();
+    const mxCss = e.clientX - rect.left;
+    const myCss = e.clientY - rect.top;
+
+    const mx = mxCss * (cropCanvas.width / rect.width);
+    const my = myCss * (cropCanvas.height / rect.height);
+
     const { rx, ry, rw, rh } = cropRectToCanvasRect(displayCanvas, cropRect, cropCanvas);
     const corner = hitCorner(mx, my, rx, ry, rw, rh);
 
@@ -1205,166 +1293,115 @@ function initCropEvents() {
     else cropCanvas.style.cursor = "default";
   });
 
-  cropCanvas.addEventListener(
-    "pointerdown",
-    (e) => {
-      const pe = e as PointerEvent;
-      if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
-      // prevent page scrolling while dragging on touch devices
-      e.preventDefault();
+  cropCanvas.addEventListener("mousedown", (e) => {
+    if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
 
-      rebuildDisplayCanvas();
-      if (!displayCanvas) return;
+    rebuildDisplayCanvas();
+    if (!displayCanvas) return;
 
-      // Single active pointer (ignore extra fingers)
-      if (activePointerId !== null) return;
-      activePointerId = pe.pointerId;
-      try { cropCanvas.setPointerCapture(pe.pointerId); } catch {}
+    const rect = cropCanvas.getBoundingClientRect();
+    const mxCss = e.clientX - rect.left;
+    const myCss = e.clientY - rect.top;
 
-      const { mx, my } = getCanvasXY(pe.clientX, pe.clientY);
-      const { rx, ry, rw, rh } = cropRectToCanvasRect(displayCanvas, cropRect, cropCanvas);
+    const mx = mxCss * (cropCanvas.width / rect.width);
+    const my = myCss * (cropCanvas.height / rect.height);
 
-      const corner = hitCorner(mx, my, rx, ry, rw, rh);
-      if (corner) {
-        cropDragMode = corner;
-        const start = { x: cropRect.x, y: cropRect.y, w: cropRect.w, h: cropRect.h };
-        let ax = 0,
-          ay = 0;
-        if (corner === "nw") {
-          ax = start.x + start.w;
-          ay = start.y + start.h;
-        }
-        if (corner === "ne") {
-          ax = start.x;
-          ay = start.y + start.h;
-        }
-        if (corner === "sw") {
-          ax = start.x + start.w;
-          ay = start.y;
-        }
-        if (corner === "se") {
-          ax = start.x;
-          ay = start.y;
-        }
-        dragAnchor = { ax, ay, start };
-        return;
-      }
+    const { rx, ry, rw, rh } = cropRectToCanvasRect(displayCanvas, cropRect, cropCanvas);
 
-      const inside = mx >= rx && mx <= rx + rw && my >= ry && my <= ry + rh;
-      if (!inside) {
-        // nothing grabbed
-        cropDragMode = "none";
-        return;
-      }
+    const corner = hitCorner(mx, my, rx, ry, rw, rh);
+    if (corner) {
+      cropDragMode = corner;
+      const start = { x: cropRect.x, y: cropRect.y, w: cropRect.w, h: cropRect.h };
+      let ax = 0, ay = 0;
+      if (corner === "nw") { ax = start.x + start.w; ay = start.y + start.h; }
+      if (corner === "ne") { ax = start.x;           ay = start.y + start.h; }
+      if (corner === "sw") { ax = start.x + start.w; ay = start.y; }
+      if (corner === "se") { ax = start.x;           ay = start.y; }
+      dragAnchor = { ax, ay, start };
+      return;
+    }
 
-      cropDragMode = "move";
-      dragStart = { mx, my, x: cropRect.x, y: cropRect.y };
-    },
-    { passive: false }
-  );
+    const inside = mx >= rx && mx <= rx + rw && my >= ry && my <= ry + rh;
+    if (!inside) return;
 
-  const endDrag = (pe?: PointerEvent) => {
-    if (pe && activePointerId !== null && pe.pointerId !== activePointerId) return;
-    cropDragMode = "none";
-    activePointerId = null;
-  };
+    cropDragMode = "move";
+    dragStart = { mx, my, x: cropRect.x, y: cropRect.y };
+  });
 
-  window.addEventListener("pointerup", (e) => endDrag(e as PointerEvent));
-  window.addEventListener("pointercancel", (e) => endDrag(e as PointerEvent));
+  window.addEventListener("mouseup", () => { cropDragMode = "none"; });
 
-  window.addEventListener(
-    "pointermove",
-    (e) => {
-      const pe = e as PointerEvent;
-      if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
-      if (cropDragMode === "none") return;
-      if (activePointerId !== null && pe.pointerId !== activePointerId) return;
+  window.addEventListener("mousemove", (e) => {
+    if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
+    if (cropDragMode === "none") return;
 
-      // prevent scrolling while dragging on touch
-      if (pe.pointerType !== "mouse") e.preventDefault();
+    rebuildDisplayCanvas();
+    if (!displayCanvas) return;
+    const dc = displayCanvas;
 
-      rebuildDisplayCanvas();
-      if (!displayCanvas) return;
-      const dc = displayCanvas;
+      const rect = cropCanvas.getBoundingClientRect();
+      const mxCss = e.clientX - rect.left;
+      const myCss = e.clientY - rect.top;
 
-      const { mx, my } = getCanvasXY(pe.clientX, pe.clientY);
+      const mx = mxCss * (cropCanvas.width / rect.width);
+      const my = myCss * (cropCanvas.height / rect.height);
+
       const { dx, dw, dy, dh } = getContainTransformForCropCanvas(dc, cropCanvas);
 
       const canvasToSrcX = (val: number) => (val / dw) * dc.width;
       const canvasToSrcY = (val: number) => (val / dh) * dc.height;
 
-      if (cropDragMode === "move") {
-        const deltaXCanvas = mx - dragStart.mx;
-        const deltaYCanvas = my - dragStart.my;
+    if (cropDragMode === "move") {
+      const deltaXCanvas = mx - dragStart.mx;
+      const deltaYCanvas = my - dragStart.my;
 
-        cropRect.x = dragStart.x + canvasToSrcX(deltaXCanvas);
-        cropRect.y = dragStart.y + canvasToSrcY(deltaYCanvas);
+      cropRect.x = dragStart.x + canvasToSrcX(deltaXCanvas);
+      cropRect.y = dragStart.y + canvasToSrcY(deltaYCanvas);
 
-        cropRect.x = clamp(cropRect.x, 0, displayCanvas.width - cropRect.w);
-        cropRect.y = clamp(cropRect.y, 0, displayCanvas.height - cropRect.h);
-
-        drawCropUI();
-        scheduleRecomputePreview(60);
-        return;
-      }
-
-      // resize corner while keeping 2:1
-      const nx = (mx - dx) / dw;
-      const ny = (my - dy) / dh;
-      const px = clamp(nx, 0, 1) * displayCanvas.width;
-      const py = clamp(ny, 0, 1) * displayCanvas.height;
-
-      const { ax, ay } = dragAnchor;
-
-      const dxAbs = Math.abs(px - ax);
-      const dyAbs = Math.abs(py - ay);
-
-      const wFromX = dxAbs;
-      const wFromY = 2 * dyAbs;
-
-      let w = Math.max(wFromX, wFromY);
-      const minW = 24;
-      w = Math.max(minW, w);
-      let h = w / 2;
-
-      if (w > displayCanvas.width) {
-        w = displayCanvas.width;
-        h = w / 2;
-      }
-      if (h > displayCanvas.height) {
-        h = displayCanvas.height;
-        w = h * 2;
-      }
-
-      let x = 0,
-        y = 0;
-      if (cropDragMode === "nw") {
-        x = ax - w;
-        y = ay - h;
-      } else if (cropDragMode === "ne") {
-        x = ax;
-        y = ay - h;
-      } else if (cropDragMode === "sw") {
-        x = ax - w;
-        y = ay;
-      } else {
-        x = ax;
-        y = ay;
-      }
-
-      x = clamp(x, 0, displayCanvas.width - w);
-      y = clamp(y, 0, displayCanvas.height - h);
-
-      cropRect.x = x;
-      cropRect.y = y;
-      cropRect.w = w;
-      cropRect.h = h;
+      cropRect.x = clamp(cropRect.x, 0, displayCanvas.width - cropRect.w);
+      cropRect.y = clamp(cropRect.y, 0, displayCanvas.height - cropRect.h);
 
       drawCropUI();
       scheduleRecomputePreview(60);
-    },
-    { passive: false }
-  );
+      return;
+    }
+
+    // resize corner while keeping selected aspect
+    const nx = (mx - dx) / dw;
+    const ny = (my - dy) / dh;
+    const px = clamp(nx, 0, 1) * displayCanvas.width;
+    const py = clamp(ny, 0, 1) * displayCanvas.height;
+
+    const { ax, ay } = dragAnchor;
+
+    const dxAbs = Math.abs(px - ax);
+    const dyAbs = Math.abs(py - ay);
+
+    const wFromX = dxAbs;
+    const r = aspectRatio(currentCropAspect);
+    const wFromY = r * dyAbs;
+
+    let w = Math.max(wFromX, wFromY);
+    const minW = 24;
+    w = Math.max(minW, w);
+    let h = w / r;
+
+    if (w > displayCanvas.width) { w = displayCanvas.width; h = w / r; }
+    if (h > displayCanvas.height) { h = displayCanvas.height; w = h * r; }
+
+    let x = 0, y = 0;
+    if (cropDragMode === "nw") { x = ax - w; y = ay - h; }
+    else if (cropDragMode === "ne") { x = ax; y = ay - h; }
+    else if (cropDragMode === "sw") { x = ax - w; y = ay; }
+    else { x = ax; y = ay; }
+
+    x = clamp(x, 0, displayCanvas.width - w);
+    y = clamp(y, 0, displayCanvas.height - h);
+
+    cropRect.x = x; cropRect.y = y; cropRect.w = w; cropRect.h = h;
+
+    drawCropUI();
+    scheduleRecomputePreview(60);
+  });
 
   cropCanvas.addEventListener("wheel", (e) => {
     if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
@@ -1381,11 +1418,12 @@ function initCropEvents() {
 
     let nw = cropRect.w * k;
     nw = clamp(nw, 24, displayCanvas.width);
-    let nh = nw / 2;
+    const rWheel = aspectRatio(currentCropAspect);
+    let nh = nw / rWheel;
 
     if (nh > displayCanvas.height) {
       nh = displayCanvas.height;
-      nw = nh * 2;
+      nw = nh * rWheel;
     }
 
     cropRect.w = nw;
@@ -1436,7 +1474,7 @@ function renderCoverToSize(
   return ctx.getImageData(0, 0, tw, th);
 }
 
-function renderTo24x12(src: HTMLCanvasElement, preset: Preset, useTwoStep: boolean): ImageData {
+function renderToSize(src: HTMLCanvasElement, preset: Preset, useTwoStep: boolean, tw: number, th: number): ImageData {
   const sw = src.width;
   const sh = src.height;
 
@@ -1444,22 +1482,27 @@ function renderTo24x12(src: HTMLCanvasElement, preset: Preset, useTwoStep: boole
   const smoothSingle = preset === "photo";
 
   if (!useTwoStep) {
-    return renderCoverToSize(src, sw, sh, 24, 12, smoothSingle);
+    return renderCoverToSize(src, sw, sh, tw, th, smoothSingle);
   }
 
-  const mid = renderCoverToSize(src, sw, sh, 96, 48, smoothFirst);
+  // Upscale the intermediate stage proportionally (keeps details for tiny output)
+  const midW = tw * 4;
+  const midH = th * 4;
+
+  const mid = renderCoverToSize(src, sw, sh, midW, midH, smoothFirst);
   const midCanvas = document.createElement("canvas");
-  midCanvas.width = 96;
-  midCanvas.height = 48;
+  midCanvas.width = midW;
+  midCanvas.height = midH;
   const mctx = midCanvas.getContext("2d")!;
   mctx.putImageData(mid, 0, 0);
 
   // final step no smoothing for sharper pixels
-  return renderCoverToSize(midCanvas, 96, 48, 24, 12, false);
+  return renderCoverToSize(midCanvas, midW, midH, tw, th, false);
 }
 
 // -------------------- EDGE SHARPEN (LIGHT) --------------------
-function edgeAwareSharpen24x12(img: ImageData, amount = 0.9, edgeThreshold = 10) {
+
+function edgeAwareSharpen(img: ImageData, amount = 0.9, edgeThreshold = 10) {
   const w = img.width, h = img.height;
   const src = img.data;
   const out = new Uint8ClampedArray(src.length);
@@ -1839,16 +1882,23 @@ function cleanupIndicesMajoritySafe(
 }
 
 // -------------------- DRAW TRUE SIZE + DEBUG --------------------
-function drawTrueSizeEmpty() {
+function setTrueSizeCanvasDims(w: number, h: number) {
   if (!refs) return;
-  refs.dstTrueCtx.clearRect(0, 0, 24, 12);
-  refs.dstTrueCtx.fillStyle = "rgba(255,255,255,0.06)";
-  refs.dstTrueCtx.fillRect(0, 0, 24, 12);
+  if (refs.dstTrueCanvas.width !== w) refs.dstTrueCanvas.width = w;
+  if (refs.dstTrueCanvas.height !== h) refs.dstTrueCanvas.height = h;
 }
 
-function drawTrueSize(indices: Uint8Array, palette: Uint8Array) {
+function drawTrueSizeEmpty(w: number, h: number) {
   if (!refs) return;
-  const w = 24, h = 12;
+  setTrueSizeCanvasDims(w, h);
+  refs.dstTrueCtx.clearRect(0, 0, w, h);
+  refs.dstTrueCtx.fillStyle = "rgba(255,255,255,0.06)";
+  refs.dstTrueCtx.fillRect(0, 0, w, h);
+}
+
+function drawTrueSize(indices: Uint8Array, palette: Uint8Array, w: number, h: number) {
+  if (!refs) return;
+  setTrueSizeCanvasDims(w, h);
   const img = refs.dstTrueCtx.createImageData(w, h);
   const data = img.data;
   for (let i = 0; i < w * h; i++) {
@@ -1861,20 +1911,32 @@ function drawTrueSize(indices: Uint8Array, palette: Uint8Array) {
   refs.dstTrueCtx.putImageData(img, 0, 0);
 }
 
-function drawZoom(indices: Uint8Array, palette: Uint8Array) {
-  if (!refs) return;
+function drawZoomTo(
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+  indices: Uint8Array,
+  palette: Uint8Array,
+  w: number,
+  h: number
+) {
   const zoom = 10;
-  refs.dstZoomCtx.clearRect(0, 0, refs.dstZoomCanvas.width, refs.dstZoomCanvas.height);
-  refs.dstZoomCtx.imageSmoothingEnabled = false;
+  // Ensure canvas size (w*zoom x h*zoom) matches expected
+  const cw = w * zoom;
+  const ch = h * zoom;
+  if (canvas.width !== cw) canvas.width = cw;
+  if (canvas.height !== ch) canvas.height = ch;
 
-  for (let y = 0; y < 12; y++) {
-    for (let x = 0; x < 24; x++) {
-      const idx = indices[y * 24 + x];
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingEnabled = false;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = indices[y * w + x];
       const r = palette[idx * 3 + 0];
       const g = palette[idx * 3 + 1];
       const b = palette[idx * 3 + 2];
-      refs.dstZoomCtx.fillStyle = `rgb(${r},${g},${b})`;
-      refs.dstZoomCtx.fillRect(x * zoom, y * zoom, zoom, zoom);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(x * zoom, y * zoom, zoom, zoom);
     }
   }
 }
@@ -1909,13 +1971,13 @@ function renderPreview() {
     return;
   }
 
-  if (!icon24x12Indexed || !palette256) return;
+  if (!iconCombined24x12Indexed || !palette256) return;
 
   // build 24x12 RGBA image
   const iw = 24, ih = 12;
   const img = ctx.createImageData(iw, ih);
   for (let i = 0; i < iw * ih; i++) {
-    const idx = icon24x12Indexed[i];
+    const idx = iconCombined24x12Indexed[i];
     img.data[i * 4 + 0] = palette256[idx * 3 + 0];
     img.data[i * 4 + 1] = palette256[idx * 3 + 1];
     img.data[i * 4 + 2] = palette256[idx * 3 + 2];
@@ -1933,68 +1995,19 @@ function renderPreview() {
   ctx.drawImage(tmp, GAME_TEMPLATE.slotX, GAME_TEMPLATE.slotY, GAME_TEMPLATE.slotW, GAME_TEMPLATE.slotH);
 }
 
-function renderGamePreviewWith(indices: Uint8Array, palette: Uint8Array) {
-  if (!refs) return;
-  const canvas = refs.previewCanvas;
-  const ctx = refs.previewCtx;
 
-  const tw = GAME_TEMPLATE.baseW;
-  const th = GAME_TEMPLATE.baseH;
+function downloadBMPs(ally8: Uint8Array, clan16: Uint8Array, combined24: Uint8Array, palette: Uint8Array) {
+  const h = 12;
 
-  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-  canvas.width = Math.round(tw * dpr);
-  canvas.height = Math.round(th * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const allyBmp = makeBmp8bitIndexed(8, h, palette, ally8);
+  const clanBmp = makeBmp8bitIndexed(16, h, palette, clan16);
+  const combinedBmp = makeBmp8bitIndexed(24, h, palette, combined24);
 
-  ctx.clearRect(0, 0, tw, th);
-
-  if (gameTemplateImg) {
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(gameTemplateImg, 0, 0, tw, th);
-  } else {
-    ctx.fillStyle = "#111";
-    ctx.fillRect(0, 0, tw, th);
-  }
-
-  // Build an ImageData from indices/palette
-  const iw = 24, ih = 12;
-  const img = new ImageData(iw, ih);
-  const d = img.data;
-  for (let i = 0; i < iw * ih; i++) {
-    const idx = indices[i];
-    d[i * 4 + 0] = palette[idx * 3 + 0];
-    d[i * 4 + 1] = palette[idx * 3 + 1];
-    d[i * 4 + 2] = palette[idx * 3 + 2];
-    d[i * 4 + 3] = 255;
-  }
-
-  const tmp = document.createElement("canvas");
-  tmp.width = iw;
-  tmp.height = ih;
-  tmp.getContext("2d")!.putImageData(img, 0, 0);
-
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(tmp, GAME_TEMPLATE.slotX, GAME_TEMPLATE.slotY, GAME_TEMPLATE.slotW, GAME_TEMPLATE.slotH);
+  downloadBlob(allyBmp, "ally_8x12_256.bmp");
+  downloadBlob(clanBmp, "clan_16x12_256.bmp");
+  downloadBlob(combinedBmp, "crest_24x12_256.bmp");
 }
 
-function downloadBMP(indices: Uint8Array, palette: Uint8Array) {
-  const leftW = 8, rightW = 16, h = 12;
-  const left = new Uint8Array(leftW * h);
-  const right = new Uint8Array(rightW * h);
-
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < leftW; x++) left[y * leftW + x] = indices[y * 24 + x];
-    for (let x = 0; x < rightW; x++) right[y * rightW + x] = indices[y * 24 + (leftW + x)];
-  }
-
-  const leftBmp = makeBmp8bitIndexed(leftW, h, palette, left);
-  const rightBmp = makeBmp8bitIndexed(rightW, h, palette, right);
-
-  downloadBlob(leftBmp, "ally_8x12_256.bmp");
-  downloadBlob(rightBmp, "clan_16x12_256.bmp");
-}
 
 // -------------------- RECOMPUTE PIPELINE --------------------
 let previewTimer: number | null = null;
@@ -2025,18 +2038,21 @@ function recomputePreview() {
   const src = getCroppedSource();
   if (!src) return;
 
-  // Downscale to 24x12
-  const img24 = renderTo24x12(src, preset, useTwoStep);
+  const baseW = currentMode === "only_clan" ? 16 : 24;
+  const baseH = 12;
+
+  // Downscale to base size
+  const imgBase = renderToSize(src, preset, useTwoStep, baseW, baseH);
 
   // snap alpha
-  for (let i = 0; i < img24.data.length; i += 4) img24.data[i + 3] = img24.data[i + 3] < 128 ? 0 : 255;
+  for (let i = 0; i < imgBase.data.length; i += 4) imgBase.data[i + 3] = imgBase.data[i + 3] < 128 ? 0 : 255;
 
   // invert (before sharpen/quantize)
   if (invertColors) {
-    for (let i = 0; i < img24.data.length; i += 4) {
-      img24.data[i] = 255 - img24.data[i];
-      img24.data[i + 1] = 255 - img24.data[i + 1];
-      img24.data[i + 2] = 255 - img24.data[i + 2];
+    for (let i = 0; i < imgBase.data.length; i += 4) {
+      imgBase.data[i] = 255 - imgBase.data[i];
+      imgBase.data[i + 1] = 255 - imgBase.data[i + 1];
+      imgBase.data[i + 2] = 255 - imgBase.data[i + 2];
     }
   }
 
@@ -2044,29 +2060,68 @@ function recomputePreview() {
   if (doEdgeSharpen) {
     const amount = preset === "logo" ? 1.1 : 0.9;
     const thr = preset === "logo" ? 8 : 12;
-    edgeAwareSharpen24x12(img24, amount, thr);
+    edgeAwareSharpen(imgBase, amount, thr);
   }
 
   // Quantize
-  const q = quantizeTo256(img24, dither, dAmt, centerWeighted, useOKLab, useNoiseOrdered);
+  const q = quantizeTo256(imgBase, dither, dAmt, centerWeighted, useOKLab, useNoiseOrdered);
   palette256 = q.palette;
-  icon24x12Indexed = q.indices;
 
-  // Cleanup
-  if (doCleanup && icon24x12Indexed && palette256) {
+  if (baseW === 24) {
+    iconCombined24x12Indexed = q.indices;
+    // split
+    iconAlly8x12Indexed = new Uint8Array(8 * 12);
+    iconClan16x12Indexed = new Uint8Array(16 * 12);
+    for (let y = 0; y < 12; y++) {
+      for (let x = 0; x < 8; x++) iconAlly8x12Indexed[y * 8 + x] = iconCombined24x12Indexed[y * 24 + x];
+      for (let x = 0; x < 16; x++) iconClan16x12Indexed[y * 16 + x] = iconCombined24x12Indexed[y * 24 + (8 + x)];
+    }
+  } else {
+    // Only clan (16x12) => pad to 24x12 for preview + downloads
+    iconClan16x12Indexed = q.indices;
+    iconCombined24x12Indexed = new Uint8Array(24 * 12);
+    iconCombined24x12Indexed.fill(0);
+    for (let y = 0; y < 12; y++) {
+      for (let x = 0; x < 16; x++) iconCombined24x12Indexed[y * 24 + (8 + x)] = iconClan16x12Indexed[y * 16 + x];
+    }
+    iconAlly8x12Indexed = new Uint8Array(8 * 12);
+    iconAlly8x12Indexed.fill(0);
+  }
+
+  // Cleanup (run on the combined 24×12 so all exports look consistent)
+  if (doCleanup && iconCombined24x12Indexed && palette256) {
     const passes = 1;
     const minMaj = preset === "logo" ? 6 : 7;
     const maxJump = preset === "logo" ? 110 : 80;
-    cleanupIndicesMajoritySafe(icon24x12Indexed, 24, 12, palette256, passes, minMaj, maxJump);
+    cleanupIndicesMajoritySafe(iconCombined24x12Indexed, 24, 12, palette256, passes, minMaj, maxJump);
+    // re-split after cleanup
+    if (iconAlly8x12Indexed && iconClan16x12Indexed) {
+      for (let y = 0; y < 12; y++) {
+        for (let x = 0; x < 8; x++) iconAlly8x12Indexed[y * 8 + x] = iconCombined24x12Indexed[y * 24 + x];
+        for (let x = 0; x < 16; x++) iconClan16x12Indexed[y * 16 + x] = iconCombined24x12Indexed[y * 24 + (8 + x)];
+      }
+    }
   }
 
-  drawTrueSize(icon24x12Indexed, palette256);
-  if (refs.advancedChk.checked) drawZoom(icon24x12Indexed, palette256);
+  // True size depends on mode
+  if (currentMode === "only_clan" && iconClan16x12Indexed && palette256) {
+    drawTrueSize(iconClan16x12Indexed, palette256, 16, 12);
+  } else if (iconCombined24x12Indexed && palette256) {
+    drawTrueSize(iconCombined24x12Indexed, palette256, 24, 12);
+  }
 
-    // Update game preview with current output
-    renderGamePreviewWith(icon24x12Indexed, palette256);
+  if (refs.advancedChk.checked && palette256) {
+    if (currentMode === "only_clan" && iconClan16x12Indexed) {
+      drawZoomTo(refs.dstZoom16Canvas, refs.dstZoom16Ctx, iconClan16x12Indexed, palette256, 16, 12);
+    } else if (iconCombined24x12Indexed) {
+      drawZoomTo(refs.dstZoom24Canvas, refs.dstZoom24Ctx, iconCombined24x12Indexed, palette256, 24, 12);
+    }
+  }
 
-  refs.downloadBtn.disabled = false;
+  // Update game preview with current output
+  if (iconCombined24x12Indexed && palette256) renderGamePreviewWith(iconCombined24x12Indexed, palette256);
+
+  refs.downloadBtn.disabled = !(iconCombined24x12Indexed && palette256);
   renderPreview();
 }
 
