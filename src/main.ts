@@ -1841,7 +1841,28 @@ function quantizeTo256(
 ): { palette: Uint8Array; indices: Uint8Array } {
   const pcFull = utils.PointContainer.fromUint8Array(img24x12.data, img24x12.width, img24x12.height);
 
+  // Palette quantizer: NeuQuant (default) or WuQuant (photo-quality preset)
+  const paletteQuantization = (preset === "photo") ? "wuquant" : "neuquant";
+
   let paletteObj: any;
+
+  const buildPaletteSafe = (containers: any[]) => {
+    try {
+      return buildPaletteSync(containers, {
+        colors: 256,
+        colorDistanceFormula: "euclidean",
+        paletteQuantization: paletteQuantization as any,
+      } as any);
+    } catch {
+      // Fallback in case WuQuant is not available in the installed image-q version.
+      return buildPaletteSync(containers, {
+        colors: 256,
+        colorDistanceFormula: "euclidean",
+        paletteQuantization: "neuquant",
+      } as any);
+    }
+  };
+
   if (centerWeighted) {
     const w = img24x12.width, h = img24x12.height;
     const cx0 = Math.floor(w * 0.25), cy0 = Math.floor(h * 0.25);
@@ -1860,17 +1881,9 @@ function quantizeTo256(
     }
 
     const pcCenter = utils.PointContainer.fromUint8Array(center.data, center.width, center.height);
-    paletteObj = buildPaletteSync([pcFull, pcCenter, pcCenter, pcCenter], {
-      colors: 256,
-      colorDistanceFormula: "euclidean",
-      paletteQuantization: "neuquant",
-    });
+    paletteObj = buildPaletteSafe([pcFull, pcCenter, pcCenter, pcCenter]);
   } else {
-    paletteObj = buildPaletteSync([pcFull], {
-      colors: 256,
-      colorDistanceFormula: "euclidean",
-      paletteQuantization: "neuquant",
-    });
+    paletteObj = buildPaletteSafe([pcFull]);
   }
 
   const palPoints = paletteObj.getPointContainer().getPointArray();
