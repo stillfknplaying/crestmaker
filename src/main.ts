@@ -16,7 +16,12 @@ type GameTemplate = {
   slotH: number;
 };
 
+// CrestMaker — beta 0.0.7
 const SITE_NAME = "CrestMaker";
+
+// Persist some UI state across language switches
+const ADV_OPEN_KEY = "cm_adv_open";
+let advancedOpen = localStorage.getItem(ADV_OPEN_KEY) === "1";
 
 document.documentElement.setAttribute("data-theme", "dark");
 
@@ -27,7 +32,7 @@ app.innerHTML = `
     <header class="header">
       <div class="brand">
         <h1>${SITE_NAME}</h1>
-        <p class="muted">BMP 8-bit (256-color) emblem converter — 24×12 (ally 8×12 + clan 16×12).</p>
+        <p class="muted hidden">BMP 8-bit (256-color) emblem converter — 24×12 (ally 8×12 + clan 16×12).</p>
       </div>
 
       <div class="top-actions">
@@ -113,6 +118,11 @@ function getLang(): Lang {
 let currentLang: Lang = getLang();
 
 function setLang(lang: Lang) {
+  // Preserve advanced toggle state across language switches
+  if (refs?.advancedChk) {
+    advancedOpen = refs.advancedChk.checked;
+    localStorage.setItem(ADV_OPEN_KEY, advancedOpen ? "1" : "0");
+  }
   currentLang = lang;
   localStorage.setItem("cm_lang", lang);
   renderRoute();
@@ -417,13 +427,13 @@ function renderToolPage() {
           </select>
         </div>
 
-        <label class="toggle compact"  ${tipAttr("More conversion controls for 24×12 icons","Больше настроек конвертации для иконки 24×12","Більше налаштувань конвертації для іконки 24×12")}>
+        <label class="toggle compact" ${tipAttr("More conversion controls for 24×12 icons","Больше настроек конвертации для иконки 24×12","Більше налаштувань конвертації для іконки 24×12")}>
           <span>${escapeHtml(t("Advanced settings","Расширенные настройки","Розширені налаштування"))}</span>
-          <input id="advanced" type="checkbox" />
+          <input id="advanced" type="checkbox" ${advancedOpen ? "checked" : ""} />
           <span class="track"><span class="thumb"></span></span>
         </label>
 
-        <button id="reset" class="btn" disabled>${escapeHtml(t("Reset","Сброс","Скинути"))}</button>
+        <button id="reset" class="btn ${advancedOpen ? "" : "hidden"}" disabled>${escapeHtml(t("Reset","Сброс","Скинути"))}</button>
         <div class="toolbar-right">
           <button class="btn ${currentLang === "en" ? "active" : ""}" data-lang="en">EN</button>
           <button class="btn ${currentLang === "ru" ? "active" : ""}" data-lang="ru">RU</button>
@@ -432,9 +442,7 @@ function renderToolPage() {
 
       </div>
 
-      <div id="advancedPanel" class="advanced hidden">
-<div class="adv-grid">
-  <div class="adv-left">
+      <div id="advancedPanel" class="advanced ${advancedOpen ? "" : "hidden"}">
     <div class="adv-top">
       <div class="select">
         <span class="lbl">
@@ -465,6 +473,12 @@ function renderToolPage() {
         </span>
         <input id="ditherAmt" type="range" min="0" max="100" value="55" />
         <b><span id="ditherAmtVal">55</span>%</b>
+      </div>
+
+      <div class="btn-group adv-actions">
+        <button id="rotL" class="btn">${escapeHtml(t("Rotate","Повернуть","Повернути"))} ⟲</button>
+        <button id="rotR" class="btn">${escapeHtml(t("Rotate","Повернуть","Повернути"))} ⟳</button>
+        <button id="invert" class="btn">${escapeHtml(t("Invert","Инвертировать","Інвертувати"))}</button>
       </div>
     </div>
 
@@ -558,16 +572,8 @@ function renderToolPage() {
           <span class="track"><span class="thumb"></span></span>
         </label>
       </div>
-    </div></div>
+    </div>
   </div>
-
-  <div class="adv-right">
-    <button id="rotL" class="btn">Rotate ⟲</button>
-    <button id="rotR" class="btn">Rotate ⟳</button>
-    <button id="invert" class="btn">Invert</button>
-  </div>
-</div>
-</div>
 
 <div class="grid">
 
@@ -600,7 +606,7 @@ function renderToolPage() {
         <div class="card full" id="previewCard">
           <div class="preview-head">
             <h3>Game preview</h3>
-            <div class="muted">Template: <b>l2_nameplate_01.jpg</b> (2560×1440, UI=1280×720)</div>
+            <div class="muted hidden">Template: <b>l2_nameplate_01.jpg</b> (2560×1440, UI=1280×720)</div>
           </div>
           <div class="preview-wrap">
             <canvas id="preview"></canvas>
@@ -780,11 +786,19 @@ function initToolUI() {
   // template load
   loadTemplate();
 
+  // Restore advanced state on render
+  refs.advancedPanel.classList.toggle("hidden", !refs.advancedChk.checked);
+  refs.debugCard.classList.toggle("hidden", !refs.advancedChk.checked);
+  refs.resetBtn.classList.toggle("hidden", !refs.advancedChk.checked);
+
   // advanced toggle
   refs.advancedChk.addEventListener("change", () => {
     const on = refs!.advancedChk.checked;
+    advancedOpen = on;
+    localStorage.setItem(ADV_OPEN_KEY, advancedOpen ? "1" : "0");
     refs!.advancedPanel.classList.toggle("hidden", !on);
     refs!.debugCard.classList.toggle("hidden", !on);
+    refs!.resetBtn.classList.toggle("hidden", !on);
     scheduleRecomputePreview(0);
   });
 

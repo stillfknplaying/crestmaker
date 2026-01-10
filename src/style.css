@@ -239,13 +239,14 @@ select option{
 }
 .adv-grid{ display:grid; grid-template-columns: 1fr auto; gap:14px; align-items:start; }
 .adv-top{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.adv-actions{ margin-left: auto; }
 .adv-toggles{ margin-top:10px; display:grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap:10px 12px; }
 
 .adv-opt{
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  gap:10px;
+  justify-content:flex-start;
+  gap:6px;
 }
 .opt-head{
   display:inline-flex;
@@ -261,6 +262,7 @@ select option{
 .toggle-switch{
   flex:0 0 auto;
   gap:0;
+  margin-left: 2px;
 }
 .toggle-switch .track{
   margin-left: 0;
