@@ -2,10 +2,8 @@ import "./style.css";
 import { buildPaletteSync, utils } from "image-q";
 
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
-// Scan direction controls were added experimentally (serpentine/linear).
-// Rolled back for stability: we always use linear scan in error-diffusion.
 // Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
-type Preset = "logo" | "balanced" | "art" | "smooth" | "photo" | "dark";
+type Preset = "logo" | "balanced" | "art" | "smooth" | "photo";
 type CropRect = { x: number; y: number; w: number; h: number }; // in source pixels; aspect controlled by UI
 type CropDragMode = "none" | "move" | "nw" | "ne" | "sw" | "se";
 
@@ -473,13 +471,12 @@ function renderToolPage() {
   <span>${escapeHtml(t("Preset","Пресет","Пресет"))}</span>
   <select id="preset">
     
-    <option value="logo">${escapeHtml(t("Simple logo","Простой логотип","Простий логотип"))}</option>
-    <option value="balanced" selected>${escapeHtml(t("Balanced (recommended)","Баланс (рекомендуется)","Баланс (рекомендовано)"))}</option>
-    <option value="art">${escapeHtml(t("Game-style art","Игровая картинка","Ігрова картинка"))}</option>
-    <option value="smooth">${escapeHtml(t("Smooth gradients","Плавные градиенты","Плавні градієнти"))}</option>
-    <option value="photo">${escapeHtml(t("Photo / complex","Фото / сложная","Фото / складна"))}</option>
-    <option value="dark">${escapeHtml(t("Dark images","Тёмные картинки","Темні зображення"))}</option>
-  </select>
+    <option value="logo">${escapeHtml(t("Simple","Обычно","Простий"))}</option>
+    <option value="balanced" selected>${escapeHtml(t("Balanced","Баланс","Баланс"))}</option>
+    <option value="art">${escapeHtml(t("Art","Арт","Арт"))}</option>
+    <option value="smooth">${escapeHtml(t("Smooth","Плавность","Плавність"))}</option>
+    <option value="photo">${escapeHtml(t("Complex","Сложная","Складна"))}</option>
+</select>
 </div>
 
         <label class="toggle compact" ${tipAttr("More conversion controls for 24×12 icons","Больше настроек конвертации для иконки 24×12","Більше налаштувань конвертації для іконки 24×12")}>
@@ -516,7 +513,6 @@ function renderToolPage() {
           <option value="floyd">${escapeHtml(t("Smooth (Floyd–Steinberg)","Плавно (Floyd–Steinberg)","Плавно (Floyd–Steinberg)"))}</option>
         </select>
       </div>
-
 
       <div class="range">
         <span class="lbl">
@@ -1007,7 +1003,7 @@ function initToolUI() {
 
   // live recompute for advanced controls
   const live: Array<HTMLElement> = [
-    refs.ditherSel, refs.twoStepChk, refs.centerPaletteChk,
+	    refs.ditherSel, refs.twoStepChk, refs.centerPaletteChk,
     refs.oklabChk, refs.noiseDitherChk, refs.edgeSharpenChk, refs.cleanupChk,
     refs.useCropChk,
   ];
@@ -1093,15 +1089,6 @@ function applyPresetDefaults(p: Preset) {
     case "smooth":
       r.ditherSel.value = "atkinson";
       setStrength(32);
-      r.twoStepChk.checked = true;
-      r.centerPaletteChk.checked = true;
-      r.noiseDitherChk.checked = false;
-      r.edgeSharpenChk.checked = false;
-      break;
-
-    case "dark":
-      r.ditherSel.value = "atkinson";
-      setStrength(28);
       r.twoStepChk.checked = true;
       r.centerPaletteChk.checked = true;
       r.noiseDitherChk.checked = false;
@@ -1713,193 +1700,93 @@ function edgeAwareSharpen(img: ImageData, amount = 0.9, edgeThreshold = 10) {
   img.data.set(out);
 }
 
-function presetLevelStrength(p: Preset): number {
-  switch (p) {
-    case "dark": return 0.26;
-    case "smooth": return 0.22;
-    case "balanced": return 0.18;
-    case "art": return 0.14;
-    case "photo": return 0.10;
-    case "logo": default: return 0.0;
+// Very gentle levels normalization (kept intentionally subtle for tiny 24×12 / 16×12 icons).
+function softNormalizeLevels(img: ImageData, preset: Preset): void {
+  // Strength is small on purpose to avoid "fried" photos and noisy gradients.
+  let strength = 0.12;
+  if (preset === "logo") strength = 0.18;
+  else if (preset === "balanced") strength = 0.14;
+  else if (preset === "art") strength = 0.12;
+  else if (preset === "smooth") strength = 0.08;
+  else if (preset === "photo") strength = 0.06;
+
+  const d = img.data;
+  let rMin = 255, gMin = 255, bMin = 255;
+  let rMax = 0, gMax = 0, bMax = 0;
+
+  for (let i = 0; i < d.length; i += 4) {
+    const a = d[i + 3];
+    if (a === 0) continue;
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    if (r < rMin) rMin = r;
+    if (g < gMin) gMin = g;
+    if (b < bMin) bMin = b;
+    if (r > rMax) rMax = r;
+    if (g > gMax) gMax = g;
+    if (b > bMax) bMax = b;
+  }
+
+  const rRange = rMax - rMin;
+  const gRange = gMax - gMin;
+  const bRange = bMax - bMin;
+
+  // If image is already flat (or transparent), do nothing.
+  if (rRange < 8 && gRange < 8 && bRange < 8) return;
+
+  const rScale = rRange > 0 ? 255 / rRange : 1;
+  const gScale = gRange > 0 ? 255 / gRange : 1;
+  const bScale = bRange > 0 ? 255 / bRange : 1;
+
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue;
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    const rn = clamp((r - rMin) * rScale, 0, 255);
+    const gn = clamp((g - gMin) * gScale, 0, 255);
+    const bn = clamp((b - bMin) * bScale, 0, 255);
+    d[i]     = clamp(Math.round(lerp(r, rn, strength)), 0, 255);
+    d[i + 1] = clamp(Math.round(lerp(g, gn, strength)), 0, 255);
+    d[i + 2] = clamp(Math.round(lerp(b, bn, strength)), 0, 255);
   }
 }
 
-// Very gentle levels normalization to avoid "too dark / too pale" after quantization.
-// Uses 2%–98% luma percentiles and blends with the original by strength.
-function softNormalizeLevels(img: ImageData, preset: Preset) {
-  const strength = presetLevelStrength(preset);
-  if (strength <= 0) return;
-
-  const data = img.data;
-  const hist = new Uint32Array(256);
-  let count = 0;
-
-  for (let i = 0; i < data.length; i += 4) {
-    const a = data[i + 3];
-    if (a < 16) continue;
-    const l = Math.round(0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]);
-    hist[clamp(l, 0, 255)]++;
-    count++;
-  }
-  if (count < 10) return;
-
-  const lowTarget = Math.floor(count * 0.02);
-  const highTarget = Math.floor(count * 0.98);
-
-  let lo = 0, acc = 0;
-  for (let i = 0; i < 256; i++) {
-    acc += hist[i];
-    if (acc >= lowTarget) { lo = i; break; }
-  }
-  let hi = 255; acc = 0;
-  for (let i = 0; i < 256; i++) {
-    acc += hist[i];
-    if (acc >= highTarget) { hi = i; break; }
-  }
-
-  // Safety guards (avoid aggressive stretching)
-  lo = Math.min(lo, 80);
-  hi = Math.max(hi, 175);
-  if (hi - lo < 40) return;
-
-  const inv = 1 / (hi - lo);
-
-  for (let i = 0; i < data.length; i += 4) {
-    const a = data[i + 3];
-    if (a < 16) continue;
-
-    for (let c = 0; c < 3; c++) {
-      const v0 = data[i + c];
-      const v1 = clamp((v0 - lo) * inv * 255, 0, 255);
-      data[i + c] = clamp(v0 + (v1 - v0) * strength, 0, 255);
-    }
-  }
-}
-
-// -------------------- OKLAB --------------------
-function srgbToLinear(u8: number) {
-  const u = u8 / 255;
-  return u <= 0.04045 ? u / 12.92 : Math.pow((u + 0.055) / 1.055, 2.4);
-}
-
-function rgb8ToOKLab(r8: number, g8: number, b8: number) {
-  const r = srgbToLinear(r8);
-  const g = srgbToLinear(g8);
-  const b = srgbToLinear(b8);
-
-  const l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
-  const m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
-  const s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
-
-  const l_ = Math.cbrt(l);
-  const m_ = Math.cbrt(m);
-  const s_ = Math.cbrt(s);
-
-  const L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_;
-  const A = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_;
-  const B = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_;
-
-  return [L, A, B] as const;
-}
-
-// -------------------- DITHER HELPERS --------------------
-function hash01(x: number, y: number) {
-  let n = (x * 374761393 + y * 668265263) ^ 0x9e3779b9;
-  n = (n ^ (n >> 13)) * 1274126177;
-  n = n ^ (n >> 16);
-  return (n >>> 0) / 4294967296;
-}
-
-// -------------------- QUANTIZE + CLEANUP --------------------
 function quantizeTo256(
-  img24x12: ImageData,
+  img: ImageData,
   ditherMode: DitherMode,
   ditherStrength01: number,
-  centerWeighted: boolean,
-  useOKLab: boolean,
-  useNoiseOrdered: boolean,
-  _preset: Preset
+  _balanceColors: boolean,
+  _useOKLab: boolean,
+  useNoiseOrdered: boolean
 ): { palette: Uint8Array; indices: Uint8Array } {
-  const pcFull = utils.PointContainer.fromUint8Array(img24x12.data, img24x12.width, img24x12.height);
+  // Build 256-color palette with image-q defaults (rollback from NeuQuant/Wu choices).
+  const pc = utils.PointContainer.fromImageData(img);
+  // image-q expects an array of PointContainers
+  const pal = buildPaletteSync([pc], { colors: 256, colorDistanceFormula: "euclidean" } as any);
 
-  // Palette quantizer:
-  // Rollback NeuQuant/WuQuant selection for more predictable results.
-  // We rely on image-q defaults + euclidean distance with 256 colors.
-  let paletteObj: any;
-  const buildPaletteSafe = (containers: any[]) =>
-    buildPaletteSync(containers, {
-      colors: 256,
-      colorDistanceFormula: "euclidean",
-    } as any);
-
-  if (centerWeighted) {
-    const w = img24x12.width, h = img24x12.height;
-    const cx0 = Math.floor(w * 0.25), cy0 = Math.floor(h * 0.25);
-    const cx1 = Math.ceil (w * 0.75), cy1 = Math.ceil (h * 0.75);
-
-    const center = new ImageData(cx1 - cx0, cy1 - cy0);
-    for (let y = cy0; y < cy1; y++) {
-      for (let x = cx0; x < cx1; x++) {
-        const si = (y * w + x) * 4;
-        const di = ((y - cy0) * (cx1 - cx0) + (x - cx0)) * 4;
-        center.data[di]     = img24x12.data[si];
-        center.data[di + 1] = img24x12.data[si + 1];
-        center.data[di + 2] = img24x12.data[si + 2];
-        center.data[di + 3] = img24x12.data[si + 3];
-      }
-    }
-
-    const pcCenter = utils.PointContainer.fromUint8Array(center.data, center.width, center.height);
-    paletteObj = buildPaletteSafe([pcFull, pcCenter, pcCenter, pcCenter]);
-  } else {
-    paletteObj = buildPaletteSafe([pcFull]);
-  }
-
-  const palPoints = paletteObj.getPointContainer().getPointArray();
+  // Extract palette into packed RGB bytes (256 * 3).
   const palette = new Uint8Array(256 * 3);
-  for (let i = 0; i < 256; i++) {
-    const c = palPoints[i];
-    palette[i * 3 + 0] = c?.r ?? 0;
-    palette[i * 3 + 1] = c?.g ?? 0;
-    palette[i * 3 + 2] = c?.b ?? 0;
+  const palPC = (pal as any).getPointContainer?.() ?? (pal as any)._pointContainer;
+  const pts: any[] = palPC?.getPointArray?.() ?? palPC?.points ?? [];
+  const count = Math.min(256, pts.length);
+  for (let i = 0; i < count; i++) {
+    const p = pts[i];
+    palette[i * 3 + 0] = p.r ?? p[0] ?? 0;
+    palette[i * 3 + 1] = p.g ?? p[1] ?? 0;
+    palette[i * 3 + 2] = p.b ?? p[2] ?? 0;
   }
 
-  let palOK: Float32Array | null = null;
-  if (useOKLab) {
-    palOK = new Float32Array(256 * 3);
-    for (let i = 0; i < 256; i++) {
-      const [L, A, B] = rgb8ToOKLab(palette[i * 3], palette[i * 3 + 1], palette[i * 3 + 2]);
-      palOK[i * 3] = L;
-      palOK[i * 3 + 1] = A;
-      palOK[i * 3 + 2] = B;
-    }
-  }
-
-  function nearestIndex(r8: number, g8: number, b8: number): number {
+  // Nearest palette index (brute force is fine for 24×12 / 16×12).
+  const nearestIndex = (r8: number, g8: number, b8: number): number => {
     let best = 0;
     let bestDist = Infinity;
-
-    if (useOKLab && palOK) {
-      const [L, A, B] = rgb8ToOKLab(r8, g8, b8);
-      for (let i = 0; i < 256; i++) {
-        const dL = L - palOK[i * 3];
-        const dA = A - palOK[i * 3 + 1];
-        const dB = B - palOK[i * 3 + 2];
-        const dist = dL * dL + dA * dA + dB * dB;
-        if (dist < bestDist) {
-          bestDist = dist;
-          best = i;
-          if (dist === 0) break;
-        }
-      }
-      return best;
-    }
-
     for (let i = 0; i < 256; i++) {
-      const pr = palette[i * 3];
+      const pr = palette[i * 3 + 0];
       const pg = palette[i * 3 + 1];
       const pb = palette[i * 3 + 2];
-      const dr = r8 - pr, dg = g8 - pg, db = b8 - pb;
+      const dr = r8 - pr;
+      const dg = g8 - pg;
+      const db = b8 - pb;
       const dist = dr * dr + dg * dg + db * db;
       if (dist < bestDist) {
         bestDist = dist;
@@ -1908,120 +1795,119 @@ function quantizeTo256(
       }
     }
     return best;
-  }
-
-  const indices = new Uint8Array(img24x12.width * img24x12.height);
-
-  
-const rgba = img24x12.data;
-
-// Error-diffusion dithering (palette-aware) with optional serpentine scanning.
-// Strength is applied to the diffused error so tiny icons don't get "overcooked".
-if (ditherMode === "floyd" || ditherMode === "atkinson") {
-  const w = img24x12.width;
-  const h = img24x12.height;
-  const strength = clamp(ditherStrength01, 0, 1);
-
-  const errR = new Float32Array(w * h);
-  const errG = new Float32Array(w * h);
-  const errB = new Float32Array(w * h);
-
-  const addErr = (x: number, y: number, er: number, eg: number, eb: number, wgt: number) => {
-    if (x < 0 || y < 0 || x >= w || y >= h) return;
-    const j = y * w + x;
-    errR[j] += er * wgt;
-    errG[j] += eg * wgt;
-    errB[j] += eb * wgt;
   };
 
-  // Rolled back serpentine scanning: always use linear scan (L→R, T→B).
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = y * w + x;
-      const p = i * 4;
+  const w = img.width;
+  const h = img.height;
+  const rgba = img.data;
+  const indices = new Uint8Array(w * h);
 
-      const r0 = rgba[p] + errR[i];
-      const g0 = rgba[p + 1] + errG[i];
-      const b0 = rgba[p + 2] + errB[i];
+  const strength = clamp(ditherStrength01, 0, 1);
 
-      const r = clamp(r0, 0, 255);
-      const g = clamp(g0, 0, 255);
-      const b = clamp(b0, 0, 255);
+  // Small deterministic noise for ordered dithering.
+  const hash01 = (x: number, y: number): number => {
+    let n = (x * 374761393) ^ (y * 668265263);
+    n = (n ^ (n >>> 13)) * 1274126177;
+    n = (n ^ (n >>> 16)) >>> 0;
+    return n / 0xffffffff;
+  };
 
-      const idx = nearestIndex(r, g, b);
-      indices[i] = idx;
+  // Error diffusion dithering (linear scan only; serpentine was rolled back).
+  if (ditherMode === "floyd" || ditherMode === "atkinson") {
+    const errR = new Float32Array(w * h);
+    const errG = new Float32Array(w * h);
+    const errB = new Float32Array(w * h);
 
-      const pr = palette[idx * 3];
-      const pg = palette[idx * 3 + 1];
-      const pb = palette[idx * 3 + 2];
+    const addErr = (x: number, y: number, er: number, eg: number, eb: number, wgt: number) => {
+      if (x < 0 || y < 0 || x >= w || y >= h) return;
+      const j = y * w + x;
+      errR[j] += er * wgt;
+      errG[j] += eg * wgt;
+      errB[j] += eb * wgt;
+    };
 
-      const er = (r - pr) * strength;
-      const eg = (g - pg) * strength;
-      const eb = (b - pb) * strength;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x;
+        const p = i * 4;
 
-      if (ditherMode === "atkinson") {
-        // Atkinson diffusion: 6 neighbors, each 1/8
-        const wgt = 1 / 8;
-        addErr(x + 1, y,     er, eg, eb, wgt);
-        addErr(x + 2, y,     er, eg, eb, wgt);
-        addErr(x - 1, y + 1, er, eg, eb, wgt);
-        addErr(x,     y + 1, er, eg, eb, wgt);
-        addErr(x + 1, y + 1, er, eg, eb, wgt);
-        addErr(x,     y + 2, er, eg, eb, wgt);
-      } else {
-        // Floyd–Steinberg diffusion
-        addErr(x + 1, y,     er, eg, eb, 7 / 16);
-        addErr(x - 1, y + 1, er, eg, eb, 3 / 16);
-        addErr(x,     y + 1, er, eg, eb, 5 / 16);
-        addErr(x + 1, y + 1, er, eg, eb, 1 / 16);
+        const r = clamp(rgba[p + 0] + errR[i], 0, 255);
+        const g = clamp(rgba[p + 1] + errG[i], 0, 255);
+        const b = clamp(rgba[p + 2] + errB[i], 0, 255);
+
+        const idx = nearestIndex(r, g, b);
+        indices[i] = idx;
+
+        const pr = palette[idx * 3 + 0];
+        const pg = palette[idx * 3 + 1];
+        const pb = palette[idx * 3 + 2];
+
+        const er = (r - pr) * strength;
+        const eg = (g - pg) * strength;
+        const eb = (b - pb) * strength;
+
+        if (ditherMode === "atkinson") {
+          // Atkinson diffusion: 6 neighbors, each 1/8
+          const wgt = 1 / 8;
+          addErr(x + 1, y,     er, eg, eb, wgt);
+          addErr(x + 2, y,     er, eg, eb, wgt);
+          addErr(x - 1, y + 1, er, eg, eb, wgt);
+          addErr(x,     y + 1, er, eg, eb, wgt);
+          addErr(x + 1, y + 1, er, eg, eb, wgt);
+          addErr(x,     y + 2, er, eg, eb, wgt);
+        } else {
+          // Floyd–Steinberg diffusion
+          addErr(x + 1, y,     er, eg, eb, 7 / 16);
+          addErr(x - 1, y + 1, er, eg, eb, 3 / 16);
+          addErr(x,     y + 1, er, eg, eb, 5 / 16);
+          addErr(x + 1, y + 1, er, eg, eb, 1 / 16);
+        }
       }
     }
+
+    return { palette, indices };
   }
 
-  return { palette, indices };
-}
-
-const w = img24x12.width;
-const h = img24x12.height;
+  // Ordered dithering (Bayer) + optional noise.
+  const bayer4 = [
+    0,  8,  2, 10,
+    12, 4, 14, 6,
+    3, 11, 1,  9,
+    15, 7, 13, 5,
+  ];
+  const bayer8 = [
+    0, 48, 12, 60, 3, 51, 15, 63,
+    32, 16, 44, 28, 35, 19, 47, 31,
+    8, 56, 4, 52, 11, 59, 7, 55,
+    40, 24, 36, 20, 43, 27, 39, 23,
+    2, 50, 14, 62, 1, 49, 13, 61,
+    34, 18, 46, 30, 33, 17, 45, 29,
+    10, 58, 6, 54, 9, 57, 5, 53,
+    42, 26, 38, 22, 41, 25, 37, 21,
+  ];
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
       const p = i * 4;
 
-      let r = rgba[p];
+      let r = rgba[p + 0];
       let g = rgba[p + 1];
       let b = rgba[p + 2];
 
       if (ditherMode === "ordered4" || ditherMode === "ordered8") {
         if (useNoiseOrdered) {
           const t = hash01(x, y) - 0.5;
-          const offset = t * 36 * ditherStrength01;
+          const offset = t * 36 * strength;
           r = clamp(r + offset, 0, 255);
           g = clamp(g + offset, 0, 255);
           b = clamp(b + offset, 0, 255);
         } else {
-          const bayer4 = [
-            0,  8,  2, 10,
-            12, 4, 14, 6,
-            3, 11, 1,  9,
-            15, 7, 13, 5
-          ];
-          const bayer8 = [
-            0, 48, 12, 60, 3, 51, 15, 63,
-            32, 16, 44, 28, 35, 19, 47, 31,
-            8, 56, 4, 52, 11, 59, 7, 55,
-            40, 24, 36, 20, 43, 27, 39, 23,
-            2, 50, 14, 62, 1, 49, 13, 61,
-            34, 18, 46, 30, 33, 17, 45, 29,
-            10, 58, 6, 54, 9, 57, 5, 53,
-            42, 26, 38, 22, 41, 25, 37, 21
-          ];
           const is8 = ditherMode === "ordered8";
           const t = is8
             ? (bayer8[(y % 8) * 8 + (x % 8)] / 63)
             : (bayer4[(y % 4) * 4 + (x % 4)] / 15);
-          const offset = (t - 0.5) * 32 * ditherStrength01;
+          const offset = (t - 0.5) * 32 * strength;
           r = clamp(r + offset, 0, 255);
           g = clamp(g + offset, 0, 255);
           b = clamp(b + offset, 0, 255);
@@ -2251,7 +2137,6 @@ function clampDitherStrength(preset: Preset, mode: DitherMode, v01: number): num
     art: 0.75,
     smooth: 0.55,
     photo: 0.45,
-    dark: 0.55,
   };
 
   const capsDiffusion: Record<Preset, number> = {
@@ -2260,7 +2145,6 @@ function clampDitherStrength(preset: Preset, mode: DitherMode, v01: number): num
     art: 0.34,
     smooth: 0.34,
     photo: 0.26,
-    dark: 0.28,
   };
 
   if (mode === "ordered4" || mode === "ordered8") return Math.min(v, capsOrdered[preset]);
@@ -2332,13 +2216,12 @@ function recomputePreview() {
     else if (preset === "balanced") { amount = 0.85; thr = 11; }
     else if (preset === "photo") { amount = 0.35; thr = 16; }
     else if (preset === "smooth") { amount = 0.25; thr = 16; }
-    else if (preset === "dark") { amount = 0.25; thr = 15; }
 
     if (amount > 0) edgeAwareSharpen(imgBase, amount, thr);
   }
 
   // Quantize
-  const q = quantizeTo256(imgBase, dither, dAmt, centerWeighted, useOKLab, useNoiseOrdered, preset);
+	  const q = quantizeTo256(imgBase, dither, dAmt, centerWeighted, useOKLab, useNoiseOrdered);
   palette256 = q.palette;
 
   if (baseW === 24) {
