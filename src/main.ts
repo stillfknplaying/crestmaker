@@ -2,7 +2,8 @@ import "./style.css";
 import { buildPaletteSync, utils } from "image-q";
 
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
-type ScanMode = "auto" | "serpentine" | "linear";
+// Scan direction controls were added experimentally (serpentine/linear).
+// Rolled back for stability: we always use linear scan in error-diffusion.
 // Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
 type Preset = "logo" | "balanced" | "art" | "smooth" | "photo" | "dark";
 type CropRect = { x: number; y: number; w: number; h: number }; // in source pixels; aspect controlled by UI
@@ -517,22 +518,6 @@ function renderToolPage() {
       </div>
 
 
-      <div class="select">
-        <span class="lbl">
-          ${escapeHtml(t("Scan","Сканирование","Сканування"))}
-          ${helpHtml(
-            "Controls scanning direction for error-diffusion dithering. Auto uses serpentine only when it helps.",
-            "Направление сканирования для error-diffusion. Auto включает serpentine только когда это помогает.",
-            "Напрям сканування для error-diffusion. Auto вмикає serpentine лише коли це допомагає."
-          )}
-        </span>
-        <select id="scan">
-          <option value="auto" selected>${escapeHtml(t("Auto","Авто","Авто"))}</option>
-          <option value="serpentine">${escapeHtml(t("Serpentine","Змейка","Змійка"))}</option>
-          <option value="linear">${escapeHtml(t("Linear","Линейно","Лінійно"))}</option>
-        </select>
-      </div>
-
       <div class="range">
         <span class="lbl">
           ${escapeHtml(t("Strength","Сила","Сила"))}
@@ -722,7 +707,6 @@ type ToolRefs = {
   advancedPanel: HTMLDivElement;
 
   ditherSel: HTMLSelectElement;
-  scanSel: HTMLSelectElement;
   twoStepChk: HTMLInputElement;
   centerPaletteChk: HTMLInputElement;
   ditherAmt: HTMLInputElement;
@@ -842,7 +826,6 @@ function initToolUI() {
     advancedPanel: document.querySelector<HTMLDivElement>("#advancedPanel")!,
 
     ditherSel: document.querySelector<HTMLSelectElement>("#dither")!,
-    scanSel: document.querySelector<HTMLSelectElement>("#scan")!,
     twoStepChk: document.querySelector<HTMLInputElement>("#twoStep")!,
     centerPaletteChk: document.querySelector<HTMLInputElement>("#centerPalette")!,
     ditherAmt: document.querySelector<HTMLInputElement>("#ditherAmt")!,
@@ -1024,7 +1007,7 @@ function initToolUI() {
 
   // live recompute for advanced controls
   const live: Array<HTMLElement> = [
-    refs.ditherSel, refs.scanSel, refs.twoStepChk, refs.centerPaletteChk,
+    refs.ditherSel, refs.twoStepChk, refs.centerPaletteChk,
     refs.oklabChk, refs.noiseDitherChk, refs.edgeSharpenChk, refs.cleanupChk,
     refs.useCropChk,
   ];
@@ -1078,7 +1061,6 @@ function applyPresetDefaults(p: Preset) {
   // Defaults that most presets share
   r.oklabChk.checked = true;
   r.cleanupChk.checked = true;
-  r.scanSel.value = "auto";
 
   switch (p) {
     case "logo":
@@ -1836,32 +1818,19 @@ function quantizeTo256(
   centerWeighted: boolean,
   useOKLab: boolean,
   useNoiseOrdered: boolean,
-  scanMode: ScanMode,
-  preset: Preset
+  _preset: Preset
 ): { palette: Uint8Array; indices: Uint8Array } {
   const pcFull = utils.PointContainer.fromUint8Array(img24x12.data, img24x12.width, img24x12.height);
 
-  // Palette quantizer: NeuQuant (default) or WuQuant (photo-quality preset)
-  const paletteQuantization = (preset === "photo") ? "wuquant" : "neuquant";
-
+  // Palette quantizer:
+  // Rollback NeuQuant/WuQuant selection for more predictable results.
+  // We rely on image-q defaults + euclidean distance with 256 colors.
   let paletteObj: any;
-
-  const buildPaletteSafe = (containers: any[]) => {
-    try {
-      return buildPaletteSync(containers, {
-        colors: 256,
-        colorDistanceFormula: "euclidean",
-        paletteQuantization: paletteQuantization as any,
-      } as any);
-    } catch {
-      // Fallback in case WuQuant is not available in the installed image-q version.
-      return buildPaletteSync(containers, {
-        colors: 256,
-        colorDistanceFormula: "euclidean",
-        paletteQuantization: "neuquant",
-      } as any);
-    }
-  };
+  const buildPaletteSafe = (containers: any[]) =>
+    buildPaletteSync(containers, {
+      colors: 256,
+      colorDistanceFormula: "euclidean",
+    } as any);
 
   if (centerWeighted) {
     const w = img24x12.width, h = img24x12.height;
@@ -1951,8 +1920,6 @@ const rgba = img24x12.data;
 if (ditherMode === "floyd" || ditherMode === "atkinson") {
   const w = img24x12.width;
   const h = img24x12.height;
-
-  const serpentine = resolveSerpentine(scanMode, preset, ditherMode);
   const strength = clamp(ditherStrength01, 0, 1);
 
   const errR = new Float32Array(w * h);
@@ -1967,13 +1934,9 @@ if (ditherMode === "floyd" || ditherMode === "atkinson") {
     errB[j] += eb * wgt;
   };
 
+  // Rolled back serpentine scanning: always use linear scan (L→R, T→B).
   for (let y = 0; y < h; y++) {
-    const rev = serpentine && (y % 2 === 1);
-    const xStart = rev ? (w - 1) : 0;
-    const xEnd = rev ? -1 : w;
-    const step = rev ? -1 : 1;
-
-    for (let x = xStart; x !== xEnd; x += step) {
+    for (let x = 0; x < w; x++) {
       const i = y * w + x;
       const p = i * 4;
 
@@ -1998,21 +1961,19 @@ if (ditherMode === "floyd" || ditherMode === "atkinson") {
 
       if (ditherMode === "atkinson") {
         // Atkinson diffusion: 6 neighbors, each 1/8
-        const s = rev ? -1 : 1; // mirror on serpentine rows
         const wgt = 1 / 8;
-        addErr(x + 1 * s, y,     er, eg, eb, wgt);
-        addErr(x + 2 * s, y,     er, eg, eb, wgt);
-        addErr(x - 1 * s, y + 1, er, eg, eb, wgt);
-        addErr(x,         y + 1, er, eg, eb, wgt);
-        addErr(x + 1 * s, y + 1, er, eg, eb, wgt);
-        addErr(x,         y + 2, er, eg, eb, wgt);
+        addErr(x + 1, y,     er, eg, eb, wgt);
+        addErr(x + 2, y,     er, eg, eb, wgt);
+        addErr(x - 1, y + 1, er, eg, eb, wgt);
+        addErr(x,     y + 1, er, eg, eb, wgt);
+        addErr(x + 1, y + 1, er, eg, eb, wgt);
+        addErr(x,     y + 2, er, eg, eb, wgt);
       } else {
         // Floyd–Steinberg diffusion
-        const s = rev ? -1 : 1;
-        addErr(x + 1 * s, y,     er, eg, eb, 7 / 16);
-        addErr(x - 1 * s, y + 1, er, eg, eb, 3 / 16);
-        addErr(x,         y + 1, er, eg, eb, 5 / 16);
-        addErr(x + 1 * s, y + 1, er, eg, eb, 1 / 16);
+        addErr(x + 1, y,     er, eg, eb, 7 / 16);
+        addErr(x - 1, y + 1, er, eg, eb, 3 / 16);
+        addErr(x,     y + 1, er, eg, eb, 5 / 16);
+        addErr(x + 1, y + 1, er, eg, eb, 1 / 16);
       }
     }
   }
@@ -2307,15 +2268,6 @@ function clampDitherStrength(preset: Preset, mode: DitherMode, v01: number): num
   return v;
 }
 
-function resolveSerpentine(scanMode: ScanMode, preset: Preset, dither: DitherMode): boolean {
-  if (scanMode === "serpentine") return true;
-  if (scanMode === "linear") return false;
-  // auto
-  if (dither !== "floyd" && dither !== "atkinson") return false;
-  // serpentine helps gradients/photos, but can add noise to simple logos
-  return preset !== "logo";
-}
-
 // -------------------- RECOMPUTE PIPELINE --------------------
 let previewTimer: number | null = null;
 
@@ -2336,7 +2288,6 @@ function recomputePreview() {
   const useTwoStep = refs.twoStepChk.checked;
   const centerWeighted = refs.centerPaletteChk.checked;
   const dAmtRaw = Number(refs.ditherAmt.value) / 100;
-  const scanMode = refs.scanSel.value as ScanMode;
   const dAmt = clampDitherStrength(preset, dither, dAmtRaw);
 
   const useOKLab = refs.oklabChk.checked;
@@ -2387,7 +2338,7 @@ function recomputePreview() {
   }
 
   // Quantize
-  const q = quantizeTo256(imgBase, dither, dAmt, centerWeighted, useOKLab, useNoiseOrdered, scanMode, preset);
+  const q = quantizeTo256(imgBase, dither, dAmt, centerWeighted, useOKLab, useNoiseOrdered, preset);
   palette256 = q.palette;
 
   if (baseW === 24) {
