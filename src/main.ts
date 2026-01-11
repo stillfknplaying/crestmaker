@@ -3,7 +3,7 @@ import { buildPaletteSync, utils } from "image-q";
 
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
 // Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
-type Preset = "logo" | "balanced" | "art" | "smooth" | "photo";
+type Preset = "legacy" | "simple" | "balanced" | "complex";
 type CropRect = { x: number; y: number; w: number; h: number }; // in source pixels; aspect controlled by UI
 type CropDragMode = "none" | "move" | "nw" | "ne" | "sw" | "se";
 
@@ -471,11 +471,10 @@ function renderToolPage() {
   <span>${escapeHtml(t("Preset","Пресет","Пресет"))}</span>
   <select id="preset">
     
-    <option value="logo">${escapeHtml(t("Simple","Обычно","Простий"))}</option>
+    <option value="legacy">${escapeHtml(t("Legacy","Legacy","Legacy"))}</option>
+    <option value="simple">${escapeHtml(t("Simple","Обычно","Простий"))}</option>
     <option value="balanced" selected>${escapeHtml(t("Balanced","Баланс","Баланс"))}</option>
-    <option value="art">${escapeHtml(t("Art","Арт","Арт"))}</option>
-    <option value="smooth">${escapeHtml(t("Smooth","Плавность","Плавність"))}</option>
-    <option value="photo">${escapeHtml(t("Complex","Сложная","Складна"))}</option>
+    <option value="complex">${escapeHtml(t("Complex","Сложная","Складна"))}</option>
 </select>
 </div>
 
@@ -514,7 +513,7 @@ function renderToolPage() {
         </select>
       </div>
 
-      <div class="range">
+      <div class="range" id="strengthRow">
         <span class="lbl">
           ${escapeHtml(t("Strength","Сила","Сила"))}
           ${helpHtml(
@@ -921,13 +920,16 @@ function initToolUI() {
   refs.confirmYes.addEventListener("click", () => {
     refs?.confirmModal.classList.add("hidden");
     applyPresetDefaults(refs!.presetSel.value as Preset);
+    updateControlAvailability(refs!.presetSel.value as Preset);
     scheduleRecomputePreview(0);
   });
 
   // preset defaults + change
   applyPresetDefaults(refs.presetSel.value as Preset);
+  updateControlAvailability(refs.presetSel.value as Preset);
   refs.presetSel.addEventListener("change", () => {
     applyPresetDefaults(refs!.presetSel.value as Preset);
+    updateControlAvailability(refs!.presetSel.value as Preset);
     scheduleRecomputePreview(0);
   });
 
@@ -1010,6 +1012,7 @@ function initToolUI() {
   for (const el of live) {
     el.addEventListener("change", () => {
       drawCropUI();
+      updateControlAvailability(refs!.presetSel.value as Preset);
       scheduleRecomputePreview(70);
     });
     el.addEventListener("input", () => {
@@ -1059,13 +1062,26 @@ function applyPresetDefaults(p: Preset) {
   r.cleanupChk.checked = true;
 
   switch (p) {
-    case "logo":
+    case "legacy":
+      r.ditherSel.value = "none";
+      setStrength(0);
+      r.twoStepChk.checked = false;
+      r.centerPaletteChk.checked = false;
+      r.oklabChk.checked = false;
+      r.noiseDitherChk.checked = false;
+      r.edgeSharpenChk.checked = false;
+      r.cleanupChk.checked = false;
+      break;
+
+    case "simple":
       r.ditherSel.value = "none";
       setStrength(25);
       r.twoStepChk.checked = true;
       r.centerPaletteChk.checked = true;
+      r.oklabChk.checked = true;
       r.noiseDitherChk.checked = false;
       r.edgeSharpenChk.checked = true;
+      r.cleanupChk.checked = true;
       break;
 
     case "balanced":
@@ -1073,39 +1089,125 @@ function applyPresetDefaults(p: Preset) {
       setStrength(45);
       r.twoStepChk.checked = true;
       r.centerPaletteChk.checked = true; // "Balance colors"
+      r.oklabChk.checked = true;
       r.noiseDitherChk.checked = true;
       r.edgeSharpenChk.checked = true;
+      r.cleanupChk.checked = true;
       break;
 
-    case "art":
-      r.ditherSel.value = "ordered4";
-      setStrength(55);
-      r.twoStepChk.checked = true;
-      r.centerPaletteChk.checked = true;
-      r.noiseDitherChk.checked = true;
-      r.edgeSharpenChk.checked = true;
-      break;
-
-    case "smooth":
-      r.ditherSel.value = "atkinson";
-      setStrength(32);
-      r.twoStepChk.checked = true;
-      r.centerPaletteChk.checked = true;
-      r.noiseDitherChk.checked = false;
-      r.edgeSharpenChk.checked = false;
-      break;
-
-    case "photo":
+    case "complex":
     default:
       r.ditherSel.value = "floyd";
       setStrength(22);
       r.twoStepChk.checked = true;
       r.centerPaletteChk.checked = false;
+      r.oklabChk.checked = true;
       r.noiseDitherChk.checked = false;
       r.edgeSharpenChk.checked = false;
+      r.cleanupChk.checked = true;
       break;
   }
 }
+
+
+function updateControlAvailability(p: Preset) {
+  const r = refs;
+  if (!r) return;
+
+  // Helper: hide/show whole control rows without changing layout structure elsewhere
+  const setRowVisibleByInput = (input: HTMLElement, visible: boolean) => {
+    const row =
+      input.closest(".adv-opt") ||
+      input.closest(".range") ||
+      input.closest(".select");
+    if (!row) return;
+    row.classList.toggle("hidden", !visible);
+  };
+
+  const setToggleVisible = (el: HTMLInputElement, visible: boolean, forceOffWhenHidden = true) => {
+    setRowVisibleByInput(el, visible);
+    if (!visible && forceOffWhenHidden) el.checked = false;
+  };
+
+  // -----------------
+  // 1) Strength slider: currently observed as non-functional across all presets -> hide entirely
+  // -----------------
+  const strengthRow = document.getElementById("strengthRow");
+  if (strengthRow) strengthRow.classList.add("hidden");
+  r.ditherAmt.disabled = true;
+
+  // -----------------
+  // 2) Color smoothing options: only show variants that actually influence output in the current preset
+  // -----------------
+  const allowedDithersByPreset: Record<Preset, DitherMode[]> = {
+    legacy: ["none", "ordered4", "ordered8", "atkinson", "floyd"],
+    simple: ["none"],
+    balanced: ["none", "ordered4", "ordered8", "atkinson", "floyd"],
+    complex: ["none"],
+  };
+
+  const ditherLabel = (v: DitherMode) => {
+    switch (v) {
+      case "none":
+        return t("Off", "Выкл", "Вимк");
+      case "ordered4":
+        return t("Pattern 4×4", "Шаблон 4×4", "Візерунок 4×4");
+      case "ordered8":
+        return t("Pattern 8×8", "Шаблон 8×8", "Візерунок 8×8");
+      case "atkinson":
+        return t("Smooth (Atkinson)", "Плавно (Atkinson)", "Плавно (Atkinson)");
+      case "floyd":
+        return t("Smooth (Floyd–Steinberg)", "Плавно (Floyd–Steinberg)", "Плавно (Floyd–Steinberg)");
+    }
+  };
+
+  const allowed = allowedDithersByPreset[p];
+  // Rebuild options only if needed (keeps selection stable when possible)
+  const current = (r.ditherSel.value as DitherMode) || "none";
+  const nextValue: DitherMode = allowed.includes(current) ? current : "none";
+
+  r.ditherSel.innerHTML = allowed
+    .map((v) => `<option value="${v}">${escapeHtml(ditherLabel(v))}</option>`)
+    .join("");
+
+  r.ditherSel.value = nextValue;
+
+  // If preset supports only Off, keep the dropdown visible but make it non-interactive (no misleading choices)
+  r.ditherSel.disabled = allowed.length <= 1;
+
+  // -----------------
+  // 3) Advanced toggles: hide those that have no effect in the current preset (based on current implementation)
+  // -----------------
+  // Your observed behavior matrix:
+  // - Legacy: only Smoother resize affects output (color smoothing selection itself affects output)
+  // - Simple: Smoother resize + Sharpen edges
+  // - Balanced: Smoother resize + Balance colors + Subtle noise + Sharpen edges + Strength (but Strength is globally hidden for now)
+  // - Complex: Smoother resize + Sharpen edges
+  //
+  // Global dead / not wired:
+  // - Better color match (OKLab) -> hide everywhere
+  // - Cleanup pixels -> hide everywhere (currently no visible impact)
+  const showSmootherResize = true;
+  const showBalance = p === "balanced";
+  const showSubtleNoise = p === "balanced";
+  const showSharpen = p !== "legacy";
+  const showBetterMatch = false;
+  const showCleanup = false;
+
+  // Smoother resize stays visible always
+  setToggleVisible(r.twoStepChk, showSmootherResize, false);
+
+  // Hide per-preset controls
+  setToggleVisible(r.centerPaletteChk, showBalance);
+  setToggleVisible(r.noiseDitherChk, showSubtleNoise);
+
+  setToggleVisible(r.edgeSharpenChk, showSharpen);
+
+  // Dead / disabled globally
+  setToggleVisible(r.oklabChk, showBetterMatch);
+  setToggleVisible(r.cleanupChk, showCleanup);
+}
+
 
 // -------------------- IMAGE LOADING --------------------
 function loadImageFromFile(file: File): Promise<HTMLImageElement> {
@@ -1618,18 +1720,19 @@ function renderToSize(src: HTMLCanvasElement, preset: Preset, useTwoStep: boolea
   const sw = src.width;
   const sh = src.height;
 
-  const smoothFirst = preset !== "logo";
-  const smoothSingle = preset === "photo";
+  const smoothFirst = preset !== "simple" && preset !== "legacy";
+  const smoothSingle = preset === "complex";
+  const smoothLegacy = preset === "legacy";
 
   if (!useTwoStep) {
-    return renderCoverToSize(src, sw, sh, tw, th, smoothSingle);
+    return renderCoverToSize(src, sw, sh, tw, th, smoothLegacy ? false : smoothSingle);
   }
 
   // Upscale the intermediate stage proportionally (keeps details for tiny output)
   const midW = tw * 4;
   const midH = th * 4;
 
-  const mid = renderCoverToSize(src, sw, sh, midW, midH, smoothFirst);
+  const mid = renderCoverToSize(src, sw, sh, midW, midH, smoothLegacy ? false : smoothFirst);
   const midCanvas = document.createElement("canvas");
   midCanvas.width = midW;
   midCanvas.height = midH;
@@ -1702,13 +1805,12 @@ function edgeAwareSharpen(img: ImageData, amount = 0.9, edgeThreshold = 10) {
 
 // Very gentle levels normalization (kept intentionally subtle for tiny 24×12 / 16×12 icons).
 function softNormalizeLevels(img: ImageData, preset: Preset): void {
+  if (preset === "legacy") return;
   // Strength is small on purpose to avoid "fried" photos and noisy gradients.
   let strength = 0.12;
-  if (preset === "logo") strength = 0.18;
+  if (preset === "simple") strength = 0.18;
   else if (preset === "balanced") strength = 0.14;
-  else if (preset === "art") strength = 0.12;
-  else if (preset === "smooth") strength = 0.08;
-  else if (preset === "photo") strength = 0.06;
+  else if (preset === "complex") strength = 0.06;
 
   const d = img.data;
   let rMin = 255, gMin = 255, bMin = 255;
@@ -2132,19 +2234,17 @@ function clampDitherStrength(preset: Preset, mode: DitherMode, v01: number): num
 
   // Ordered patterns can tolerate a bit more; error-diffusion gets "fried" easily on tiny 24×12.
   const capsOrdered: Record<Preset, number> = {
-    logo: 0.45,
+    legacy: 0.0,
+    simple: 0.45,
     balanced: 0.60,
-    art: 0.75,
-    smooth: 0.55,
-    photo: 0.45,
+    complex: 0.45,
   };
 
   const capsDiffusion: Record<Preset, number> = {
-    logo: 0.22,
+    legacy: 0.0,
+    simple: 0.22,
     balanced: 0.30,
-    art: 0.34,
-    smooth: 0.34,
-    photo: 0.26,
+    complex: 0.26,
   };
 
   if (mode === "ordered4" || mode === "ordered8") return Math.min(v, capsOrdered[preset]);
@@ -2211,11 +2311,10 @@ function recomputePreview() {
     let amount = 0.0;
     let thr = 12;
 
-    if (preset === "logo") { amount = 1.05; thr = 9; }
-    else if (preset === "art") { amount = 0.95; thr = 11; }
+    if (preset === "legacy") { amount = 0.0; thr = 12; }
+    else if (preset === "simple") { amount = 1.05; thr = 9; }
     else if (preset === "balanced") { amount = 0.85; thr = 11; }
-    else if (preset === "photo") { amount = 0.35; thr = 16; }
-    else if (preset === "smooth") { amount = 0.25; thr = 16; }
+    else if (preset === "complex") { amount = 0.35; thr = 16; }
 
     if (amount > 0) edgeAwareSharpen(imgBase, amount, thr);
   }
@@ -2248,8 +2347,8 @@ function recomputePreview() {
   // Cleanup (run on the combined 24×12 so all exports look consistent)
   if (doCleanup && iconCombined24x12Indexed && palette256) {
     const passes = 1;
-    const minMaj = preset === "logo" ? 6 : 7;
-    const maxJump = preset === "logo" ? 110 : 80;
+    const minMaj = preset === "simple" ? 6 : 7;
+    const maxJump = preset === "simple" ? 110 : 80;
     cleanupIndicesMajoritySafe(iconCombined24x12Indexed, 24, 12, palette256, passes, minMaj, maxJump);
     // re-split after cleanup
     if (iconAlly8x12Indexed && iconClan16x12Indexed) {

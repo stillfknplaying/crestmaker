@@ -240,7 +240,16 @@ select option{
 .adv-grid{ display:grid; grid-template-columns: 1fr auto; gap:14px; align-items:start; }
 .adv-top{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 .adv-actions{ margin-left: 0; }
-.adv-toggles{ margin-top:10px; display:grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap:10px 12px; }
+.adv-toggles{
+  margin-top:10px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 12px;
+  align-items:center;
+}
+
+/* Make each toggle block shrink-to-fit so they line up in one row when space allows */
+.adv-opt{ flex: 0 0 auto; }
 
 .adv-opt{
   display:flex;
@@ -273,10 +282,6 @@ select option{
 @media (max-width: 860px){
   .adv-grid{ grid-template-columns: 1fr; }
   .adv-right{ justify-content:flex-start; }
-  .adv-toggles{ grid-template-columns: repeat(2, minmax(160px, 1fr)); }
-}
-@media (max-width: 520px){
-  .adv-toggles{ grid-template-columns: 1fr; }
 }
 .btn-group{
   display:flex;
