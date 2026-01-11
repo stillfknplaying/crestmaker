@@ -25,7 +25,30 @@ const ADV_OPEN_KEY = "cm_adv_open";
 let advancedOpen = localStorage.getItem(ADV_OPEN_KEY) === "1";
 
 
-// Persist mode + crop aspect
+// Persist mode + crop aspect + pipeline
+const PIPELINE_KEY = "cm_pipeline_v1";
+type PipelineMode = "old" | "pixel";
+type PixelPreset = "pixel-l2" | "pixel-clean" | "pixel-soft";
+
+function getPipeline(): PipelineMode {
+  const v = localStorage.getItem(PIPELINE_KEY);
+  return v === "pixel" ? "pixel" : "old";
+}
+function setPipeline(p: PipelineMode) {
+  localStorage.setItem(PIPELINE_KEY, p);
+}
+
+const PIXEL_PRESET_KEY = "cm_pixel_preset_v1";
+function getPixelPreset(): PixelPreset {
+  const v = localStorage.getItem(PIXEL_PRESET_KEY) as PixelPreset | null;
+  // Default Pixel preset should be Clean (when nothing saved yet)
+  return v === "pixel-clean" || v === "pixel-soft" || v === "pixel-l2" ? v : "pixel-clean";
+}
+function setPixelPreset(p: PixelPreset) {
+  localStorage.setItem(PIXEL_PRESET_KEY, p);
+}
+
+
 const MODE_KEY = "cm_mode_v1";
 const CROP_ASPECT_KEY = "cm_crop_aspect_v1";
 
@@ -445,7 +468,7 @@ function renderToolPage() {
   }
   const trueW = currentMode === "only_clan" ? 16 : 24;
   const trueH = 12;
-  const cropLabel = currentCropAspect === "16x12" ? "16×12 (4:3)" : "24×12 (2:1)";
+  const cropLabel = currentCropAspect === "16x12" ? "4:3" : "2:1";
   routeRoot.innerHTML = `
     <section class="tool">
       <div class="toolbar">
@@ -467,19 +490,33 @@ function renderToolPage() {
 </div>
 
 
-<div class="select" ${tipAttr("Quick settings for converting to a 256-color BMP","Быстрые настройки конвертации в BMP 256 цветов","Швидкі налаштування конвертації в BMP 256 кольорів")}>
-  <span>${escapeHtml(t("Preset","Пресет","Пресет"))}</span>
-  <select id="preset">
-    
-    <option value="legacy">${escapeHtml(t("Legacy","Legacy","Legacy"))}</option>
-    <option value="simple">${escapeHtml(t("Simple","Обычно","Простий"))}</option>
-    <option value="balanced" selected>${escapeHtml(t("Balanced","Баланс","Баланс"))}</option>
-    <option value="complex">${escapeHtml(t("Complex","Сложная","Складна"))}</option>
-</select>
+<div class="select" ${tipAttr("Choose conversion type: Modern (image-q) or Pixel (fixed 256 palette + ordered dither)","Выберите тип конвертации: Modern (image-q) или Pixel (фикс. палитра 256 + ordered dither)","Оберіть тип конвертації: Modern (image-q) або Pixel (фікс. палітра 256 + ordered dither)")}>
+  <span>${escapeHtml(t("Conversion","Конвертация","Конвертація"))}</span>
+  <select id="pipeline">
+    <option value="old" ${getPipeline()==="old" ? "selected" : ""}>Modern</option>
+    <option value="pixel" ${getPipeline()==="pixel" ? "selected" : ""}>Pixel</option>
+  </select>
 </div>
 
-        <label class="toggle compact" ${tipAttr("More conversion controls for 24×12 icons","Больше настроек конвертации для иконки 24×12","Більше налаштувань конвертації для іконки 24×12")}>
-          <span>${escapeHtml(t("Advanced settings","Расширенные настройки","Розширені налаштування"))}</span>
+<div class="select" ${tipAttr("Quick settings for converting to BMP 256 colors (depends on Conversion)","Быстрые настройки конвертации в BMP 256 цветов (зависят от Конвертации)","Швидкі налаштування конвертації в BMP 256 кольорів (залежать від Конвертації)")}>
+  <span>${escapeHtml(t("Preset","Пресет","Пресет"))}</span>
+  <select id="preset">
+    ${getPipeline()==="pixel"
+      ? `
+        <option value="pixel-l2" ${getPixelPreset()==="pixel-l2" ? "selected" : ""}>Mild</option>
+        <option value="pixel-clean" ${getPixelPreset()==="pixel-clean" ? "selected" : ""}>Clean</option>
+        <option value="pixel-soft" ${getPixelPreset()==="pixel-soft" ? "selected" : ""}>Soft</option>
+      `
+      : `
+        <option value="balanced" selected>${escapeHtml(t("Balanced","Баланс","Баланс"))}</option>
+        <option value="simple">${escapeHtml(t("Simple","Обычно","Простий"))}</option>
+        <option value="complex">${escapeHtml(t("Complex","Сложная","Складна"))}</option>
+        <option value="legacy">${escapeHtml(t("Legacy","Legacy","Legacy"))}</option>
+      `}
+  </select>
+</div>
+<label class="toggle compact" ${tipAttr("More conversion controls for 24×12 icons","Больше настроек конвертации для иконки 24×12","Більше налаштувань конвертації для іконки 24×12")}>
+          <span>${escapeHtml(t("Settings","Настройки","Налаштування"))}</span>
           <input id="advanced" type="checkbox" ${advancedOpen ? "checked" : ""} />
           <span class="track"><span class="thumb"></span></span>
         </label>
@@ -533,8 +570,8 @@ function renderToolPage() {
       </div>
     </div>
 
-    <div class="adv-toggles">
-      <div class="adv-opt">
+      <div class="adv-toggles">
+      <div class="adv-opt old-only" id="optTwoStep">
         <div class="opt-head">
           <span class="opt-name">${escapeHtml(t("Smoother resize","Плавное уменьшение","Плавне зменшення"))}</span>
           ${helpHtml(
@@ -549,7 +586,7 @@ function renderToolPage() {
         </label>
       </div>
 
-      <div class="adv-opt">
+      <div class="adv-opt old-only" id="optBalanceColors">
         <div class="opt-head">
           <span class="opt-name">${escapeHtml(t("Balance colors","Баланс цветов","Баланс кольорів"))}</span>
           ${helpHtml(
@@ -564,7 +601,7 @@ function renderToolPage() {
         </label>
       </div>
 
-      <div class="adv-opt">
+      <div class="adv-opt" id="optBetterMatch">
         <div class="opt-head">
           <span class="opt-name">${escapeHtml(t("Better color match","Точнее цвета","Точніші кольори"))}</span>
           ${helpHtml(
@@ -579,7 +616,7 @@ function renderToolPage() {
         </label>
       </div>
 
-      <div class="adv-opt">
+      <div class="adv-opt old-only" id="optSubtleNoise">
         <div class="opt-head">
           <span class="opt-name">${escapeHtml(t("Subtle noise","Лёгкий шум","Легкий шум"))}</span>
           ${helpHtml(
@@ -594,7 +631,7 @@ function renderToolPage() {
         </label>
       </div>
 
-      <div class="adv-opt">
+      <div class="adv-opt old-only" id="optSharpenEdges">
         <div class="opt-head">
           <span class="opt-name">${escapeHtml(t("Sharpen edges","Чёткие границы","Чіткі межі"))}</span>
           ${helpHtml(
@@ -630,7 +667,7 @@ function renderToolPage() {
 
         <div class="card">
           <div class="card-head">
-            <h3>${escapeHtml(t("Crop","Crop","Crop"))} (${cropLabel})</h3>
+            <h3>${escapeHtml(t("Crop","Crop","Crop"))} ${cropLabel}</h3>
             <label class="toggle compact">
               <span>Use crop</span>
               <input id="useCrop" type="checkbox" checked />
@@ -638,7 +675,6 @@ function renderToolPage() {
             </label>
           </div>
           <canvas id="crop" width="480" height="240"></canvas>
-          <p class="hint">Drag to move. Drag corners to resize. Wheel to zoom.</p>
         </div>
 
         <div class="card">
@@ -651,13 +687,11 @@ function renderToolPage() {
         <div class="card advanced-only ${advancedOpen && currentMode === "ally_clan" ? "" : "hidden"}" id="debugCard24">
           <h3>Result 24×12 (zoom)</h3>
           <canvas id="dstZoom24" width="240" height="120"></canvas>
-          <p class="hint">Debug view.</p>
         </div>
 
         <div class="card advanced-only ${advancedOpen && currentMode === "only_clan" ? "" : "hidden"}" id="debugCard16">
           <h3>Result 16×12 (zoom)</h3>
           <canvas id="dstZoom16" width="160" height="120"></canvas>
-          <p class="hint">Debug view.</p>
         </div>
 
         <div class="card full" id="previewCard">
@@ -668,7 +702,6 @@ function renderToolPage() {
           <div class="preview-wrap">
             <canvas id="preview"></canvas>
           </div>
-          <p class="hint">Shows your emblem inside the clan icon slot (approximation of in-game look).</p>
         </div>
       </div>
 
@@ -697,7 +730,8 @@ type ToolRefs = {
   modeSel: HTMLSelectElement;
 
   presetSel: HTMLSelectElement;
-  advancedChk: HTMLInputElement;
+  pipelineSel: HTMLSelectElement;
+advancedChk: HTMLInputElement;
   resetBtn: HTMLButtonElement;
   advancedPanel: HTMLDivElement;
 
@@ -816,7 +850,8 @@ function initToolUI() {
     modeSel: document.querySelector<HTMLSelectElement>("#mode")!,
 
     presetSel: document.querySelector<HTMLSelectElement>("#preset")!,
-    advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
+    pipelineSel: document.querySelector<HTMLSelectElement>("#pipeline")!,
+advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
     resetBtn: document.querySelector<HTMLButtonElement>("#reset")!,
     advancedPanel: document.querySelector<HTMLDivElement>("#advancedPanel")!,
 
@@ -858,6 +893,61 @@ function initToolUI() {
     confirmYes: document.querySelector<HTMLButtonElement>("#confirmYes")!,
     confirmNo: document.querySelector<HTMLButtonElement>("#confirmNo")!,
   };
+
+  // Pipeline persistence + UI toggles
+  refs.pipelineSel.value = getPipeline();
+
+  const applyPresetOptions = (p: PipelineMode) => {
+    if (p === "pixel") {
+      const px = getPixelPreset();
+      refs!.presetSel.innerHTML = `
+        <option value="pixel-l2" ${px === "pixel-l2" ? "selected" : ""}>Mild</option>
+        <option value="pixel-clean" ${px === "pixel-clean" ? "selected" : ""}>Clean</option>
+        <option value="pixel-soft" ${px === "pixel-soft" ? "selected" : ""}>Soft</option>
+      `;
+      refs!.presetSel.value = px;
+    } else {
+      refs!.presetSel.innerHTML = `
+        <option value="balanced" selected>${escapeHtml(t("Balanced","Баланс","Баланс"))}</option>
+        <option value="simple">${escapeHtml(t("Simple","Обычно","Простий"))}</option>
+        <option value="complex">${escapeHtml(t("Complex","Сложная","Складна"))}</option>
+        <option value="legacy">${escapeHtml(t("Legacy","Legacy","Legacy"))}</option>
+      `;
+      refs!.presetSel.value = "balanced";
+    }
+  };
+
+  refs.pipelineSel.value = getPipeline();
+  applyPresetOptions(refs.pipelineSel.value as PipelineMode);
+
+  const syncPipelineUI = () => {
+    const p = refs!.pipelineSel.value as PipelineMode;
+    setPipeline(p);
+    applyPresetOptions(p);
+
+
+    // Disable old-only controls when Pixel pipeline is active (to reduce confusion)
+    const isPixel = p === "pixel";
+
+    // In Pixel pipeline, these old-only toggles must be completely hidden (not disabled)
+    document.querySelectorAll<HTMLElement>(".old-only").forEach((el) => {
+      el.classList.toggle("hidden", isPixel);
+    });
+
+    refs!.ditherSel.disabled = isPixel;
+    refs!.ditherAmt.disabled = isPixel;
+    // Better color match is old-only (currently disabled in Pixel mode)
+    refs!.oklabChk.disabled = isPixel;
+
+    // Two-step / Balance colors / Subtle noise / Sharpen edges are ignored in Pixel conversion.
+  };
+
+  refs.pipelineSel.addEventListener("change", () => {
+    syncPipelineUI();
+    recomputePreview();
+  });
+  syncPipelineUI();
+
 
   // Language switcher (tool page)
   document.querySelectorAll<HTMLButtonElement>(".toolbar-right button[data-lang]").forEach((btn) => {
@@ -925,11 +1015,21 @@ function initToolUI() {
   });
 
   // preset defaults + change
-  applyPresetDefaults(refs.presetSel.value as Preset);
-  updateControlAvailability(refs.presetSel.value as Preset);
+  if ((refs.pipelineSel.value as PipelineMode) !== "pixel") {
+    applyPresetDefaults(refs.presetSel.value as Preset);
+    updateControlAvailability(refs.presetSel.value as Preset);
+  } else {
+    updateControlAvailability("balanced");
+  }
   refs.presetSel.addEventListener("change", () => {
-    applyPresetDefaults(refs!.presetSel.value as Preset);
-    updateControlAvailability(refs!.presetSel.value as Preset);
+    const p = refs!.pipelineSel.value as PipelineMode;
+    if (p === "pixel") {
+      setPixelPreset(refs!.presetSel.value as PixelPreset);
+      updateControlAvailability("balanced");
+    } else {
+      applyPresetDefaults(refs!.presetSel.value as Preset);
+      updateControlAvailability(refs!.presetSel.value as Preset);
+    }
     scheduleRecomputePreview(0);
   });
 
@@ -1114,6 +1214,8 @@ function updateControlAvailability(p: Preset) {
   const r = refs;
   if (!r) return;
 
+  const isPixel = (r.pipelineSel.value as PipelineMode) === "pixel";
+
   // Helper: hide/show whole control rows without changing layout structure elsewhere
   const setRowVisibleByInput = (input: HTMLElement, visible: boolean) => {
     const row =
@@ -1187,10 +1289,12 @@ function updateControlAvailability(p: Preset) {
   // Global dead / not wired:
   // - Better color match (OKLab) -> hide everywhere
   // - Cleanup pixels -> hide everywhere (currently no visible impact)
-  const showSmootherResize = true;
-  const showBalance = p === "balanced";
-  const showSubtleNoise = p === "balanced";
-  const showSharpen = p !== "legacy";
+  // In Pixel conversion these controls must be completely hidden and must not re-appear
+  // when switching Pixel presets.
+  const showSmootherResize = !isPixel;
+  const showBalance = !isPixel && p === "balanced";
+  const showSubtleNoise = !isPixel && p === "balanced";
+  const showSharpen = !isPixel && p !== "legacy";
   const showBetterMatch = false;
   const showCleanup = false;
 
@@ -1206,6 +1310,9 @@ function updateControlAvailability(p: Preset) {
   // Dead / disabled globally
   setToggleVisible(r.oklabChk, showBetterMatch);
   setToggleVisible(r.cleanupChk, showCleanup);
+
+
+
 }
 
 
@@ -2023,6 +2130,164 @@ function quantizeTo256(
   return { palette, indices };
 }
 
+// ---------------- Pixel pipeline (fixed palette + ordered dither) ----------------
+
+function clamp01(x: number): number { return x < 0 ? 0 : x > 1 ? 1 : x; }
+function clamp255(x: number): number { return x < 0 ? 0 : x > 255 ? 255 : x; }
+
+function buildWinHalftone256Palette(): Uint8Array {
+  const levels = [0, 51, 102, 153, 204, 255];
+  const colors: number[] = [];
+
+  // 216-color 6x6x6 cube
+  for (let r = 0; r < 6; r++) {
+    for (let g = 0; g < 6; g++) {
+      for (let b = 0; b < 6; b++) colors.push(levels[r], levels[g], levels[b]);
+    }
+  }
+
+  // Avoid duplicates with cube-grays
+  const cubeGraySet = new Set<number>();
+  for (let i = 0; i < colors.length; i += 3) {
+    const rr = colors[i], gg = colors[i + 1], bb = colors[i + 2];
+    if (rr === gg && gg === bb) cubeGraySet.add(rr);
+  }
+
+  // Add grayscale ramp (non-duplicate)
+  const grayCount = 40;
+  for (let k = 0; k < grayCount; k++) {
+    const v = Math.round((k * 255) / (grayCount - 1));
+    if (!cubeGraySet.has(v)) colors.push(v, v, v);
+  }
+
+  // Pad/truncate to exactly 256
+  const total = Math.floor(colors.length / 3);
+  if (total < 256) {
+    const pad = (256 - total) * 3;
+    for (let i = 0; i < pad; i++) colors.push(0);
+  } else if (total > 256) {
+    colors.length = 256 * 3;
+  }
+
+  return Uint8Array.from(colors);
+}
+
+const BAYER8: number[] = [
+  0, 48, 12, 60, 3, 51, 15, 63,
+  32, 16, 44, 28, 35, 19, 47, 31,
+  8, 56, 4, 52, 11, 59, 7, 55,
+  40, 24, 36, 20, 43, 27, 39, 23,
+  2, 50, 14, 62, 1, 49, 13, 61,
+  34, 18, 46, 30, 33, 17, 45, 29,
+  10, 58, 6, 54, 9, 57, 5, 53,
+  42, 26, 38, 22, 41, 25, 37, 21,
+];
+
+function nearestPaletteIndexRGB(
+  r: number, g: number, b: number,
+  palR: Uint8Array, palG: Uint8Array, palB: Uint8Array
+): number {
+  let best = 0;
+  let bestD = 1e9;
+  for (let i = 0; i < 256; i++) {
+    const dr = r - palR[i];
+    const dg = g - palG[i];
+    const db = b - palB[i];
+    const d = dr * dr + dg * dg + db * db;
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+      if (d === 0) break;
+    }
+  }
+  return best;
+}
+
+function quantizeOrderedDither256(
+  img: ImageData,
+  palette: Uint8Array,
+  strength01: number,
+  edgeFriendlyBias: boolean
+): Uint8Array {
+  const { width: w, height: h, data } = img;
+
+  const palR = new Uint8Array(256);
+  const palG = new Uint8Array(256);
+  const palB = new Uint8Array(256);
+  for (let i = 0; i < 256; i++) {
+    palR[i] = palette[i * 3 + 0];
+    palG[i] = palette[i * 3 + 1];
+    palB[i] = palette[i * 3 + 2];
+  }
+
+  const out = new Uint8Array(w * h);
+  const amp = 24 * clamp01(strength01);
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      let r = data[i + 0];
+      let g = data[i + 1];
+      let b = data[i + 2];
+      const a = data[i + 3];
+
+      // Transparent -> black (typical crest behavior)
+      if (a < 16) {
+        out[y * w + x] = nearestPaletteIndexRGB(0, 0, 0, palR, palG, palB);
+        continue;
+      }
+
+      const t = BAYER8[(y & 7) * 8 + (x & 7)]; // 0..63
+      const d = ((t / 63) - 0.5) * 2;          // -1..+1
+
+      if (edgeFriendlyBias) {
+        const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        r = clamp255(r + d * amp);
+        g = clamp255(g + d * amp);
+        b = clamp255(b + d * amp);
+        const l2 = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        const dl = l - l2;
+        r = clamp255(r + dl * 0.25);
+        g = clamp255(g + dl * 0.25);
+        b = clamp255(b + dl * 0.25);
+      } else {
+        r = clamp255(r + d * amp);
+        g = clamp255(g + d * amp);
+        b = clamp255(b + d * amp);
+      }
+
+      out[y * w + x] = nearestPaletteIndexRGB(r, g, b, palR, palG, palB);
+    }
+  }
+
+  return out;
+}
+
+function quantizePixel256(img: ImageData, preset: PixelPreset): { palette: Uint8Array; indices: Uint8Array } {
+  // Fixed palette + ordered dither (closest to "old tools" behavior)
+  const palette = buildWinHalftone256Palette();
+
+  let strength = 0.55;
+  let edgeBias = true;
+
+  if (preset === "pixel-clean") {
+    strength = 0.28;
+    edgeBias = true;
+  } else if (preset === "pixel-soft") {
+    strength = 0.68;
+    edgeBias = true;
+  } else {
+    // pixel-l2
+    strength = 0.55;
+    edgeBias = true;
+  }
+
+  const indices = quantizeOrderedDither256(img, palette, strength, edgeBias);
+  return { palette, indices };
+}
+
+
+
 function cleanupIndicesMajoritySafe(
   indices: Uint8Array,
   w: number,
@@ -2267,16 +2532,23 @@ function recomputePreview() {
   if (!refs) return;
   if (!sourceImage) return;
 
-  const preset = refs.presetSel.value as Preset;
+  const pipeline = refs.pipelineSel.value as PipelineMode;
+  const presetVal = refs.presetSel.value;
+  const preset = (pipeline === "pixel" ? "balanced" : (presetVal as Preset));
+  const pixelPreset = (pipeline === "pixel" ? (presetVal as PixelPreset) : getPixelPreset());
   const dither = refs.ditherSel.value as DitherMode;
-  const useTwoStep = refs.twoStepChk.checked;
-  const centerWeighted = refs.centerPaletteChk.checked;
+  const isPixel = pipeline === "pixel";
+
+  // In Pixel conversion, these must not affect the output (and are hidden in UI):
+  // Smoother resize / Balance colors / Subtle noise / Sharpen edges
+  const useTwoStep = isPixel ? false : refs.twoStepChk.checked;
+  const centerWeighted = isPixel ? false : refs.centerPaletteChk.checked;
   const dAmtRaw = Number(refs.ditherAmt.value) / 100;
-  const dAmt = clampDitherStrength(preset, dither, dAmtRaw);
+  const dAmt = pipeline === "pixel" ? 0 : clampDitherStrength(preset, dither, dAmtRaw);
 
   const useOKLab = refs.oklabChk.checked;
-  const useNoiseOrdered = refs.noiseDitherChk.checked;
-  const doEdgeSharpen = refs.edgeSharpenChk.checked;
+  const useNoiseOrdered = isPixel ? false : refs.noiseDitherChk.checked;
+  const doEdgeSharpen = isPixel ? false : refs.edgeSharpenChk.checked;
   const doCleanup = refs.cleanupChk.checked;
 
   const src = getCroppedSource();
@@ -2320,28 +2592,42 @@ function recomputePreview() {
   }
 
   // Quantize
-	  const q = quantizeTo256(imgBase, dither, dAmt, centerWeighted, useOKLab, useNoiseOrdered);
+  const q =
+    isPixel
+      ? quantizePixel256(imgBase, pixelPreset)
+      : quantizeTo256(imgBase, dither, dAmt, centerWeighted, useOKLab, useNoiseOrdered);
   palette256 = q.palette;
 
   if (baseW === 24) {
-    iconCombined24x12Indexed = q.indices;
+    const combined = q.indices; // non-null
+    iconCombined24x12Indexed = combined;
+
     // split
-    iconAlly8x12Indexed = new Uint8Array(8 * 12);
-    iconClan16x12Indexed = new Uint8Array(16 * 12);
+    const ally = new Uint8Array(8 * 12);
+    const clan = new Uint8Array(16 * 12);
+
     for (let y = 0; y < 12; y++) {
-      for (let x = 0; x < 8; x++) iconAlly8x12Indexed[y * 8 + x] = iconCombined24x12Indexed[y * 24 + x];
-      for (let x = 0; x < 16; x++) iconClan16x12Indexed[y * 16 + x] = iconCombined24x12Indexed[y * 24 + (8 + x)];
+      for (let x = 0; x < 8; x++) ally[y * 8 + x] = combined[y * 24 + x];
+      for (let x = 0; x < 16; x++) clan[y * 16 + x] = combined[y * 24 + (8 + x)];
     }
+
+    iconAlly8x12Indexed = ally;
+    iconClan16x12Indexed = clan;
   } else {
     // Only clan (16x12) => pad to 24x12 for preview + downloads
-    iconClan16x12Indexed = q.indices;
-    iconCombined24x12Indexed = new Uint8Array(24 * 12);
-    iconCombined24x12Indexed.fill(0);
+    const clan = q.indices; // non-null
+    iconClan16x12Indexed = clan;
+
+    const combined = new Uint8Array(24 * 12);
+    combined.fill(0);
     for (let y = 0; y < 12; y++) {
-      for (let x = 0; x < 16; x++) iconCombined24x12Indexed[y * 24 + (8 + x)] = iconClan16x12Indexed[y * 16 + x];
+      for (let x = 0; x < 16; x++) combined[y * 24 + (8 + x)] = clan[y * 16 + x];
     }
-    iconAlly8x12Indexed = new Uint8Array(8 * 12);
-    iconAlly8x12Indexed.fill(0);
+    iconCombined24x12Indexed = combined;
+
+    const ally = new Uint8Array(8 * 12);
+    ally.fill(0);
+    iconAlly8x12Indexed = ally;
   }
 
   // Cleanup (run on the combined 24×12 so all exports look consistent)
@@ -2353,8 +2639,8 @@ function recomputePreview() {
     // re-split after cleanup
     if (iconAlly8x12Indexed && iconClan16x12Indexed) {
       for (let y = 0; y < 12; y++) {
-        for (let x = 0; x < 8; x++) iconAlly8x12Indexed[y * 8 + x] = iconCombined24x12Indexed[y * 24 + x];
-        for (let x = 0; x < 16; x++) iconClan16x12Indexed[y * 16 + x] = iconCombined24x12Indexed[y * 24 + (8 + x)];
+        for (let x = 0; x < 8; x++) iconAlly8x12Indexed[y * 8 + x] = (iconCombined24x12Indexed ?? q.indices)[y * 24 + x];
+        for (let x = 0; x < 16; x++) iconClan16x12Indexed[y * 16 + x] = (iconCombined24x12Indexed ?? q.indices)[y * 24 + (8 + x)];
       }
     }
   }
