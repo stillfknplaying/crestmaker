@@ -1,6 +1,11 @@
 import "./style.css";
 import { buildPaletteSync, utils } from "image-q";
 
+import { privacyPolicyHtml } from "./content/privacy";
+import { termsHtml } from "./content/terms";
+import { gdprHtml } from "./content/gdpr";
+import { aboutHtml } from "./content/about";
+
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
 // Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
 type Preset = "legacy" | "simple" | "balanced" | "complex";
@@ -23,7 +28,6 @@ const SITE_NAME = "CrestMaker";
 // Persist some UI state across language switches
 const ADV_OPEN_KEY = "cm_adv_open";
 let advancedOpen = localStorage.getItem(ADV_OPEN_KEY) === "1";
-
 
 // Persist mode + crop aspect + pipeline
 const PIPELINE_KEY = "cm_pipeline_v1";
@@ -454,10 +458,10 @@ function renderRoute() {
   const hash = (location.hash || "#/").replace(/^#/, "");
   const path = hash.startsWith("/") ? hash : "/" + hash;
 
-  if (path === "/privacy") return renderPolicyPage(t("Privacy Policy","Политика конфиденциальности","Політика конфіденційності"), privacyPolicyHtml());
-  if (path === "/terms") return renderPolicyPage(t("Terms of Service","Пользовательское соглашение","Умови користування"), termsHtml());
-  if (path === "/about") return renderPolicyPage(t("About","О проекте","Про проєкт"), aboutHtml());
-  if (path === "/gdpr") return renderPolicyPage("GDPR", gdprHtml());
+  if (path === "/privacy") return renderPolicyPage(t("Privacy Policy","Политика конфиденциальности","Політика конфіденційності"), privacyPolicyHtml(currentLang));
+  if (path === "/terms") return renderPolicyPage(t("Terms of Service","Пользовательское соглашение","Умови користування"), termsHtml(currentLang));
+  if (path === "/about") return renderPolicyPage(t("About","О проекте","Про проєкт"), aboutHtml(currentLang));
+  if (path === "/gdpr") return renderPolicyPage("GDPR", gdprHtml(currentLang));
 
 return renderToolPage();
 }
@@ -2920,255 +2924,9 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 // -------------------- POLICY CONTENT (EN/RU/UA) --------------------
-function privacyPolicyHtml(): string {
-  const lastUpdated = "January 2026";
 
-  const en = `
-    <p><b>Last updated:</b> ${lastUpdated}</p>
 
-    <h3>Overview</h3>
-    <p>CrestMaker is a privacy-first tool. Image processing is performed locally in your browser.</p>
 
-    <h3>Image processing</h3>
-    <ul>
-      <li><b>Local-only:</b> images are processed on your device</li>
-      <li><b>No uploads:</b> images are not sent to our servers</li>
-      <li><b>No storage:</b> we do not store your images</li>
-    </ul>
-
-    <h3>Data we collect</h3>
-    <p>We do not require accounts and do not collect names, emails, or uploaded images.</p>
-
-    <h3>Cookies</h3>
-    <p>Currently, CrestMaker does not use cookies for tracking. In the future, we may use strictly necessary cookies for essential functionality.</p>
-
-    <h3>Advertising (Google AdSense) & consent</h3>
-    <p>If advertising (such as Google AdSense) is enabled in the future, it may set cookies or use similar technologies. Where required by law (e.g., in the EEA/UK), we will request your consent before showing personalized ads.</p>
-
-    <h3>Contact</h3>
-    <p>If you have questions, please contact us via the website contact information.</p>
-  `;
-
-  const ru = `
-    <p><b>Дата обновления:</b> ${lastUpdated}</p>
-
-    <h3>Общее</h3>
-    <p>CrestMaker — инструмент с приоритетом конфиденциальности. Обработка изображений выполняется локально в браузере.</p>
-
-    <h3>Обработка изображений</h3>
-    <ul>
-      <li><b>Только локально:</b> обработка на вашем устройстве</li>
-      <li><b>Без загрузки:</b> изображения не отправляются на наши серверы</li>
-      <li><b>Без хранения:</b> мы не сохраняем ваши изображения</li>
-    </ul>
-
-    <h3>Какие данные мы собираем</h3>
-    <p>Регистрация не нужна. Мы не собираем имена, email и загруженные изображения.</p>
-
-    <h3>Cookies</h3>
-    <p>Сейчас CrestMaker не использует cookies для трекинга. В будущем могут быть добавлены только строго необходимые cookies для работы функций сайта.</p>
-
-    <h3>Реклама (Google AdSense) и согласие</h3>
-    <p>Если в будущем будет подключена реклама (например, Google AdSense), она может использовать cookies или аналогичные технологии. Там, где это требуется законом (например, в EEA/UK), мы будем запрашивать согласие перед показом персонализированной рекламы.</p>
-
-    <h3>Контакты</h3>
-    <p>Если у вас есть вопросы, свяжитесь с нами через контактную информацию на сайте.</p>
-  `;
-
-  const ua = `
-    <p><b>Дата оновлення:</b> ${lastUpdated}</p>
-
-    <h3>Загальна інформація</h3>
-    <p>CrestMaker — інструмент із пріоритетом конфіденційності. Обробка зображень виконується локально у вашому браузері.</p>
-
-    <h3>Обробка зображень</h3>
-    <ul>
-      <li><b>Локально:</b> обробка на вашому пристрої</li>
-      <li><b>Без завантаження:</b> зображення не надсилаються на наші сервери</li>
-      <li><b>Без зберігання:</b> ми не зберігаємо ваші зображення</li>
-    </ul>
-
-    <h3>Які дані ми збираємо</h3>
-    <p>Реєстрація не потрібна. Ми не збираємо імена, email або завантажені зображення.</p>
-
-    <h3>Cookies</h3>
-    <p>Наразі CrestMaker не використовує cookies для трекінгу. У майбутньому можуть бути додані лише строго необхідні cookies для роботи функцій сайту.</p>
-
-    <h3>Реклама (Google AdSense) та згода</h3>
-    <p>Якщо у майбутньому буде підключено рекламу (наприклад, Google AdSense), вона може використовувати cookies або подібні технології. Там, де це вимагається законом (наприклад, EEA/UK), ми запитуватимемо вашу згоду перед показом персоналізованої реклами.</p>
-
-    <h3>Контакти</h3>
-    <p>Якщо у вас є питання, зв’яжіться з нами через контактну інформацію на сайті.</p>
-  `;
-
-  return currentLang === "ru" ? ru : currentLang === "ua" ? ua : en;
-}
-
-function termsHtml(): string {
-  const lastUpdated = "January 2026";
-
-  const en = `
-    <p><b>Last updated:</b> ${lastUpdated}</p>
-
-    <h3>1. Service</h3>
-    <p>CrestMaker provides a browser-based image conversion tool for creating game crests.</p>
-
-    <h3>2. Your content</h3>
-    <ul>
-      <li>You are responsible for the images you upload and confirm you have the right to use them.</li>
-      <li>We do not claim ownership of your images.</li>
-    </ul>
-
-    <h3>3. Acceptable use</h3>
-    <p>You agree not to use the service for illegal purposes or to violate intellectual property rights.</p>
-
-    <h3>4. Availability</h3>
-    <p>The service is provided “as is” and may be updated, changed, or discontinued at any time.</p>
-
-    <h3>5. Disclaimer</h3>
-    <p>We do not guarantee compatibility with any specific game server or client. Use at your own risk.</p>
-  `;
-
-  const ru = `
-    <p><b>Дата обновления:</b> ${lastUpdated}</p>
-
-    <h3>1. Сервис</h3>
-    <p>CrestMaker — это браузерный инструмент для конвертации изображений в формат игровых гербов.</p>
-
-    <h3>2. Ваш контент</h3>
-    <ul>
-      <li>Вы несёте ответственность за изображения и подтверждаете, что имеете право их использовать.</li>
-      <li>Мы не претендуем на права на ваши изображения.</li>
-    </ul>
-
-    <h3>3. Допустимое использование</h3>
-    <p>Запрещено использовать сервис в незаконных целях или нарушать права третьих лиц.</p>
-
-    <h3>4. Доступность</h3>
-    <p>Сервис предоставляется «как есть» и может изменяться или быть прекращён в любое время.</p>
-
-    <h3>5. Отказ от гарантий</h3>
-    <p>Мы не гарантируем совместимость с конкретными серверами/клиентами игр. Использование — на ваш риск.</p>
-  `;
-
-  const ua = `
-    <p><b>Дата оновлення:</b> ${lastUpdated}</p>
-
-    <h3>1. Сервіс</h3>
-    <p>CrestMaker — це браузерний інструмент для конвертації зображень у формат ігрових емблем.</p>
-
-    <h3>2. Ваш контент</h3>
-    <ul>
-      <li>Ви відповідаєте за зображення та підтверджуєте, що маєте право їх використовувати.</li>
-      <li>Ми не претендуємо на права на ваші зображення.</li>
-    </ul>
-
-    <h3>3. Допустиме використання</h3>
-    <p>Заборонено використовувати сервіс у незаконних цілях або порушувати права третіх осіб.</p>
-
-    <h3>4. Доступність</h3>
-    <p>Сервіс надається «як є» і може змінюватися або бути припинений у будь-який час.</p>
-
-    <h3>5. Відмова від гарантій</h3>
-    <p>Ми не гарантуємо сумісність із конкретними серверами/клієнтами ігор. Використання — на ваш ризик.</p>
-  `;
-
-  return currentLang === "ru" ? ru : currentLang === "ua" ? ua : en;
-}
-
-function gdprHtml(): string {
-  const lastUpdated = "January 2026";
-
-  const en = `
-    <p><b>Last updated:</b> ${lastUpdated}</p>
-
-    <h3>GDPR summary</h3>
-    <p>CrestMaker does not collect or store personal data. Image processing is local-only.</p>
-
-    <h3>Lawful basis</h3>
-    <p>Because we do not process personal data, a lawful basis under Article 6 is not applicable in the current version.</p>
-
-    <h3>Cookies & consent (future)</h3>
-    <p>If ads or analytics are enabled in the future, we will show a consent banner where required and provide options to manage preferences.</p>
-  `;
-
-  const ru = `
-    <p><b>Дата обновления:</b> ${lastUpdated}</p>
-
-    <h3>Кратко о GDPR</h3>
-    <p>CrestMaker не собирает и не хранит персональные данные. Обработка изображений выполняется локально.</p>
-
-    <h3>Правовое основание</h3>
-    <p>Так как персональные данные не обрабатываются, основание по статье 6 GDPR в текущей версии неприменимо.</p>
-
-    <h3>Cookies и согласие (на будущее)</h3>
-    <p>Если в будущем будут включены реклама или аналитика, мы покажем баннер согласия там, где это требуется, и дадим возможность управлять настройками.</p>
-  `;
-
-  const ua = `
-    <p><b>Дата оновлення:</b> ${lastUpdated}</p>
-
-    <h3>Коротко про GDPR</h3>
-    <p>CrestMaker не збирає та не зберігає персональні дані. Обробка зображень виконується локально.</p>
-
-    <h3>Правова підстава</h3>
-    <p>Оскільки персональні дані не обробляються, правова підстава за статтею 6 GDPR у поточній версії не застосовується.</p>
-
-    <h3>Cookies і згода (на майбутнє)</h3>
-    <p>Якщо у майбутньому буде увімкнено рекламу або аналітику, ми покажемо банер згоди там, де це потрібно, і дамо можливість керувати налаштуваннями.</p>
-  `;
-
-  return currentLang === "ru" ? ru : currentLang === "ua" ? ua : en;
-}
-
-function aboutHtml(): string {
-  const en = `
-    <h3>What is CrestMaker?</h3>
-    <p>CrestMaker is a free, browser-based tool for converting images into game-ready crests.</p>
-
-    <h3>Privacy-first</h3>
-    <ul>
-      <li>No accounts</li>
-      <li>No uploads — local processing only</li>
-      <li>Lightweight and fast</li>
-    </ul>
-
-    <h3>Why it exists</h3>
-    <p>To make crest creation simple and safe — without installing software and without sending images to any server.</p>
-  `;
-
-  const ru = `
-    <h3>Что такое CrestMaker?</h3>
-    <p>CrestMaker — бесплатный браузерный инструмент для конвертации изображений в игровые гербы.</p>
-
-    <h3>Приватность</h3>
-    <ul>
-      <li>Без аккаунтов</li>
-      <li>Без загрузки на сервер — обработка только локально</li>
-      <li>Лёгкий и быстрый</li>
-    </ul>
-
-    <h3>Зачем он нужен</h3>
-    <p>Чтобы сделать создание герба простым и безопасным — без установки софта и без отправки изображений куда-либо.</p>
-  `;
-
-  const ua = `
-    <h3>Що таке CrestMaker?</h3>
-    <p>CrestMaker — безкоштовний браузерний інструмент для конвертації зображень у ігрові емблеми.</p>
-
-    <h3>Конфіденційність</h3>
-    <ul>
-      <li>Без акаунтів</li>
-      <li>Без надсилання на сервер — лише локальна обробка</li>
-      <li>Легкий та швидкий</li>
-    </ul>
-
-    <h3>Навіщо він потрібен</h3>
-    <p>Щоб зробити створення емблеми простим і безпечним — без встановлення програм і без відправки зображень кудись.</p>
-  `;
-
-  return currentLang === "ru" ? ru : currentLang === "ua" ? ua : en;
-}
 
 // -------------------- SMALL UTIL --------------------
 function escapeHtml(s: string) {
