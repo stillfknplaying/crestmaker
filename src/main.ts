@@ -17,7 +17,7 @@ type GameTemplate = {
   slotH: number;
 };
 
-// CrestMaker — beta 0.0.7
+// CrestMaker — beta 0.0.8.5
 const SITE_NAME = "CrestMaker";
 
 // Persist some UI state across language switches
