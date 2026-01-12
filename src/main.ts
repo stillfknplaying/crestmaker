@@ -28,7 +28,7 @@ let advancedOpen = localStorage.getItem(ADV_OPEN_KEY) === "1";
 // Persist mode + crop aspect + pipeline
 const PIPELINE_KEY = "cm_pipeline_v1";
 type PipelineMode = "old" | "pixel";
-type PixelPreset = "pixel-l2" | "pixel-clean" | "pixel-soft";
+type PixelPreset = "pixel-clean" | "pixel-crisp" | "pixel-stable" | "pixel-indexed";
 
 function getPipeline(): PipelineMode {
   const v = localStorage.getItem(PIPELINE_KEY);
@@ -41,11 +41,22 @@ function setPipeline(p: PipelineMode) {
 const PIXEL_PRESET_KEY = "cm_pixel_preset_v1";
 function getPixelPreset(): PixelPreset {
   const v = localStorage.getItem(PIXEL_PRESET_KEY) as PixelPreset | null;
+  // Migrate removed presets (Mild/Soft) to Clean
+  if ((v as any) === "pixel-l2" || (v as any) === "pixel-soft") return "pixel-clean";
   // Default Pixel preset should be Clean (when nothing saved yet)
-  return v === "pixel-clean" || v === "pixel-soft" || v === "pixel-l2" ? v : "pixel-clean";
+  return v === "pixel-clean" || v === "pixel-crisp" || v === "pixel-stable" || v === "pixel-indexed" ? v : "pixel-clean";
 }
 function setPixelPreset(p: PixelPreset) {
   localStorage.setItem(PIXEL_PRESET_KEY, p);
+}
+
+const MODERN_PRESET_KEY = "cm_modern_preset_v1";
+function getModernPreset(): Preset {
+  const v = localStorage.getItem(MODERN_PRESET_KEY) as Preset | null;
+  return v === "legacy" || v === "simple" || v === "balanced" || v === "complex" ? v : "balanced";
+}
+function setModernPreset(p: Preset) {
+  localStorage.setItem(MODERN_PRESET_KEY, p);
 }
 
 
@@ -520,10 +531,11 @@ function renderToolPage() {
   <select id="preset">
     ${getPipeline()==="pixel"
       ? `
-        <option value="pixel-l2" ${getPixelPreset()==="pixel-l2" ? "selected" : ""}>Mild</option>
+        
         <option value="pixel-clean" ${getPixelPreset()==="pixel-clean" ? "selected" : ""}>Clean</option>
-        <option value="pixel-soft" ${getPixelPreset()==="pixel-soft" ? "selected" : ""}>Soft</option>
-      `
+        <option value="pixel-crisp" ${getPixelPreset()==="pixel-crisp" ? "selected" : ""}>Crisp</option>
+        <option value="pixel-stable" ${getPixelPreset()==="pixel-stable" ? "selected" : ""}>Stable</option>
+        <option value="pixel-indexed" ${getPixelPreset()==="pixel-indexed" ? "selected" : ""}>Indexed</option>`
       : `
         <option value="balanced" selected>${escapeHtml(t("Balanced","Баланс","Баланс"))}</option>
         <option value="simple">${escapeHtml(t("Simple","Обычно","Простий"))}</option>
@@ -549,7 +561,7 @@ function renderToolPage() {
 
       <div id="advancedPanel" class="advanced ${advancedOpen ? "" : "hidden"}">
     <div class="adv-top">
-      <div class="select hidden">
+      <div id="smoothingRow" class="select">
         <span class="lbl">
           ${escapeHtml(t("Smoothing","Сглаживание","Згладжування"))}
           ${helpHtml(
@@ -946,19 +958,21 @@ advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
     if (p === "pixel") {
       const px = getPixelPreset();
       refs!.presetSel.innerHTML = `
-        <option value="pixel-l2" ${px === "pixel-l2" ? "selected" : ""}>Mild</option>
         <option value="pixel-clean" ${px === "pixel-clean" ? "selected" : ""}>Clean</option>
-        <option value="pixel-soft" ${px === "pixel-soft" ? "selected" : ""}>Soft</option>
+        <option value="pixel-crisp" ${px === "pixel-crisp" ? "selected" : ""}>Crisp</option>
+        <option value="pixel-stable" ${px === "pixel-stable" ? "selected" : ""}>Stable</option>
+        <option value="pixel-indexed" ${px === "pixel-indexed" ? "selected" : ""}>Indexed</option>
       `;
       refs!.presetSel.value = px;
     } else {
+      const mp = getModernPreset();
       refs!.presetSel.innerHTML = `
-        <option value="balanced" selected>${escapeHtml(t("Balanced","Баланс","Баланс"))}</option>
-        <option value="simple">${escapeHtml(t("Simple","Обычно","Простий"))}</option>
-        <option value="complex">${escapeHtml(t("Complex","Сложная","Складна"))}</option>
-        <option value="legacy">${escapeHtml(t("Legacy","Legacy","Legacy"))}</option>
+        <option value="balanced" ${mp === "balanced" ? "selected" : ""}>${escapeHtml(t("Balanced","Баланс","Баланс"))}</option>
+        <option value="simple" ${mp === "simple" ? "selected" : ""}>${escapeHtml(t("Simple","Обычно","Простий"))}</option>
+        <option value="complex" ${mp === "complex" ? "selected" : ""}>${escapeHtml(t("Complex","Сложная","Складна"))}</option>
+        <option value="legacy" ${mp === "legacy" ? "selected" : ""}>${escapeHtml(t("Legacy","Legacy","Legacy"))}</option>
       `;
-      refs!.presetSel.value = "balanced";
+      refs!.presetSel.value = mp;
     }
   };
 
@@ -967,36 +981,63 @@ advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
 
   let prevPipeline: PipelineMode = refs!.pipelineSel.value as PipelineMode;
 
-
-
   const syncPipelineUI = () => {
-    const p = refs!.pipelineSel.value as PipelineMode;
-    setPipeline(p);
-    applyPresetOptions(p);
+    const next = refs!.pipelineSel.value as PipelineMode;
+    const prev = prevPipeline;
 
-    // When switching to Pixel, default to Clean (predictable)
-    if (p === "pixel" && prevPipeline !== "pixel") {
-      setPixelPreset("pixel-clean");
-      applyPresetOptions(p);
+    // Persist the currently selected preset BEFORE the preset options are replaced.
+    if (prev === "old") {
+      const cur = refs!.presetSel.value as Preset;
+      if (cur === "legacy" || cur === "simple" || cur === "balanced" || cur === "complex") {
+        setModernPreset(cur);
+      }
+    } else {
+      const cur = refs!.presetSel.value as PixelPreset;
+      if (cur === "pixel-clean" || cur === "pixel-crisp" || cur === "pixel-stable" || cur === "pixel-indexed") {
+        setPixelPreset(cur);
+      } else {
+        // Migrate removed presets
+        setPixelPreset("pixel-clean");
+      }
     }
 
+    // Update pipeline storage
+    setPipeline(next);
 
-    // Disable old-only controls when Pixel pipeline is active (to reduce confusion)
-    const isPixel = p === "pixel";
+    // Choose the preset for the target pipeline.
+    if (next === "pixel") {
+      // When switching to Pixel, default to Clean for predictability.
+      const target = prev !== "pixel" ? "pixel-clean" : getPixelPreset();
+      setPixelPreset(target);
+    } else {
+      // When switching back to Modern, restore the last Modern preset (default Balanced).
+      setModernPreset(getModernPreset());
+    }
 
-    // In Pixel pipeline, these old-only toggles must be completely hidden (not disabled)
+    // Rebuild preset options for the selected pipeline and sync <select> value.
+    applyPresetOptions(next);
+
+    // Hide Modern-only controls when Pixel pipeline is active (to reduce confusion).
+    const isPixel = next === "pixel";
     document.querySelectorAll<HTMLElement>(".old-only").forEach((el) => {
       el.classList.toggle("hidden", isPixel);
     });
 
+    // Dither controls are Modern-only in current UX.
     refs!.ditherSel.disabled = isPixel;
     refs!.ditherAmt.disabled = isPixel;
-    // Better color match is old-only (currently disabled in Pixel mode)
     refs!.oklabChk.disabled = isPixel;
 
-    // Two-step / Balance colors / Subtle noise / Sharpen edges are ignored in Pixel conversion.
+    // Ensure the currently shown preset is actually applied (fix preset desync).
+    if (!isPixel) {
+      const mp = refs!.presetSel.value as Preset;
+      applyPresetDefaults(mp);
+      updateControlAvailability(mp);
+    } else {
+      updateControlAvailability("balanced");
+    }
 
-    prevPipeline = p;
+    prevPipeline = next;
   };
 
   refs.pipelineSel.addEventListener("change", () => {
@@ -1066,8 +1107,25 @@ advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
   refs.confirmNo.addEventListener("click", () => refs?.confirmModal.classList.add("hidden"));
   refs.confirmYes.addEventListener("click", () => {
     refs?.confirmModal.classList.add("hidden");
-    applyPresetDefaults(refs!.presetSel.value as Preset);
-    updateControlAvailability(refs!.presetSel.value as Preset);
+
+    // Reset should also reset Brightness / Contrast (universal)
+    setBrightness(0);
+    setContrast(0);
+    refs!.brightness.value = "0";
+    refs!.brightnessVal.textContent = "0";
+    refs!.contrast.value = "0";
+    refs!.contrastVal.textContent = "0";
+
+    // Reset other advanced defaults only for the non-pixel pipeline
+    const pipe = refs!.pipelineSel.value as PipelineMode;
+    if (pipe !== "pixel") {
+      applyPresetDefaults(refs!.presetSel.value as Preset);
+      updateControlAvailability(refs!.presetSel.value as Preset);
+    } else {
+      // Pixel presets aren't compatible with Preset keys; keep controls hidden/consistent.
+      updateControlAvailability("balanced");
+    }
+
     scheduleRecomputePreview(0);
   });
 
@@ -1316,8 +1374,12 @@ function updateControlAvailability(p: Preset) {
   r.ditherAmt.disabled = true;
 
   // -----------------
-  // 2) Color smoothing options: only show variants that actually influence output in the current preset
+  // 2) Color smoothing options: MUST BE ALWAYS HIDDEN
   // -----------------
+
+  const smoothingRow = document.getElementById("smoothingRow");
+  if (smoothingRow) smoothingRow.classList.add("hidden");
+
   const allowedDithersByPreset: Record<Preset, DitherMode[]> = {
     legacy: ["none", "ordered4", "ordered8", "atkinson", "floyd"],
     simple: ["none"],
@@ -1353,7 +1415,7 @@ function updateControlAvailability(p: Preset) {
   r.ditherSel.value = nextValue;
 
   // If preset supports only Off, keep the dropdown visible but make it non-interactive (no misleading choices)
-  r.ditherSel.disabled = allowed.length <= 1;
+  r.ditherSel.disabled = allowedSafe.length <= 1;
 
   // -----------------
   // 3) Advanced toggles: hide those that have no effect in the current preset (based on current implementation)
@@ -2342,27 +2404,46 @@ function quantizeOrderedDither256(
 }
 
 function quantizePixel256(img: ImageData, preset: PixelPreset): { palette: Uint8Array; indices: Uint8Array } {
-  // Fixed palette + ordered dither (closest to "old tools" behavior)
-  const palette = buildWinHalftone256Palette();
+  // Pixel presets are designed to be predictable and distinct from Modern:
+  // - Clean: fixed 256 palette + light ordered dither
+  // - Crisp: subtle edge emphasis (no blur), then fixed palette + ordered dither (sharper boundaries)
+  // - Stable: fixed palette + ordered dither, then a mild majority cleanup pass to reduce isolated pixels/checkerboard
+  // - Indexed: palette-first (adaptive 256-color), no dithering (preserve palette character)
 
-  let strength = 0.55;
-  let edgeBias = true;
-
-  if (preset === "pixel-clean") {
-    strength = 0.28;
-    edgeBias = true;
-  } else if (preset === "pixel-soft") {
-    strength = 0.68;
-    edgeBias = true;
-  } else {
-    // pixel-l2
-    strength = 0.55;
-    edgeBias = true;
+  if (preset === "pixel-indexed") {
+    // Adaptive palette from the image, no dithering.
+    return quantizeTo256(img, "none", 0, false, false, false);
   }
 
-  const indices = quantizeOrderedDither256(img, palette, strength, edgeBias);
+  // Fixed palette + ordered dither (closest to classic "256 palette" tools)
+  const palette = buildWinHalftone256Palette();
+
+  let work = img;
+  let strength = 0.28; // Clean default
+  const edgeBias = true;
+
+  if (preset === "pixel-crisp") {
+    // Slight edge emphasis after resize to make boundaries more confident without Modern-like smoothing.
+    work = new ImageData(new Uint8ClampedArray(img.data), img.width, img.height);
+    edgeAwareSharpen(work, 0.75, 12);
+    strength = 0.38;
+  } else if (preset === "pixel-stable") {
+    strength = 0.45;
+  } else {
+    // pixel-clean
+    strength = 0.28;
+  }
+
+  const indices = quantizeOrderedDither256(work, palette, strength, edgeBias);
+
+  if (preset === "pixel-stable") {
+    // Mild post cleanup to reduce isolated pixels / checkerboard artifacts.
+    cleanupIndicesMajoritySafe(indices, work.width, work.height, palette, 2, 5, 85);
+  }
+
   return { palette, indices };
 }
+
 
 
 
