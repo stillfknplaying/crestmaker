@@ -49,6 +49,23 @@ function setPixelPreset(p: PixelPreset) {
 }
 
 
+const BRIGHTNESS_KEY = "cm_brightness_v1";
+const CONTRAST_KEY = "cm_contrast_v1";
+function getBrightness(): number {
+  const v = Number(localStorage.getItem(BRIGHTNESS_KEY) ?? "0");
+  return Number.isFinite(v) ? Math.max(-50, Math.min(50, v)) : 0;
+}
+function setBrightness(v: number) {
+  localStorage.setItem(BRIGHTNESS_KEY, String(Math.max(-50, Math.min(50, v))));
+}
+function getContrast(): number {
+  const v = Number(localStorage.getItem(CONTRAST_KEY) ?? "0");
+  return Number.isFinite(v) ? Math.max(-50, Math.min(50, v)) : 0;
+}
+function setContrast(v: number) {
+  localStorage.setItem(CONTRAST_KEY, String(Math.max(-50, Math.min(50, v))));
+}
+
 const MODE_KEY = "cm_mode_v1";
 const CROP_ASPECT_KEY = "cm_crop_aspect_v1";
 
@@ -482,7 +499,7 @@ function renderToolPage() {
         <div class="sep"></div>
 
         <div class="select" ${tipAttr("Select output size: 24×12 (full) or 16×12 (clan only).","Выберите размер: 24×12 (полный) или 16×12 (только клан).","Оберіть розмір: 24×12 (повний) або 16×12 (лише клан).")}>
-  <span>${escapeHtml(t("Mode","Режим","Режим"))}</span>
+  <span>${escapeHtml(t("Size","Размер","Розмір"))}</span>
   <select id="mode">
     <option value="ally_clan" ${currentMode==="ally_clan" ? "selected" : ""}>${escapeHtml(t("24×12","24×12","24×12"))}</option>
     <option value="only_clan" ${currentMode==="only_clan" ? "selected" : ""}>${escapeHtml(t("16×12","16×12","16×12"))}</option>
@@ -491,7 +508,7 @@ function renderToolPage() {
 
 
 <div class="select" ${tipAttr("Choose conversion type: Modern (image-q) or Pixel (fixed 256 palette + ordered dither)","Выберите тип конвертации: Modern (image-q) или Pixel (фикс. палитра 256 + ordered dither)","Оберіть тип конвертації: Modern (image-q) або Pixel (фікс. палітра 256 + ordered dither)")}>
-  <span>${escapeHtml(t("Conversion","Конвертация","Конвертація"))}</span>
+  <span>${escapeHtml(t("Mode","Режим","Режим"))}</span>
   <select id="pipeline">
     <option value="old" ${getPipeline()==="old" ? "selected" : ""}>Modern</option>
     <option value="pixel" ${getPipeline()==="pixel" ? "selected" : ""}>Pixel</option>
@@ -532,9 +549,9 @@ function renderToolPage() {
 
       <div id="advancedPanel" class="advanced ${advancedOpen ? "" : "hidden"}">
     <div class="adv-top">
-      <div class="select">
+      <div class="select hidden">
         <span class="lbl">
-          ${escapeHtml(t("Color smoothing","Сглаживание цветов","Згладжування кольорів"))}
+          ${escapeHtml(t("Smoothing","Сглаживание","Згладжування"))}
           ${helpHtml(
             "Adds a subtle pixel pattern to smooth color transitions in a 24×12 256-color BMP.",
             "Добавляет лёгкий пиксельный узор, чтобы сгладить переходы цветов в BMP 256 (24×12).",
@@ -561,6 +578,24 @@ function renderToolPage() {
         </span>
         <input id="ditherAmt" type="range" min="0" max="100" value="55" />
         <b><span id="ditherAmtVal">55</span>%</b>
+      </div>
+
+      <div class="range" id="brightnessRow">
+        <span class="lbl">
+          ${escapeHtml(t("Brightness","Яркость","Яскравість"))}
+          ${helpHtml("Adjusts brightness before conversion.","Регулирует яркость перед конвертацией.","Регулює яскравість перед конвертацією.")}
+        </span>
+        <input id="brightness" type="range" min="-50" max="50" value="0" />
+        <b><span id="brightnessVal">0</span></b>
+      </div>
+
+      <div class="range" id="contrastRow">
+        <span class="lbl">
+          ${escapeHtml(t("Contrast","Контраст","Контраст"))}
+          ${helpHtml("Adjusts contrast before conversion.","Регулирует контраст перед конвертацией.","Регулює контраст перед конвертацією.")}
+        </span>
+        <input id="contrast" type="range" min="-50" max="50" value="0" />
+        <b><span id="contrastVal">0</span></b>
       </div>
 
       <div class="btn-group adv-actions">
@@ -684,12 +719,12 @@ function renderToolPage() {
           </div>
         </div>
 
-        <div class="card advanced-only ${advancedOpen && currentMode === "ally_clan" ? "" : "hidden"}" id="debugCard24">
+        <div class="card" id="debugCard24">
           <h3>Result 24×12 (zoom)</h3>
           <canvas id="dstZoom24" width="240" height="120"></canvas>
         </div>
 
-        <div class="card advanced-only ${advancedOpen && currentMode === "only_clan" ? "" : "hidden"}" id="debugCard16">
+        <div class="card" id="debugCard16">
           <h3>Result 16×12 (zoom)</h3>
           <canvas id="dstZoom16" width="160" height="120"></canvas>
         </div>
@@ -740,6 +775,11 @@ advancedChk: HTMLInputElement;
   centerPaletteChk: HTMLInputElement;
   ditherAmt: HTMLInputElement;
   ditherAmtVal: HTMLSpanElement;
+
+  brightness: HTMLInputElement;
+  brightnessVal: HTMLSpanElement;
+  contrast: HTMLInputElement;
+  contrastVal: HTMLSpanElement;
 
   oklabChk: HTMLInputElement;
   noiseDitherChk: HTMLInputElement;
@@ -861,6 +901,11 @@ advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
     ditherAmt: document.querySelector<HTMLInputElement>("#ditherAmt")!,
     ditherAmtVal: document.querySelector<HTMLSpanElement>("#ditherAmtVal")!,
 
+    brightness: document.querySelector<HTMLInputElement>("#brightness")!,
+    brightnessVal: document.querySelector<HTMLSpanElement>("#brightnessVal")!,
+    contrast: document.querySelector<HTMLInputElement>("#contrast")!,
+    contrastVal: document.querySelector<HTMLSpanElement>("#contrastVal")!,
+
     oklabChk: document.querySelector<HTMLInputElement>("#oklab")!,
     noiseDitherChk: document.querySelector<HTMLInputElement>("#noiseDither")!,
     edgeSharpenChk: document.querySelector<HTMLInputElement>("#edgeSharpen")!,
@@ -920,10 +965,20 @@ advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
   refs.pipelineSel.value = getPipeline();
   applyPresetOptions(refs.pipelineSel.value as PipelineMode);
 
+  let prevPipeline: PipelineMode = refs!.pipelineSel.value as PipelineMode;
+
+
+
   const syncPipelineUI = () => {
     const p = refs!.pipelineSel.value as PipelineMode;
     setPipeline(p);
     applyPresetOptions(p);
+
+    // When switching to Pixel, default to Clean (predictable)
+    if (p === "pixel" && prevPipeline !== "pixel") {
+      setPixelPreset("pixel-clean");
+      applyPresetOptions(p);
+    }
 
 
     // Disable old-only controls when Pixel pipeline is active (to reduce confusion)
@@ -940,6 +995,8 @@ advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
     refs!.oklabChk.disabled = isPixel;
 
     // Two-step / Balance colors / Subtle noise / Sharpen edges are ignored in Pixel conversion.
+
+    prevPipeline = p;
   };
 
   refs.pipelineSel.addEventListener("change", () => {
@@ -985,8 +1042,8 @@ advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
 
   // Restore advanced state on render
   refs.advancedPanel.classList.toggle("hidden", !refs.advancedChk.checked);
-  refs.debugCard24.classList.toggle("hidden", !(refs.advancedChk.checked && currentMode === "ally_clan"));
-  refs.debugCard16.classList.toggle("hidden", !(refs.advancedChk.checked && currentMode === "only_clan"));
+  refs.debugCard24.classList.toggle("hidden", currentMode !== "ally_clan");
+  refs.debugCard16.classList.toggle("hidden", currentMode !== "only_clan");
   refs.resetBtn.classList.toggle("hidden", !refs.advancedChk.checked);
 
   // advanced toggle
@@ -995,8 +1052,8 @@ advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
     advancedOpen = on;
     localStorage.setItem(ADV_OPEN_KEY, advancedOpen ? "1" : "0");
     refs!.advancedPanel.classList.toggle("hidden", !on);
-    refs!.debugCard24.classList.toggle("hidden", !(on && currentMode === "ally_clan"));
-    refs!.debugCard16.classList.toggle("hidden", !(on && currentMode === "only_clan"));
+    refs!.debugCard24.classList.toggle("hidden", currentMode !== "ally_clan");
+    refs!.debugCard16.classList.toggle("hidden", currentMode !== "only_clan");
     refs!.resetBtn.classList.toggle("hidden", !on);
     scheduleRecomputePreview(0);
   });
@@ -1034,6 +1091,26 @@ advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
   });
 
   // range UI
+  // Brightness / Contrast (universal)
+  refs.brightness.value = String(getBrightness());
+  refs.brightnessVal.textContent = String(getBrightness());
+  refs.contrast.value = String(getContrast());
+  refs.contrastVal.textContent = String(getContrast());
+
+  refs.brightness.addEventListener("input", () => {
+    const v = Number(refs!.brightness.value) || 0;
+    refs!.brightnessVal.textContent = String(v);
+    setBrightness(v);
+    scheduleRecomputePreview(50);
+  });
+  refs.contrast.addEventListener("input", () => {
+    const v = Number(refs!.contrast.value) || 0;
+    refs!.contrastVal.textContent = String(v);
+    setContrast(v);
+    scheduleRecomputePreview(50);
+  });
+
+    // range UI
   refs.ditherAmt.addEventListener("input", () => {
     refs!.ditherAmtVal.textContent = String(refs!.ditherAmt.value);
     scheduleRecomputePreview(70);
@@ -1266,9 +1343,10 @@ function updateControlAvailability(p: Preset) {
   const allowed = allowedDithersByPreset[p];
   // Rebuild options only if needed (keeps selection stable when possible)
   const current = (r.ditherSel.value as DitherMode) || "none";
-  const nextValue: DitherMode = allowed.includes(current) ? current : "none";
+  const allowedSafe = allowed ?? ["none"];
+  const nextValue: DitherMode = allowedSafe.includes(current) ? current : "none";
 
-  r.ditherSel.innerHTML = allowed
+  r.ditherSel.innerHTML = allowedSafe
     .map((v) => `<option value="${v}">${escapeHtml(ditherLabel(v))}</option>`)
     .join("");
 
@@ -2572,6 +2650,27 @@ function recomputePreview() {
     }
   }
 
+  // Brightness + Contrast (universal, applies to Modern and Pixel)
+  const brightness = getBrightness();
+  const contrast = getContrast();
+  if (brightness !== 0 || contrast !== 0) {
+    const c = contrast;
+    const k = (259 * (c + 255)) / (255 * (259 - c));
+    for (let i = 0; i < imgBase.data.length; i += 4) {
+      let r = imgBase.data[i] + brightness;
+      let g = imgBase.data[i + 1] + brightness;
+      let b = imgBase.data[i + 2] + brightness;
+
+      r = clamp255((r - 128) * k + 128);
+      g = clamp255((g - 128) * k + 128);
+      b = clamp255((b - 128) * k + 128);
+
+      imgBase.data[i] = r;
+      imgBase.data[i + 1] = g;
+      imgBase.data[i + 2] = b;
+    }
+  }
+
   // balance colors (very gentle levels normalization)
   if (centerWeighted) {
     softNormalizeLevels(imgBase, preset);
@@ -2652,7 +2751,7 @@ function recomputePreview() {
     drawTrueSize(iconCombined24x12Indexed, palette256, 24, 12);
   }
 
-  if (refs.advancedChk.checked && palette256) {
+  if (palette256) {
     if (currentMode === "only_clan" && iconClan16x12Indexed) {
       drawZoomTo(refs.dstZoom16Canvas, refs.dstZoom16Ctx, iconClan16x12Indexed, palette256, 16, 12);
     } else if (iconCombined24x12Indexed) {
