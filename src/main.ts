@@ -5,6 +5,8 @@ import { privacyPolicyHtml } from "./content/privacy";
 import { termsHtml } from "./content/terms";
 import { gdprHtml } from "./content/gdpr";
 import { aboutHtml } from "./content/about";
+import type { Lang } from "./i18n";
+import { currentLang, setLang as setLangCore, t, tipAttr, helpHtml } from "./i18n";
 
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
 // Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
@@ -188,57 +190,21 @@ app.innerHTML = `
 const yearEl = document.querySelector<HTMLSpanElement>("#year")!;
 yearEl.textContent = String(new Date().getFullYear());
 
+
 // -------------------- I18N (EN/RU/UA) --------------------
-type Lang = "en" | "ru" | "ua";
-
-function getLang(): Lang {
-  const saved = localStorage.getItem("cm_lang");
-  if (saved === "en" || saved === "ru" || saved === "ua") return saved;
-  const nav = (navigator.language || "").toLowerCase();
-  if (nav.startsWith("ru")) return "ru";
-  if (nav.startsWith("uk") || nav.startsWith("ua")) return "ua";
-  return "en";
-}
-
-let currentLang: Lang = getLang();
-
 function setLang(lang: Lang) {
   // Preserve advanced toggle state across language switches
   if (refs?.advancedChk) {
     advancedOpen = refs.advancedChk.checked;
     localStorage.setItem(ADV_OPEN_KEY, advancedOpen ? "1" : "0");
   }
-  currentLang = lang;
-  localStorage.setItem("cm_lang", lang);
+  setLangCore(lang);
   renderRoute();
   // re-render cookie banner text if visible
   renderCookieBannerIfNeeded();
   localizeCookieUI();
 }
 
-function t(en: string, ru: string, ua: string) {
-  return currentLang === "ru" ? ru : currentLang === "ua" ? ua : en;
-}
-
-function tipAttr(en: string, ru: string, ua: string) {
-  return `title="${escapeHtml(t(en, ru, ua))}"`;
-}
-
-function helpHtml(en: string, ru: string, ua: string) {
-  const msg = escapeHtml(t(en, ru, ua));
-  const label = escapeHtml(t("More info", "Подробнее", "Докладніше"));
-  // Inline help icon with tooltip (hover on desktop, tap on mobile)
-  return `
-    <span class="helpwrap">
-      <button type="button" class="helpbtn" aria-label="${label}">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-14.5a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5ZM10.75 10a1.25 1.25 0 0 1 2.5 0v7a1.25 1.25 0 0 1-2.5 0v-7Z"/>
-        </svg>
-      </button>
-      <span class="helptip" role="tooltip">${msg}</span>
-    </span>
-  `;
-}
 // -------------------- COOKIE CONSENT (beta 0.0.5) --------------------
 type ConsentState = {
   essential: true;
