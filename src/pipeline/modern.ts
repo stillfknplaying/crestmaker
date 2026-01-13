@@ -43,9 +43,24 @@ export function renderCoverToSize(
   return ctx.getImageData(0, 0, tw, th);
 }
 
-export function renderToSize(src: HTMLCanvasElement, preset: Preset, useTwoStep: boolean, tw: number, th: number): ImageData {
-  const sw = src.width;
-  const sh = src.height;
+function getCanvasImageSourceSize(src: CanvasImageSource): { w: number; h: number } {
+  // CanvasImageSource is a union; not all members have .width/.height.
+  // We resolve size for the common cases used by the app.
+  if (src instanceof HTMLCanvasElement) return { w: src.width, h: src.height };
+  if (src instanceof OffscreenCanvas) return { w: src.width, h: src.height };
+  if (src instanceof HTMLImageElement) return { w: src.naturalWidth || src.width, h: src.naturalHeight || src.height };
+  if (src instanceof SVGImageElement) return { w: src.width.baseVal.value || src.width.animVal.value, h: src.height.baseVal.value || src.height.animVal.value };
+  if (src instanceof HTMLVideoElement) return { w: src.videoWidth || src.clientWidth, h: src.videoHeight || src.clientHeight };
+  if (src instanceof ImageBitmap) return { w: src.width, h: src.height };
+  // Fallback: attempt width/height-like properties.
+  const anySrc = src as any;
+  const w = Number(anySrc?.width ?? anySrc?.naturalWidth ?? 0);
+  const h = Number(anySrc?.height ?? anySrc?.naturalHeight ?? 0);
+  return { w: w || 1, h: h || 1 };
+}
+
+export function renderToSize(src: CanvasImageSource, preset: Preset, useTwoStep: boolean, tw: number, th: number): ImageData {
+  const { w: sw, h: sh } = getCanvasImageSourceSize(src);
 
   const smoothFirst = preset !== "simple" && preset !== "legacy";
   const smoothSingle = preset === "complex";
@@ -70,7 +85,7 @@ export function renderToSize(src: HTMLCanvasElement, preset: Preset, useTwoStep:
   return renderCoverToSize(midCanvas, midW, midH, tw, th, false);
 }
 
-export function edgeAwareSharpen(img: ImageData, amount = 0.9, edgeThreshold = 10) {
+export function edgeAwareSharpen(img: ImageData, amount = 0.9, edgeThreshold = 10): ImageData {
   const w = img.width, h = img.height;
   const src = img.data;
   const out = new Uint8ClampedArray(src.length);
@@ -126,15 +141,12 @@ export function edgeAwareSharpen(img: ImageData, amount = 0.9, edgeThreshold = 1
     }
   }
   img.data.set(out);
+  return img;
 }
 
-export function softNormalizeLevels(img: ImageData, preset: Preset): void {
-  if (preset === "legacy") return;
-  // Strength is small on purpose to avoid "fried" photos and noisy gradients.
-  let strength = 0.12;
-  if (preset === "simple") strength = 0.18;
-  else if (preset === "balanced") strength = 0.14;
-  else if (preset === "complex") strength = 0.06;
+export function softNormalizeLevels(img: ImageData, amount: number): ImageData {
+  // Amount is expected to be small (e.g. 0.20–0.35). Clamp defensively.
+  const strength = clamp(amount, 0, 1);
 
   const d = img.data;
   let rMin = 255, gMin = 255, bMin = 255;
@@ -157,7 +169,7 @@ export function softNormalizeLevels(img: ImageData, preset: Preset): void {
   const bRange = bMax - bMin;
 
   // If image is already flat (or transparent), do nothing.
-  if (rRange < 8 && gRange < 8 && bRange < 8) return;
+  if (rRange < 8 && gRange < 8 && bRange < 8) return img;
 
   const rScale = rRange > 0 ? 255 / rRange : 1;
   const gScale = gRange > 0 ? 255 / gRange : 1;
@@ -175,6 +187,8 @@ export function softNormalizeLevels(img: ImageData, preset: Preset): void {
     d[i + 1] = clamp(Math.round(lerp(g, gn, strength)), 0, 255);
     d[i + 2] = clamp(Math.round(lerp(b, bn, strength)), 0, 255);
   }
+
+  return img;
 }
 
 export function clampDitherStrength(preset: Preset, mode: DitherMode, v01: number): number {

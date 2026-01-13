@@ -11,6 +11,8 @@ import { currentLang, setLang as setLangCore, t, tipAttr, helpHtml } from "./i18
 
 import { downloadBMPs, makeBmp8bitIndexed, downloadBlob } from "./bmp/writer";
 import { createCropController, initCropToAspect } from "./ui/crop";
+import { initDisplayCanvas, rebuildDisplayCanvas } from "./ui/displayCanvas";
+import { initPreview, renderPreview, scheduleRecomputePreview, recomputePreview } from "./ui/preview";
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
 // Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
 type Preset = "legacy" | "simple" | "balanced" | "complex";
@@ -822,6 +824,15 @@ queueMicrotask(() => {
 let sourceImage: HTMLImageElement | null = null;
 let displayCanvas: HTMLCanvasElement | null = null; // rotated view
 let rotation90: 0 | 90 | 180 | 270 = 0;
+
+initDisplayCanvas({
+  getSourceImage: () => sourceImage,
+  getRotation90: () => rotation90,
+  getDisplayCanvas: () => displayCanvas,
+  setDisplayCanvas: (c) => {
+    displayCanvas = c;
+  },
+});
 let invertColors = false;
 
 let cropRect: CropRect | null = null;
@@ -837,6 +848,58 @@ let palette256: Uint8Array | null = null;
 let gameTemplateImg: HTMLImageElement | null = null;
 let loadedTemplateSrc: string | null = null;
 
+initPreview({
+  getRefs: () => refs,
+  getSourceImage: () => sourceImage,
+  getCurrentMode: () => currentMode,
+  getInvertColors: () => invertColors,
+
+  getGameTemplate: () => getGameTemplate(),
+  getGameTemplateImg: () => gameTemplateImg,
+
+  getPixelPreset: () => getPixelPreset(),
+  getBrightness: () => getBrightness(),
+  getContrast: () => getContrast(),
+  clamp255,
+
+  getCroppedSource: () => cropController?.getCroppedSource() ?? null,
+
+  renderToSize,
+  edgeAwareSharpen,
+  softNormalizeLevels,
+
+  clampDitherStrength,
+  quantizeTo256,
+  quantizePixel256,
+  cleanupIndicesMajoritySafe,
+
+  drawTrueSizeEmpty,
+  drawTrueSize,
+  drawZoomTo,
+
+  // 🔽 🔽 🔽 ДОБАВИТЬ ВОТ ЭТО 🔽 🔽 🔽
+
+  getPalette256: () => palette256,
+  setPalette256: (p) => {
+    palette256 = p;
+  },
+
+  getIconAlly8: () => iconAlly8x12Indexed,
+  setIconAlly8: (v) => {
+    iconAlly8x12Indexed = v;
+  },
+
+  getIconClan16: () => iconClan16x12Indexed,
+  setIconClan16: (v) => {
+    iconClan16x12Indexed = v;
+  },
+
+  getIconCombined24: () => iconCombined24x12Indexed,
+  setIconCombined24: (v) => {
+    iconCombined24x12Indexed = v;
+  },
+});
+
 // Two templates: 24×12 uses the original, 16×12 uses the second one.
 // Slot coords are the same (both screenshots are the same resolution/UI).
 const GAME_TEMPLATE_24: GameTemplate = {
@@ -844,8 +907,8 @@ const GAME_TEMPLATE_24: GameTemplate = {
   baseW: 2560,
   baseH: 1440,
   // NOTE: user tuned to match screenshot
-  slotX: 1160.5,
-  slotY: 218.5,
+  slotX: 1160,
+  slotY: 218,
   slotW: 48,
   slotH: 24,
 };
@@ -1492,38 +1555,6 @@ async function loadTemplate() {
   }
 }
 
-// -------------------- ROTATED DISPLAY CANVAS --------------------
-function rebuildDisplayCanvas() {
-  if (!sourceImage) {
-    displayCanvas = null;
-    return;
-  }
-  if (!displayCanvas) displayCanvas = document.createElement("canvas");
-
-  const sw = sourceImage.width;
-  const sh = sourceImage.height;
-
-  const dc = displayCanvas;
-  const ctx = dc.getContext("2d")!;
-
-  if (rotation90 === 90 || rotation90 === 270) {
-    dc.width = sh;
-    dc.height = sw;
-  } else {
-    dc.width = sw;
-    dc.height = sh;
-  }
-
-  ctx.clearRect(0, 0, dc.width, dc.height);
-  ctx.save();
-  ctx.translate(dc.width / 2, dc.height / 2);
-  ctx.rotate((rotation90 * Math.PI) / 180);
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(sourceImage, -sw / 2, -sh / 2);
-  ctx.restore();
-}
-
 // -------------------- DOWNSCALE TO 24×12 --------------------
 
 
@@ -1616,244 +1647,6 @@ function drawZoomTo(
       ctx.fillRect(x * zoom, y * zoom, zoom, zoom);
     }
   }
-}
-
-// -------------------- PREVIEW RENDER --------------------
-function renderPreview() {
-  if (!refs) return;
-  const canvas = refs.previewCanvas;
-  const ctx = refs.previewCtx;
-
-  const tpl = getGameTemplate();
-
-  const tw = tpl.baseW;
-  const th = tpl.baseH;
-
-  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-  canvas.width = Math.round(tw * dpr);
-  canvas.height = Math.round(th * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  ctx.clearRect(0, 0, tw, th);
-
-  // background template 1:1 in template space
-  if (gameTemplateImg) {
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(gameTemplateImg, 0, 0, tw, th);
-  } else {
-    ctx.fillStyle = "#111";
-    ctx.fillRect(0, 0, tw, th);
-    ctx.fillStyle = "#aaa";
-    ctx.font = "28px system-ui, sans-serif";
-    const name = tpl.src.split("/").pop() || tpl.src;
-    ctx.fillText(`Template not found. Put ${name} in /public/templates/`, 40, 70);
-    return;
-  }
-
-  // Pick the correct output for the current mode.
-  // IMPORTANT: in 16×12 mode we must NOT draw the padded 24×12 (it shows as a black 8×12 block).
-  if (!palette256) return;
-  const isClanOnly = currentMode === "only_clan";
-  const indices = isClanOnly ? iconClan16x12Indexed : iconCombined24x12Indexed;
-  const iw = isClanOnly ? 16 : 24;
-  const ih = 12;
-  if (!indices) return;
-
-  // build RGBA image
-  const img = ctx.createImageData(iw, ih);
-  for (let i = 0; i < iw * ih; i++) {
-    const idx = indices[i];
-    img.data[i * 4 + 0] = palette256[idx * 3 + 0];
-    img.data[i * 4 + 1] = palette256[idx * 3 + 1];
-    img.data[i * 4 + 2] = palette256[idx * 3 + 2];
-    img.data[i * 4 + 3] = 255;
-  }
-
-  const tmp = document.createElement("canvas");
-  tmp.width = iw;
-  tmp.height = ih;
-  tmp.getContext("2d")!.putImageData(img, 0, 0);
-
-  // Emblem: scale with smoothing ON to feel closer to in-game UI scaling
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(tmp, tpl.slotX, tpl.slotY, tpl.slotW, tpl.slotH);
-}
-
-
-
-
-
-// -------------------- RECOMPUTE PIPELINE --------------------
-let previewTimer: number | null = null;
-
-function scheduleRecomputePreview(delayMs = 120) {
-  if (previewTimer) window.clearTimeout(previewTimer);
-  previewTimer = window.setTimeout(() => {
-    previewTimer = null;
-    requestAnimationFrame(() => recomputePreview());
-  }, delayMs);
-}
-
-function recomputePreview() {
-  if (!refs) return;
-  if (!sourceImage) return;
-
-  const pipeline = refs.pipelineSel.value as PipelineMode;
-  const presetVal = refs.presetSel.value;
-  const preset = (pipeline === "pixel" ? "balanced" : (presetVal as Preset));
-  const pixelPreset = (pipeline === "pixel" ? (presetVal as PixelPreset) : getPixelPreset());
-  const dither = refs.ditherSel.value as DitherMode;
-  const isPixel = pipeline === "pixel";
-
-  // In Pixel conversion, these must not affect the output (and are hidden in UI):
-  // Smoother resize / Balance colors / Subtle noise / Sharpen edges
-  const useTwoStep = isPixel ? false : refs.twoStepChk.checked;
-  const centerWeighted = isPixel ? false : refs.centerPaletteChk.checked;
-  const dAmtRaw = Number(refs.ditherAmt.value) / 100;
-  const dAmt = pipeline === "pixel" ? 0 : clampDitherStrength(preset, dither, dAmtRaw);
-
-  const useOKLab = refs.oklabChk.checked;
-  const useNoiseOrdered = isPixel ? false : refs.noiseDitherChk.checked;
-  const doEdgeSharpen = isPixel ? false : refs.edgeSharpenChk.checked;
-  const doCleanup = refs.cleanupChk.checked;
-
-  const src = cropController?.getCroppedSource();
-  if (!src) return;
-
-  const baseW = currentMode === "only_clan" ? 16 : 24;
-  const baseH = 12;
-
-  // Downscale to base size
-  const imgBase = renderToSize(src, preset, useTwoStep, baseW, baseH);
-
-  // snap alpha
-  for (let i = 0; i < imgBase.data.length; i += 4) imgBase.data[i + 3] = imgBase.data[i + 3] < 128 ? 0 : 255;
-
-  // invert (before sharpen/quantize)
-  if (invertColors) {
-    for (let i = 0; i < imgBase.data.length; i += 4) {
-      imgBase.data[i] = 255 - imgBase.data[i];
-      imgBase.data[i + 1] = 255 - imgBase.data[i + 1];
-      imgBase.data[i + 2] = 255 - imgBase.data[i + 2];
-    }
-  }
-
-  // Brightness + Contrast (universal, applies to Modern and Pixel)
-  const brightness = getBrightness();
-  const contrast = getContrast();
-  if (brightness !== 0 || contrast !== 0) {
-    const c = contrast;
-    const k = (259 * (c + 255)) / (255 * (259 - c));
-    for (let i = 0; i < imgBase.data.length; i += 4) {
-      let r = imgBase.data[i] + brightness;
-      let g = imgBase.data[i + 1] + brightness;
-      let b = imgBase.data[i + 2] + brightness;
-
-      r = clamp255((r - 128) * k + 128);
-      g = clamp255((g - 128) * k + 128);
-      b = clamp255((b - 128) * k + 128);
-
-      imgBase.data[i] = r;
-      imgBase.data[i + 1] = g;
-      imgBase.data[i + 2] = b;
-    }
-  }
-
-  // balance colors (very gentle levels normalization)
-  if (centerWeighted) {
-    softNormalizeLevels(imgBase, preset);
-  }
-
-  // edge-sharpen
-  if (doEdgeSharpen) {
-    // Safer sharpening tuned per preset (tiny icons "fry" easily)
-    let amount = 0.0;
-    let thr = 12;
-
-    if (preset === "legacy") { amount = 0.0; thr = 12; }
-    else if (preset === "simple") { amount = 1.05; thr = 9; }
-    else if (preset === "balanced") { amount = 0.85; thr = 11; }
-    else if (preset === "complex") { amount = 0.35; thr = 16; }
-
-    if (amount > 0) edgeAwareSharpen(imgBase, amount, thr);
-  }
-
-  // Quantize
-  const q =
-    isPixel
-      ? quantizePixel256(imgBase, pixelPreset)
-      : quantizeTo256(imgBase, dither, dAmt, centerWeighted, useOKLab, useNoiseOrdered);
-  palette256 = q.palette;
-
-  if (baseW === 24) {
-    const combined = q.indices; // non-null
-    iconCombined24x12Indexed = combined;
-
-    // split
-    const ally = new Uint8Array(8 * 12);
-    const clan = new Uint8Array(16 * 12);
-
-    for (let y = 0; y < 12; y++) {
-      for (let x = 0; x < 8; x++) ally[y * 8 + x] = combined[y * 24 + x];
-      for (let x = 0; x < 16; x++) clan[y * 16 + x] = combined[y * 24 + (8 + x)];
-    }
-
-    iconAlly8x12Indexed = ally;
-    iconClan16x12Indexed = clan;
-  } else {
-    // Only clan (16x12) => pad to 24x12 for preview + downloads
-    const clan = q.indices; // non-null
-    iconClan16x12Indexed = clan;
-
-    const combined = new Uint8Array(24 * 12);
-    combined.fill(0);
-    for (let y = 0; y < 12; y++) {
-      for (let x = 0; x < 16; x++) combined[y * 24 + (8 + x)] = clan[y * 16 + x];
-    }
-    iconCombined24x12Indexed = combined;
-
-    const ally = new Uint8Array(8 * 12);
-    ally.fill(0);
-    iconAlly8x12Indexed = ally;
-  }
-
-  // Cleanup (run on the combined 24×12 so all exports look consistent)
-  if (doCleanup && iconCombined24x12Indexed && palette256) {
-    const passes = 1;
-    const minMaj = preset === "simple" ? 6 : 7;
-    const maxJump = preset === "simple" ? 110 : 80;
-    cleanupIndicesMajoritySafe(iconCombined24x12Indexed, 24, 12, palette256, passes, minMaj, maxJump);
-    // re-split after cleanup
-    if (iconAlly8x12Indexed && iconClan16x12Indexed) {
-      for (let y = 0; y < 12; y++) {
-        for (let x = 0; x < 8; x++) iconAlly8x12Indexed[y * 8 + x] = (iconCombined24x12Indexed ?? q.indices)[y * 24 + x];
-        for (let x = 0; x < 16; x++) iconClan16x12Indexed[y * 16 + x] = (iconCombined24x12Indexed ?? q.indices)[y * 24 + (8 + x)];
-      }
-    }
-  }
-
-  // True size depends on mode
-  if (currentMode === "only_clan" && iconClan16x12Indexed && palette256) {
-    drawTrueSize(iconClan16x12Indexed, palette256, 16, 12);
-  } else if (iconCombined24x12Indexed && palette256) {
-    drawTrueSize(iconCombined24x12Indexed, palette256, 24, 12);
-  }
-
-  if (palette256) {
-    if (currentMode === "only_clan" && iconClan16x12Indexed) {
-      drawZoomTo(refs.dstZoom16Canvas, refs.dstZoom16Ctx, iconClan16x12Indexed, palette256, 16, 12);
-    } else if (iconCombined24x12Indexed) {
-      drawZoomTo(refs.dstZoom24Canvas, refs.dstZoom24Ctx, iconCombined24x12Indexed, palette256, 24, 12);
-    }
-  }
-
-  // Enable download depending on Mode
-  refs.downloadBtn.disabled = !(palette256 && (currentMode === "only_clan" ? !!iconClan16x12Indexed : !!iconCombined24x12Indexed));
-
-  // Update game preview with current output
-  renderPreview();
 }
 
 // -------------------- SMALL UTIL --------------------
