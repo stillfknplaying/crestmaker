@@ -22,88 +22,20 @@ import { initRoutes } from "./app/routes";
 import { createInitialState } from "./app/state";
 import * as actions from "./app/actions";
 import { initPipelineController, scheduleRecomputePipeline, recomputePipeline } from "./app/pipelineController";
-import type {  DitherMode,  Preset,  PipelineMode,  PixelPreset,  CrestMode,  CropAspect,  GameTemplate,} from "./types/types";
+import * as settings from "./app/settings";
+import type {  DitherMode,  Preset,  PipelineMode,  CrestMode,  CropAspect,  GameTemplate,} from "./types/types";
 
 // CrestMaker — beta 0.0.8.9
 const SITE_NAME = "CrestMaker";
 
-// Persist some UI state across language switches
-const ADV_OPEN_KEY = "cm_adv_open";
-let advancedOpen = localStorage.getItem(ADV_OPEN_KEY) === "1";
-
-// Persist mode + crop aspect + pipeline
-const PIPELINE_KEY = "cm_pipeline_v1";
-
-function getPipeline(): PipelineMode {
-  const v = localStorage.getItem(PIPELINE_KEY);
-  return v === "pixel" ? "pixel" : "old";
-}
-function setPipeline(p: PipelineMode) {
-  localStorage.setItem(PIPELINE_KEY, p);
-}
-
-const PIXEL_PRESET_KEY = "cm_pixel_preset_v1";
-function getPixelPreset(): PixelPreset {
-  const v = localStorage.getItem(PIXEL_PRESET_KEY) as PixelPreset | null;
-  // Migrate removed presets (Mild/Soft) to Clean
-  if ((v as any) === "pixel-l2" || (v as any) === "pixel-soft") return "pixel-clean";
-  // Default Pixel preset should be Clean (when nothing saved yet)
-  return v === "pixel-clean" || v === "pixel-crisp" || v === "pixel-stable" || v === "pixel-indexed" ? v : "pixel-clean";
-}
-function setPixelPreset(p: PixelPreset) {
-  localStorage.setItem(PIXEL_PRESET_KEY, p);
-}
-
-const MODERN_PRESET_KEY = "cm_modern_preset_v1";
-function getModernPreset(): Preset {
-  const v = localStorage.getItem(MODERN_PRESET_KEY) as Preset | null;
-  return v === "legacy" || v === "simple" || v === "balanced" || v === "complex" ? v : "balanced";
-}
-function setModernPreset(p: Preset) {
-  localStorage.setItem(MODERN_PRESET_KEY, p);
-}
-
-
-const BRIGHTNESS_KEY = "cm_brightness_v1";
-const CONTRAST_KEY = "cm_contrast_v1";
-function getBrightness(): number {
-  const v = Number(localStorage.getItem(BRIGHTNESS_KEY) ?? "0");
-  return Number.isFinite(v) ? Math.max(-50, Math.min(50, v)) : 0;
-}
-function setBrightness(v: number) {
-  localStorage.setItem(BRIGHTNESS_KEY, String(Math.max(-50, Math.min(50, v))));
-}
-function getContrast(): number {
-  const v = Number(localStorage.getItem(CONTRAST_KEY) ?? "0");
-  return Number.isFinite(v) ? Math.max(-50, Math.min(50, v)) : 0;
-}
-function setContrast(v: number) {
-  localStorage.setItem(CONTRAST_KEY, String(Math.max(-50, Math.min(50, v))));
-}
-
-const MODE_KEY = "cm_mode_v1";
-const CROP_ASPECT_KEY = "cm_crop_aspect_v1";
-
-function getMode(): CrestMode {
-  const v = localStorage.getItem(MODE_KEY);
-  return v === "only_clan" ? "only_clan" : "ally_clan";
-}
-function setMode(m: CrestMode) {
-  localStorage.setItem(MODE_KEY, m);
-}
-function getCropAspect(): CropAspect {
-  const v = localStorage.getItem(CROP_ASPECT_KEY);
-  return v === "16x12" ? "16x12" : "24x12";
-}
-function setCropAspect(a: CropAspect) {
-  localStorage.setItem(CROP_ASPECT_KEY, a);
-}
+// Persisted UI settings
+let advancedOpen = settings.getAdvancedOpen();
 function aspectRatio(a: CropAspect): number {
   return a === "16x12" ? (16 / 12) : 2;
 }
 
-let currentMode: CrestMode = getMode();
-let currentCropAspect: CropAspect = getCropAspect();
+let currentMode: CrestMode = settings.getMode();
+let currentCropAspect: CropAspect = settings.getCropAspect();
 
 document.documentElement.setAttribute("data-theme", "dark");
 
@@ -195,7 +127,7 @@ function setLang(lang: Lang) {
   // Preserve advanced toggle state across language switches
   if (state.refs?.advancedChk) {
     advancedOpen = state.refs.advancedChk.checked;
-    localStorage.setItem(ADV_OPEN_KEY, advancedOpen ? "1" : "0");
+    settings.setAdvancedOpen(advancedOpen);
   }
 
   setLangCore(lang);
@@ -237,7 +169,7 @@ function renderToolPage() {
   const desired: CropAspect = currentMode === "only_clan" ? "16x12" : "24x12";
   if (currentCropAspect !== desired) {
     currentCropAspect = desired;
-    setCropAspect(currentCropAspect);
+    settings.setCropAspect(currentCropAspect);
     if (state.displayCanvas) actions.setCropRect(state, initCropToAspect(state.displayCanvas, aspectRatio(currentCropAspect)));
   }
   const trueW = currentMode === "only_clan" ? 16 : 24;
@@ -267,21 +199,21 @@ function renderToolPage() {
 <div class="select" ${tipAttr("Choose conversion type: Modern (image-q) or Pixel (fixed 256 palette + ordered dither)","Выберите тип конвертации: Modern (image-q) или Pixel (фикс. палитра 256 + ordered dither)","Оберіть тип конвертації: Modern (image-q) або Pixel (фікс. палітра 256 + ordered dither)")}>
   <span>${escapeHtml(t("Mode","Режим","Режим"))}</span>
   <select id="pipeline">
-    <option value="old" ${getPipeline()==="old" ? "selected" : ""}>Modern</option>
-    <option value="pixel" ${getPipeline()==="pixel" ? "selected" : ""}>Pixel</option>
+    <option value="old" ${settings.getPipeline()==="old" ? "selected" : ""}>Modern</option>
+    <option value="pixel" ${settings.getPipeline()==="pixel" ? "selected" : ""}>Pixel</option>
   </select>
 </div>
 
 <div class="select" ${tipAttr("Quick settings for converting to BMP 256 colors (depends on Conversion)","Быстрые настройки конвертации в BMP 256 цветов (зависят от Конвертации)","Швидкі налаштування конвертації в BMP 256 кольорів (залежать від Конвертації)")}>
   <span>${escapeHtml(t("Preset","Пресет","Пресет"))}</span>
   <select id="preset">
-    ${getPipeline()==="pixel"
+    ${settings.getPipeline()==="pixel"
       ? `
         
-        <option value="pixel-clean" ${getPixelPreset()==="pixel-clean" ? "selected" : ""}>Clean</option>
-        <option value="pixel-crisp" ${getPixelPreset()==="pixel-crisp" ? "selected" : ""}>Crisp</option>
-        <option value="pixel-stable" ${getPixelPreset()==="pixel-stable" ? "selected" : ""}>Stable</option>
-        <option value="pixel-indexed" ${getPixelPreset()==="pixel-indexed" ? "selected" : ""}>Indexed</option>`
+        <option value="pixel-clean" ${settings.getPixelPreset()==="pixel-clean" ? "selected" : ""}>Clean</option>
+        <option value="pixel-crisp" ${settings.getPixelPreset()==="pixel-crisp" ? "selected" : ""}>Crisp</option>
+        <option value="pixel-stable" ${settings.getPixelPreset()==="pixel-stable" ? "selected" : ""}>Stable</option>
+        <option value="pixel-indexed" ${settings.getPixelPreset()==="pixel-indexed" ? "selected" : ""}>Indexed</option>`
       : `
         <option value="balanced" selected>${escapeHtml(t("Balanced","Баланс","Баланс"))}</option>
         <option value="simple">${escapeHtml(t("Simple","Обычно","Простий"))}</option>
@@ -548,9 +480,9 @@ initPipelineController({
   getCurrentMode: () => currentMode,
   getInvertColors: () => state.invertColors,
 
-  getPixelPreset: () => getPixelPreset(),
-  getBrightness: () => getBrightness(),
-  getContrast: () => getContrast(),
+  getPixelPreset: () => settings.getPixelPreset(),
+  getBrightness: () => settings.getBrightness(),
+  getContrast: () => settings.getContrast(),
   clamp255,
 
   getCroppedSource: () => state.cropController?.getCroppedSource() ?? null,
@@ -630,11 +562,11 @@ function initToolUI() {
   );
 
   // Pipeline persistence + UI toggles
-  state.refs!.pipelineSel.value = getPipeline();
+  state.refs!.pipelineSel.value = settings.getPipeline();
 
   const applyPresetOptions = (p: PipelineMode) => {
     if (p === "pixel") {
-      const px = getPixelPreset();
+      const px = settings.getPixelPreset();
       state.refs!.presetSel.innerHTML = `
         <option value="pixel-clean" ${px === "pixel-clean" ? "selected" : ""}>Clean</option>
         <option value="pixel-crisp" ${px === "pixel-crisp" ? "selected" : ""}>Crisp</option>
@@ -643,7 +575,7 @@ function initToolUI() {
       `;
       state.refs!.presetSel.value = px;
     } else {
-      const mp = getModernPreset();
+      const mp = settings.getModernPreset();
       state.refs!.presetSel.innerHTML = `
         <option value="balanced" ${mp === "balanced" ? "selected" : ""}>${escapeHtml(t("Balanced","Баланс","Баланс"))}</option>
         <option value="simple" ${mp === "simple" ? "selected" : ""}>${escapeHtml(t("Simple","Обычно","Простий"))}</option>
@@ -654,7 +586,7 @@ function initToolUI() {
     }
   };
 
-  state.refs!.pipelineSel.value = getPipeline();
+  state.refs!.pipelineSel.value = settings.getPipeline();
   applyPresetOptions(state.refs!.pipelineSel.value as PipelineMode);
 
   let prevPipeline: PipelineMode = state.refs!.pipelineSel.value as PipelineMode;
@@ -670,14 +602,14 @@ function initToolUI() {
     getPrevPipeline: () => prevPipeline,
     setPrevPipeline: (p) => { prevPipeline = p; },
 
-    getPipeline: () => getPipeline(),
-    setPipeline: (p) => setPipeline(p),
+    getPipeline: () => settings.getPipeline(),
+    setPipeline: (p) => settings.setPipeline(p),
 
-    getPixelPreset: () => getPixelPreset(),
-    setPixelPreset: (p) => setPixelPreset(p),
+    getPixelPreset: () => settings.getPixelPreset(),
+    setPixelPreset: (p) => settings.setPixelPreset(p),
 
-    getModernPreset: () => getModernPreset(),
-    setModernPreset: (p) => setModernPreset(p),
+    getModernPreset: () => settings.getModernPreset(),
+    setModernPreset: (p) => settings.setModernPreset(p),
 
     applyPresetOptions,
     applyPresetDefaults,
@@ -686,11 +618,11 @@ function initToolUI() {
     // mode/crop
     getCurrentMode: () => currentMode,
     setCurrentMode: (m) => { currentMode = m; },
-    setModeStorage: (m) => setMode(m),
+    setModeStorage: (m) => settings.setMode(m),
 
     getCurrentCropAspect: () => currentCropAspect,
     setCurrentCropAspect: (a) => { currentCropAspect = a; },
-    setCropAspectStorage: (a) => setCropAspect(a),
+    setCropAspectStorage: (a) => settings.setCropAspect(a),
 
     setCropRectNull: () => { actions.setCropRect(state, null); },
     rebuildCropRectToAspect: () => {
@@ -732,13 +664,13 @@ function initToolUI() {
     // advanced open
     getAdvancedOpen: () => advancedOpen,
     setAdvancedOpen: (v) => { advancedOpen = v; },
-    persistAdvancedOpen: (v) => localStorage.setItem(ADV_OPEN_KEY, v ? "1" : "0"),
+    persistAdvancedOpen: (v) => settings.setAdvancedOpen(v),
 
     // brightness/contrast
-    getBrightness: () => getBrightness(),
-    setBrightness: (v) => setBrightness(v),
-    getContrast: () => getContrast(),
-    setContrast: (v) => setContrast(v),
+    getBrightness: () => settings.getBrightness(),
+    setBrightness: (v) => settings.setBrightness(v),
+    getContrast: () => settings.getContrast(),
+    setContrast: (v) => settings.setContrast(v),
 
     // language
     setLang,
