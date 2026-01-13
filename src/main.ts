@@ -15,6 +15,7 @@ import { createCropController, initCropToAspect } from "./ui/crop";
 import { initDisplayCanvas, rebuildDisplayCanvas } from "./ui/displayCanvas";
 import { initPreview, renderPreview, scheduleRecomputePreview, recomputePreview } from "./ui/preview";
 import { initToolUIEvents } from "./ui/events";
+import { initBootstrap } from "./app/bootstrap";
 
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
 // Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
@@ -594,22 +595,6 @@ advancedChk: HTMLInputElement;
 
 let refs: ToolRefs | null = null;
 let cropController: ReturnType<typeof createCropController> | null = null;
-
-
-function boot() {
-  renderRoute();
-  initCookieConsentUI();
-  window.addEventListener("hashchange", renderRoute);
-}
-
-// Гарантируем запуск после полной инициализации модуля (и refs тоже)
-queueMicrotask(() => {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot, { once: true });
-  } else {
-    boot();
-  }
-});
 
 // Images + pipeline state
 let sourceImage: HTMLImageElement | null = null;
@@ -1214,3 +1199,14 @@ function escapeHtml(s: string) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+function boot() {
+  // one-time init that does not depend on tool page being rendered
+  initCookieConsentUI();
+}
+
+// MUST be the last thing in the module to avoid TDZ errors
+initBootstrap({
+  boot,
+  renderRoute,
+});
