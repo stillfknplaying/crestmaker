@@ -8,7 +8,7 @@ import { gdprHtml } from "./content/gdpr";
 import { aboutHtml } from "./content/about";
 import type { Lang } from "./i18n";
 import { currentLang, setLang as setLangCore, t, tipAttr, helpHtml } from "./i18n";
-import { downloadBMPs, makeBmp8bitIndexed, downloadBlob } from "./bmp/writer";
+import { downloadCurrentMode as downloadCurrentModeFromState, hasPalette as hasPaletteFromState } from "./app/downloads";
 import { initCookieConsentUI, renderCookieBannerIfNeeded, localizeCookieUI } from "./ui/cookieConsent";
 import { initHelpTooltips } from "./ui/helpTooltips";
 import { createCropController, initCropToAspect } from "./ui/crop";
@@ -515,8 +515,6 @@ function renderToolPage() {
 }
 
 // -------------------- TOOL UI + STATE --------------------
-
-
 initDisplayCanvas({
   getSourceImage: () => state.sourceImage,
   getRotation90: () => state.rotation90,
@@ -541,7 +539,6 @@ const resultsRenderer = createResultsRenderer({
   getCurrentMode: () => currentMode,
   renderPreview,
 });
-
 
 // Compute pipeline controller (separates compute from render)
 initPipelineController({
@@ -576,7 +573,6 @@ initPipelineController({
     resultsRenderer.render(res);
   },
 });
-
 
 // Two templates: 24×12 uses the original, 16×12 uses the second one.
 // Slot coords are the same (both screenshots are the same resolution/UI).
@@ -751,18 +747,8 @@ function initToolUI() {
     loadImageFromFile,
 
     // downloads
-    hasPalette: () => !!state.palette256,
-    downloadCurrentMode: () => {
-      if (!state.palette256) return;
-      if (currentMode === "only_clan") {
-        if (!state.iconClan16x12Indexed) return;
-        const clanBmp = makeBmp8bitIndexed(16, 12, state.palette256, state.iconClan16x12Indexed);
-        downloadBlob(clanBmp, "clan_16x12_256.bmp");
-        return;
-      }
-      if (!state.iconCombined24x12Indexed || !state.iconClan16x12Indexed || !state.iconAlly8x12Indexed) return;
-      downloadBMPs(state.iconAlly8x12Indexed, state.iconClan16x12Indexed, state.iconCombined24x12Indexed, state.palette256);
-    },
+    hasPalette: () => hasPaletteFromState(state),
+    downloadCurrentMode: () => downloadCurrentModeFromState(state, currentMode),
   });
 }
 
@@ -830,7 +816,6 @@ function applyPresetDefaults(p: Preset) {
       break;
   }
 }
-
 
 function updateControlAvailability(p: Preset) {
   const r = state.refs;
@@ -937,11 +922,7 @@ function updateControlAvailability(p: Preset) {
   // Dead / disabled globally
   setToggleVisible(r.oklabChk, showBetterMatch);
   setToggleVisible(r.cleanupChk, showCleanup);
-
-
-
 }
-
 
 // -------------------- IMAGE LOADING --------------------
 function loadImageFromFile(file: File): Promise<HTMLImageElement> {
