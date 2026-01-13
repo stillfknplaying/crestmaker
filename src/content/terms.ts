@@ -2,7 +2,6 @@ type Lang = "en" | "ru" | "ua";
 
 export function termsHtml(lang: Lang): string {
   const en = `
-<h2>Terms of Service</h2>
 <p>This tool is provided "as is", without warranties of any kind.</p>
 
 <ul>
@@ -12,10 +11,11 @@ export function termsHtml(lang: Lang): string {
 </ul>
 
 <p>By using this tool, you agree to these terms.</p>
+
+<p class="muted">Last updated: January 2026</p>
 `;
 
   const ru = `
-<h2>Пользовательское соглашение</h2>
 <p>Инструмент предоставляется "как есть", без каких-либо гарантий.</p>
 
 <ul>
@@ -25,10 +25,11 @@ export function termsHtml(lang: Lang): string {
 </ul>
 
 <p>Используя этот инструмент, вы соглашаетесь с условиями.</p>
+
+<p class="muted">Последнее обновление: January 2026</p>
 `;
 
   const ua = `
-<h2>Умови користування</h2>
 <p>Інструмент надається "як є", без будь-яких гарантій.</p>
 
 <ul>
@@ -38,6 +39,8 @@ export function termsHtml(lang: Lang): string {
 </ul>
 
 <p>Користуючись інструментом, ви погоджуєтеся з цими умовами.</p>
+
+<p class="muted">Last updated: January 2026</p>
 `;
 
   return lang === "ru" ? ru : lang === "ua" ? ua : en;

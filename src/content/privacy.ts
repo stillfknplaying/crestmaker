@@ -2,8 +2,7 @@ type Lang = "en" | "ru" | "ua";
 
 export function privacyPolicyHtml(lang: Lang): string {
   const en = `
-<h2>Privacy Policy</h2>
-<p>We respect your privacy. This tool works entirely in your browser.</p>
+<p>We respect your privacy. CrestMaker works entirely in your browser.</p>
 
 <h3>What data we collect</h3>
 <ul>
@@ -13,18 +12,20 @@ export function privacyPolicyHtml(lang: Lang): string {
 </ul>
 
 <h3>Cookies</h3>
-<p>Cookies are used only to store:</p>
+<p>We use <b>localStorage</b> (and, if needed, cookies) only to remember:</p>
 <ul>
   <li>Language preference</li>
   <li>UI settings</li>
+  <li>Your cookie consent choices (essential / analytics / ads)</li>
 </ul>
 
-<p>No tracking, analytics, or third-party cookies are used.</p>
+<p>By default, CrestMaker does not load any third‑party analytics or advertising SDKs. If this changes in the future, it will only happen when you explicitly enable the relevant category in the cookie settings.</p>
+
+<p class="muted">Last updated: January 2026</p>
 `;
 
   const ru = `
-<h2>Политика конфиденциальности</h2>
-<p>Мы уважаем вашу конфиденциальность. Этот инструмент полностью работает в вашем браузере.</p>
+<p>Мы уважаем вашу конфиденциальность. CrestMaker полностью работает в вашем браузере.</p>
 
 <h3>Какие данные мы собираем</h3>
 <ul>
@@ -34,18 +35,20 @@ export function privacyPolicyHtml(lang: Lang): string {
 </ul>
 
 <h3>Cookies</h3>
-<p>Cookies используются исключительно для:</p>
+<p>Мы используем <b>localStorage</b> (и при необходимости cookies) только для сохранения:</p>
 <ul>
-  <li>Выбора языка</li>
-  <li>Настроек интерфейса</li>
+  <li>выбранного языка</li>
+  <li>настроек интерфейса</li>
+  <li>ваших настроек cookie‑согласия (essential / analytics / ads)</li>
 </ul>
 
-<p>Мы не используем аналитику, трекеры или сторонние cookies.</p>
+<p>По умолчанию CrestMaker не подключает сторонние SDK для аналитики или рекламы. Если в будущем это изменится, такие компоненты будут подключаться только при явном включении соответствующей категории в настройках cookies.</p>
+
+<p class="muted">Последнее обновление: January 2026</p>
 `;
 
   const ua = `
-<h2>Політика конфіденційності</h2>
-<p>Ми поважаємо вашу конфіденційність. Цей інструмент повністю працює у вашому браузері.</p>
+<p>Ми поважаємо вашу конфіденційність. CrestMaker повністю працює у вашому браузері.</p>
 
 <h3>Які дані ми збираємо</h3>
 <ul>
@@ -55,13 +58,16 @@ export function privacyPolicyHtml(lang: Lang): string {
 </ul>
 
 <h3>Cookies</h3>
-<p>Cookies використовуються виключно для:</p>
+<p>Ми використовуємо <b>localStorage</b> (і за потреби cookies) лише для збереження:</p>
 <ul>
-  <li>Вибору мови</li>
-  <li>Налаштувань інтерфейсу</li>
+  <li>вибраної мови</li>
+  <li>налаштувань інтерфейсу</li>
+  <li>ваших налаштувань cookie‑згоди (essential / analytics / ads)</li>
 </ul>
 
-<p>Ми не використовуємо аналітику, трекери або сторонні cookies.</p>
+<p>За замовчуванням CrestMaker не підключає сторонні SDK для аналітики чи реклами. Якщо в майбутньому це зміниться, такі компоненти будуть завантажуватися лише після явного увімкнення відповідної категорії в налаштуваннях cookies.</p>
+
+<p class="muted">Last updated: January 2026</p>
 `;
 
   return lang === "ru" ? ru : lang === "ua" ? ua : en;
