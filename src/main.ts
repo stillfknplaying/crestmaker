@@ -603,6 +603,8 @@ initPreview({
 
   getIconCombined24: () => iconCombined24x12Indexed,
   setIconCombined24: (v) => { iconCombined24x12Indexed = v; },
+
+  setCanDownload: (can) => {  const r = refs;  if (!r) return;  r.downloadBtn.disabled = !can;},
 });
 
 

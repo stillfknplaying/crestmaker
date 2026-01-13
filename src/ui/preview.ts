@@ -22,6 +22,13 @@ type ToolRefs = {
   noiseDitherChk: HTMLInputElement;
   edgeSharpenChk: HTMLInputElement;
   cleanupChk: HTMLInputElement;
+
+  // zoom canvases (new naming only; no legacy fallback)
+  dstZoom24Canvas: HTMLCanvasElement;
+  dstZoom24Ctx: CanvasRenderingContext2D;
+
+  dstZoom16Canvas: HTMLCanvasElement;
+  dstZoom16Ctx: CanvasRenderingContext2D;
 };
 
 type GameTemplate = {
@@ -80,22 +87,45 @@ type Deps = {
   ) => { palette: Uint8Array; indices: Uint8Array };
 
   quantizePixel256: (img: ImageData, pixelPreset: PixelPreset) => { palette: Uint8Array; indices: Uint8Array };
-  cleanupIndicesMajoritySafe: (indices: Uint8Array, w: number, h: number, palette: Uint8Array, passes: number, minMaj: number, maxJump: number) => void;
+  cleanupIndicesMajoritySafe: (
+    indices: Uint8Array,
+    w: number,
+    h: number,
+    palette: Uint8Array,
+    passes: number,
+    minMaj: number,
+    maxJump: number
+  ) => void;
 
   // drawing
   drawTrueSizeEmpty: (w: number, h: number) => void;
   drawTrueSize: (indices: Uint8Array, palette: Uint8Array, w: number, h: number) => void;
-  drawZoomTo: (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, indices: Uint8Array, palette: Uint8Array, w: number, h: number) => void;
+  drawZoomTo: (
+    canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
+    indices: Uint8Array,
+    palette: Uint8Array,
+    w: number,
+    h: number
+  ) => void;
+
+  // download
+  setCanDownload: (can: boolean) => void;
 };
 
 let deps: Deps | null = null;
+
+// Reuse a temporary canvas for in-game preview stamping
+let tmpStampCanvas: HTMLCanvasElement | null = null;
 
 export function initPreview(d: Deps) {
   deps = d;
 }
 
 export function renderPreview() {
-  if (!deps) throw new Error("preview not initialized");
+  // Be resilient during startup / HMR: silently no-op until initPreview() is called.
+  if (!deps) return;
+
   const refs = deps.getRefs() as ToolRefs | null;
   if (!refs) return;
 
@@ -147,21 +177,23 @@ export function renderPreview() {
     img.data[i * 4 + 3] = 255;
   }
 
-  const tmp = document.createElement("canvas");
-  tmp.width = iw;
-  tmp.height = ih;
-  tmp.getContext("2d")!.putImageData(img, 0, 0);
+  if (!tmpStampCanvas) tmpStampCanvas = document.createElement("canvas");
+  tmpStampCanvas.width = iw;
+  tmpStampCanvas.height = ih;
+  tmpStampCanvas.getContext("2d")!.putImageData(img, 0, 0);
 
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(tmp, tpl.slotX, tpl.slotY, tpl.slotW, tpl.slotH);
+  ctx.drawImage(tmpStampCanvas, tpl.slotX, tpl.slotY, tpl.slotW, tpl.slotH);
 }
 
 // -------------------- RECOMPUTE PIPELINE --------------------
 let previewTimer: number | null = null;
 
 export function scheduleRecomputePreview(delayMs = 120) {
-  if (!deps) throw new Error("preview not initialized");
+  // Be resilient during startup / HMR.
+  if (!deps) return;
+
   if (previewTimer) window.clearTimeout(previewTimer);
   previewTimer = window.setTimeout(() => {
     previewTimer = null;
@@ -170,7 +202,9 @@ export function scheduleRecomputePreview(delayMs = 120) {
 }
 
 export function recomputePreview() {
-  if (!deps) throw new Error("preview not initialized");
+  // Be resilient during startup / HMR.
+  if (!deps) return;
+
   const refs = deps.getRefs() as ToolRefs | null;
   if (!refs) return;
   if (!deps.getSourceImage()) return;
@@ -200,7 +234,10 @@ export function recomputePreview() {
 
   const imgBase = deps.renderToSize(src, preset, useTwoStep, baseW, baseH);
 
-  for (let i = 0; i < imgBase.data.length; i += 4) imgBase.data[i + 3] = imgBase.data[i + 3] < 128 ? 0 : 255;
+  // hard alpha cutoff for crisp edges
+  for (let i = 0; i < imgBase.data.length; i += 4) {
+    imgBase.data[i + 3] = imgBase.data[i + 3] < 128 ? 0 : 255;
+  }
 
   if (deps.getInvertColors()) {
     for (let i = 0; i < imgBase.data.length; i += 4) {
@@ -217,17 +254,17 @@ export function recomputePreview() {
     const c = contrast;
     const k = (259 * (c + 255)) / (255 * (259 - c));
     for (let i = 0; i < imgBase.data.length; i += 4) {
-      let r = imgBase.data[i] + brightness;
-      let g = imgBase.data[i + 1] + brightness;
-      let b = imgBase.data[i + 2] + brightness;
+      let rr = imgBase.data[i] + brightness;
+      let gg = imgBase.data[i + 1] + brightness;
+      let bb = imgBase.data[i + 2] + brightness;
 
-      r = deps.clamp255((r - 128) * k + 128);
-      g = deps.clamp255((g - 128) * k + 128);
-      b = deps.clamp255((b - 128) * k + 128);
+      rr = deps.clamp255((rr - 128) * k + 128);
+      gg = deps.clamp255((gg - 128) * k + 128);
+      bb = deps.clamp255((bb - 128) * k + 128);
 
-      imgBase.data[i] = r;
-      imgBase.data[i + 1] = g;
-      imgBase.data[i + 2] = b;
+      imgBase.data[i] = rr;
+      imgBase.data[i + 1] = gg;
+      imgBase.data[i + 2] = bb;
     }
   }
 
@@ -290,7 +327,7 @@ export function recomputePreview() {
   deps.setIconClan16(iconClan16x12Indexed);
   deps.setIconCombined24(iconCombined24x12Indexed);
 
-  // draw debug / previews
+  // draw debug / previews (true size)
   if (deps.getCurrentMode() === "only_clan") {
     if (iconClan16x12Indexed) deps.drawTrueSize(iconClan16x12Indexed, palette256, 16, 12);
   } else if (iconCombined24x12Indexed) {
@@ -299,40 +336,26 @@ export function recomputePreview() {
     deps.drawTrueSizeEmpty(24, 12);
   }
 
-    // enable/disable Download button (main.ts owns the click handler)
+  // enable/disable Download button (main.ts owns the click handler)
   const canDownload =
     !!palette256 &&
     (deps.getCurrentMode() === "only_clan"
       ? !!iconClan16x12Indexed
       : !!iconCombined24x12Indexed && !!iconClan16x12Indexed && !!iconAlly8x12Indexed);
 
-  const r: any = refs as any;
-  if (r.downloadBtn) r.downloadBtn.disabled = !canDownload;
+  deps.setCanDownload(canDownload);
 
-  // zoomed panels: support both naming conventions (older/newer main.ts)
-  // - Newer main.ts uses dstZoom24Canvas/dstZoom16Canvas
-  // - Older builds used dstZoomCanvas/dstClanZoomCanvas/dstAllyZoomCanvas
+  // zoomed panels (new naming only)
   if (deps.getCurrentMode() === "only_clan") {
-    const zc = r.dstZoom16Canvas ?? r.dstClanZoomCanvas;
-    const zx = r.dstZoom16Ctx ?? r.dstClanZoomCtx;
-    if (zc && zx && iconClan16x12Indexed) {
-      deps.drawZoomTo(zc, zx, iconClan16x12Indexed, palette256, 16, 12);
+    if (iconClan16x12Indexed) {
+      deps.drawZoomTo(refs.dstZoom16Canvas, refs.dstZoom16Ctx, iconClan16x12Indexed, palette256, 16, 12);
     }
   } else {
-    const z24c = r.dstZoom24Canvas ?? r.dstZoomCanvas;
-    const z24x = r.dstZoom24Ctx ?? r.dstZoomCtx;
-    if (z24c && z24x && iconCombined24x12Indexed) {
-      deps.drawZoomTo(z24c, z24x, iconCombined24x12Indexed, palette256, 24, 12);
+    if (iconCombined24x12Indexed) {
+      deps.drawZoomTo(refs.dstZoom24Canvas, refs.dstZoom24Ctx, iconCombined24x12Indexed, palette256, 24, 12);
     }
-
-    const z16c = r.dstZoom16Canvas ?? r.dstClanZoomCanvas;
-    const z16x = r.dstZoom16Ctx ?? r.dstClanZoomCtx;
-    if (z16c && z16x && iconClan16x12Indexed) {
-      deps.drawZoomTo(z16c, z16x, iconClan16x12Indexed, palette256, 16, 12);
-    }
-
-    if (r.dstAllyZoomCanvas && r.dstAllyZoomCtx && iconAlly8x12Indexed) {
-      deps.drawZoomTo(r.dstAllyZoomCanvas, r.dstAllyZoomCtx, iconAlly8x12Indexed, palette256, 8, 12);
+    if (iconClan16x12Indexed) {
+      deps.drawZoomTo(refs.dstZoom16Canvas, refs.dstZoom16Ctx, iconClan16x12Indexed, palette256, 16, 12);
     }
   }
 
