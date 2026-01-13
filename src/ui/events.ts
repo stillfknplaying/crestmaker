@@ -2,96 +2,14 @@
  * IMPORTANT: No algorithms/pipeline/crop/preview logic is modified here — only wiring.
  */
 
-import type { ToolRefs } from "../app/dom";
 import type { Lang } from "../i18n";
-import type { Preset, PipelineMode, PixelPreset, CrestMode, CropAspect } from "../types/types";
-
-export interface ToolUIEventDeps {
-  // refs + state
-  getRefs: () => ToolRefs | null;
-
-  getLangButtonsRoot: () => ParentNode; // usually document
-
-  // pipeline/presets
-  getPrevPipeline: () => PipelineMode;
-  setPrevPipeline: (p: PipelineMode) => void;
-
-  getPipeline: () => PipelineMode;
-  setPipeline: (p: PipelineMode) => void;
-
-  getPixelPreset: () => PixelPreset;
-  setPixelPreset: (p: PixelPreset) => void;
-
-  getModernPreset: () => Preset;
-  setModernPreset: (p: Preset) => void;
-
-  applyPresetOptions: (p: PipelineMode) => void;
-  applyPresetDefaults: (p: Preset) => void;
-  updateControlAvailability: (p: Preset) => void;
-
-  // mode/crop
-  renderRoute: () => void;
-  getCurrentMode: () => CrestMode;
-  setCurrentMode: (m: CrestMode) => void;
-
-  setModeStorage: (m: CrestMode) => void;
-
-  getCurrentCropAspect: () => CropAspect;
-  setCurrentCropAspect: (a: CropAspect) => void;
-
-  setCropAspectStorage: (a: CropAspect) => void;
-
-  setCropRectNull: () => void;
-  rebuildCropRectToAspect: () => void;
-  drawCropUI: () => void;
-  initCropEvents: () => void;
-
-  // display / preview
-  getSourceImage: () => HTMLImageElement | null;
-  setSourceImage: (img: HTMLImageElement | null) => void;
-
-  rebuildDisplayCanvas: () => void;
-
-  getInvertColors: () => boolean;
-  setInvertColors: (v: boolean) => void;
-
-  rotateLeft: () => void;
-  rotateRight: () => void;
-
-  loadTemplate: () => void;
-
-  scheduleRecomputePreview: (delay?: number) => void;
-  recomputePreview: () => void;
-  renderPreview: () => void;
-
-  drawTrueSizeEmpty: (w: number, h: number) => void;
-
-  // advanced-open persistence
-  getAdvancedOpen: () => boolean;
-  setAdvancedOpen: (v: boolean) => void;
-  persistAdvancedOpen: (v: boolean) => void;
-
-  // brightness/contrast persistence
-  getBrightness: () => number;
-  setBrightness: (v: number) => void;
-  getContrast: () => number;
-  setContrast: (v: number) => void;
-
-  // language
-  setLang: (l: Lang) => void;
-
-  // file loading
-  loadImageFromFile: (file: File) => Promise<HTMLImageElement>;
-
-  // downloads
-  hasPalette: () => boolean;
-  downloadCurrentMode: () => void;
-}
+import type { PipelineMode, PixelPreset, Preset, CropAspect, CrestMode } from "../types/types";
+import type { EventsDeps } from "./eventsDeps";
 
 /**
  * Binds ALL tool-page events. Call once per tool page render, after refs are assigned.
  */
-export function initToolUIEvents(deps: ToolUIEventDeps) {
+export function initToolUIEvents(deps: EventsDeps) {
   const refs = deps.getRefs();
   if (!refs) return;
 

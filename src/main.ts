@@ -19,11 +19,9 @@ import { initBootstrap } from "./app/bootstrap";
 import { collectToolRefs, escapeHtml } from "./app/dom";
 import type { ToolRefs } from "./app/dom";
 import { initRoutes } from "./app/routes";
-import type {  DitherMode,  Preset,  PipelineMode,  PixelPreset,  CrestMode,
-  CropAspect,  CropRect,  CropDragMode,  GameTemplate,} from "./types/types";
+import type {  DitherMode,  Preset,  PipelineMode,  PixelPreset,  CrestMode,  CropAspect,  CropRect,  CropDragMode,  GameTemplate,} from "./types/types";
 
-
-// CrestMaker — beta 0.0.8.5
+// CrestMaker — beta 0.0.8.9
 const SITE_NAME = "CrestMaker";
 
 // Persist some UI state across language switches

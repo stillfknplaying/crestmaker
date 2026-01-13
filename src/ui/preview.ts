@@ -1,85 +1,14 @@
 // Extracted preview rendering + recompute pipeline scheduling.
 import type { ToolRefs } from "../app/dom";
-import type {  DitherMode,  Preset,  PipelineMode,  PixelPreset,  CrestMode,  GameTemplate,} from "../types/types";
+import type { DitherMode, PipelineMode, PixelPreset, Preset } from "../types/types";
+import type { PreviewDeps } from "./previewDeps";
 
-type Deps = {
-  // state getters
-  getRefs: () => ToolRefs | null; 
-  getSourceImage: () => HTMLImageElement | null;
-  getCurrentMode: () => CrestMode;
-  getInvertColors: () => boolean;
-
-  getGameTemplate: () => GameTemplate;
-  getGameTemplateImg: () => HTMLImageElement | null;
-
-  getPalette256: () => Uint8Array | null;
-  setPalette256: (p: Uint8Array | null) => void;
-
-  getIconAlly8: () => Uint8Array | null;
-  setIconAlly8: (v: Uint8Array | null) => void;
-
-  getIconClan16: () => Uint8Array | null;
-  setIconClan16: (v: Uint8Array | null) => void;
-
-  getIconCombined24: () => Uint8Array | null;
-  setIconCombined24: (v: Uint8Array | null) => void;
-
-  // helpers / options
-  getPixelPreset: () => PixelPreset;
-  getBrightness: () => number;
-  getContrast: () => number;
-  clamp255: (v: number) => number;
-
-  // image ops
-  getCroppedSource: () => HTMLCanvasElement | null;
-
-  renderToSize: (src: CanvasImageSource, preset: Preset, twoStep: boolean, w: number, h: number) => ImageData;
-  edgeAwareSharpen: (img: ImageData, strength: number) => ImageData;
-  softNormalizeLevels: (img: ImageData, amount: number) => ImageData;
-
-  clampDitherStrength: (preset: Preset, mode: DitherMode, v01: number) => number;
-  quantizeTo256: (
-    img: ImageData,
-    mode: DitherMode,
-    amount: number,
-    centerWeighted: boolean,
-    useOKLab: boolean,
-    useNoiseOrdered: boolean
-  ) => { palette: Uint8Array; indices: Uint8Array };
-
-  quantizePixel256: (img: ImageData, pixelPreset: PixelPreset) => { palette: Uint8Array; indices: Uint8Array };
-  cleanupIndicesMajoritySafe: (
-    indices: Uint8Array,
-    w: number,
-    h: number,
-    palette: Uint8Array,
-    passes: number,
-    minMaj: number,
-    maxJump: number
-  ) => void;
-
-  // drawing
-  drawTrueSizeEmpty: (w: number, h: number) => void;
-  drawTrueSize: (indices: Uint8Array, palette: Uint8Array, w: number, h: number) => void;
-  drawZoomTo: (
-    canvas: HTMLCanvasElement,
-    ctx: CanvasRenderingContext2D,
-    indices: Uint8Array,
-    palette: Uint8Array,
-    w: number,
-    h: number
-  ) => void;
-
-  // download
-  setCanDownload: (can: boolean) => void;
-};
-
-let deps: Deps | null = null;
+let deps: PreviewDeps | null = null;
 
 // Reuse a temporary canvas for in-game preview stamping
 let tmpStampCanvas: HTMLCanvasElement | null = null;
 
-export function initPreview(d: Deps) {
+export function initPreview(d: PreviewDeps) {
   deps = d;
 }
 

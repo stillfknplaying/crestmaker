@@ -1,5 +1,5 @@
-import type { ToolRefs } from "../app/dom";
-import type { CropRect, CropDragMode } from "../types/types";
+import type { CropRect } from "../types/types";
+import type { CropDeps } from "./cropDeps";
 
 function clamp(v: number, a: number, b: number) {
   return Math.max(a, Math.min(b, v));
@@ -80,22 +80,7 @@ function hitCorner(
   return null;
 }
 
-export function createCropController(deps: {
-  getRefs: () => ToolRefs | null;
-  getSourceImage: () => HTMLImageElement | null;
-  getDisplayCanvas: () => HTMLCanvasElement | null;
-  rebuildDisplayCanvas: () => void;
-  getCropRect: () => CropRect | null;
-  setCropRect: (r: CropRect | null) => void;
-  scheduleRecomputePreview: () => void;
-
-  getCropDragMode: () => CropDragMode;
-  setCropDragMode: (m: CropDragMode) => void;
-  getDragStart: () => { mx: number; my: number; x: number; y: number };
-  setDragStart: (v: { mx: number; my: number; x: number; y: number }) => void;
-  getDragAnchor: () => { ax: number; ay: number; start: CropRect };
-  setDragAnchor: (v: { ax: number; ay: number; start: CropRect }) => void;
-}) {
+export function createCropController(deps: CropDeps) {
   const {
     getRefs,
     getSourceImage,
