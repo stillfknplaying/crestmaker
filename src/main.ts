@@ -10,6 +10,9 @@ import type { Lang } from "./i18n";
 import { currentLang, setLang as setLangCore, t, tipAttr, helpHtml } from "./i18n";
 
 import { downloadBMPs, makeBmp8bitIndexed, downloadBlob } from "./bmp/writer";
+import type { ToolRefs } from "./app/dom";
+import { collectToolRefs, escapeHtml } from "./app/dom";
+
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
 // Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
 type Preset = "legacy" | "simple" | "balanced" | "complex";
@@ -741,62 +744,7 @@ function renderToolPage() {
 }
 
 // -------------------- TOOL UI + STATE --------------------
-type ToolRefs = {
-  themeToggle: HTMLInputElement;
-  fileInput: HTMLInputElement;
-  downloadBtn: HTMLButtonElement;
-
-  modeSel: HTMLSelectElement;
-
-  presetSel: HTMLSelectElement;
-  pipelineSel: HTMLSelectElement;
-advancedChk: HTMLInputElement;
-  resetBtn: HTMLButtonElement;
-  advancedPanel: HTMLDivElement;
-
-  ditherSel: HTMLSelectElement;
-  twoStepChk: HTMLInputElement;
-  centerPaletteChk: HTMLInputElement;
-  ditherAmt: HTMLInputElement;
-  ditherAmtVal: HTMLSpanElement;
-
-  brightness: HTMLInputElement;
-  brightnessVal: HTMLSpanElement;
-  contrast: HTMLInputElement;
-  contrastVal: HTMLSpanElement;
-
-  oklabChk: HTMLInputElement;
-  noiseDitherChk: HTMLInputElement;
-  edgeSharpenChk: HTMLInputElement;
-  cleanupChk: HTMLInputElement;
-
-  rotL: HTMLButtonElement;
-  rotR: HTMLButtonElement;
-  invertBtn: HTMLButtonElement;
-
-  useCropChk: HTMLInputElement;
-
-  cropCanvas: HTMLCanvasElement;
-  cropCtx: CanvasRenderingContext2D;
-
-  dstTrueCanvas: HTMLCanvasElement;
-  dstTrueCtx: CanvasRenderingContext2D;
-
-  dstZoom24Canvas: HTMLCanvasElement;
-  dstZoom24Ctx: CanvasRenderingContext2D;
-
-  dstZoom16Canvas: HTMLCanvasElement;
-  dstZoom16Ctx: CanvasRenderingContext2D;
-
-  previewCanvas: HTMLCanvasElement;
-  previewCtx: CanvasRenderingContext2D;
-
-  debugCard24: HTMLDivElement;
-  debugCard16: HTMLDivElement;
-  confirmModal: HTMLDivElement;
-  confirmYes: HTMLButtonElement;
-  confirmNo: HTMLButtonElement;
-};
+;
 
 let refs: ToolRefs | null = null;
 
@@ -866,62 +814,8 @@ function initToolUI() {
   // Help tooltips (desktop hover + mobile tap)
   initHelpTooltips();
   // refs must be available only after tool HTML is rendered
-  refs = {
-    themeToggle: document.querySelector<HTMLInputElement>("#themeToggle")!,
-    fileInput: document.querySelector<HTMLInputElement>("#file")!,
-    downloadBtn: document.querySelector<HTMLButtonElement>("#download")!,
+  refs = collectToolRefs(document);
 
-    modeSel: document.querySelector<HTMLSelectElement>("#mode")!,
-
-    presetSel: document.querySelector<HTMLSelectElement>("#preset")!,
-    pipelineSel: document.querySelector<HTMLSelectElement>("#pipeline")!,
-advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
-    resetBtn: document.querySelector<HTMLButtonElement>("#reset")!,
-    advancedPanel: document.querySelector<HTMLDivElement>("#advancedPanel")!,
-
-    ditherSel: document.querySelector<HTMLSelectElement>("#dither")!,
-    twoStepChk: document.querySelector<HTMLInputElement>("#twoStep")!,
-    centerPaletteChk: document.querySelector<HTMLInputElement>("#centerPalette")!,
-    ditherAmt: document.querySelector<HTMLInputElement>("#ditherAmt")!,
-    ditherAmtVal: document.querySelector<HTMLSpanElement>("#ditherAmtVal")!,
-
-    brightness: document.querySelector<HTMLInputElement>("#brightness")!,
-    brightnessVal: document.querySelector<HTMLSpanElement>("#brightnessVal")!,
-    contrast: document.querySelector<HTMLInputElement>("#contrast")!,
-    contrastVal: document.querySelector<HTMLSpanElement>("#contrastVal")!,
-
-    oklabChk: document.querySelector<HTMLInputElement>("#oklab")!,
-    noiseDitherChk: document.querySelector<HTMLInputElement>("#noiseDither")!,
-    edgeSharpenChk: document.querySelector<HTMLInputElement>("#edgeSharpen")!,
-    cleanupChk: document.querySelector<HTMLInputElement>("#cleanup")!,
-
-    rotL: document.querySelector<HTMLButtonElement>("#rotL")!,
-    rotR: document.querySelector<HTMLButtonElement>("#rotR")!,
-    invertBtn: document.querySelector<HTMLButtonElement>("#invert")!,
-
-    useCropChk: document.querySelector<HTMLInputElement>("#useCrop")!,
-
-    cropCanvas: document.querySelector<HTMLCanvasElement>("#crop")!,
-    cropCtx: document.querySelector<HTMLCanvasElement>("#crop")!.getContext("2d")!,
-
-    dstTrueCanvas: document.querySelector<HTMLCanvasElement>("#dstTrue")!,
-    dstTrueCtx: document.querySelector<HTMLCanvasElement>("#dstTrue")!.getContext("2d")!,
-
-    dstZoom24Canvas: document.querySelector<HTMLCanvasElement>("#dstZoom24")!,
-    dstZoom24Ctx: document.querySelector<HTMLCanvasElement>("#dstZoom24")!.getContext("2d")!,
-
-    dstZoom16Canvas: document.querySelector<HTMLCanvasElement>("#dstZoom16")!,
-    dstZoom16Ctx: document.querySelector<HTMLCanvasElement>("#dstZoom16")!.getContext("2d")!,
-
-    previewCanvas: document.querySelector<HTMLCanvasElement>("#preview")!,
-    previewCtx: document.querySelector<HTMLCanvasElement>("#preview")!.getContext("2d")!,
-
-    debugCard24: document.querySelector<HTMLDivElement>("#debugCard24")!,
-    debugCard16: document.querySelector<HTMLDivElement>("#debugCard16")!,
-    confirmModal: document.querySelector<HTMLDivElement>("#confirmModal")!,
-    confirmYes: document.querySelector<HTMLButtonElement>("#confirmYes")!,
-    confirmNo: document.querySelector<HTMLButtonElement>("#confirmNo")!,
-  };
 
   // Pipeline persistence + UI toggles
   refs.pipelineSel.value = getPipeline();
@@ -2229,14 +2123,4 @@ function recomputePreview() {
 
   // Update game preview with current output
   renderPreview();
-}
-
-// -------------------- SMALL UTIL --------------------
-function escapeHtml(s: string) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 }
