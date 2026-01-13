@@ -19,6 +19,7 @@ import { initRoutes } from "./routes";
 import { createInitialState } from "./state";
 import * as actions from "./actions";
 import { initPipelineController, scheduleRecomputePipeline, recomputePipeline } from "./pipelineController";
+import { LocalPipelineEngine } from "./pipeline/localEngine";
 import * as settings from "./settings";
 import { loadImageFromClipboardEvent, loadImageFromDataTransfer, loadImageFromFile } from "./fileLoader";
 import type {  DitherMode,  Preset,  PipelineMode,  CrestMode,  CropAspect,  GameTemplate,} from "../types/types";
@@ -466,9 +467,25 @@ export function createApp() {
     getIconCombined24: () => state.iconCombined24x12Indexed,
   });
 
+  // Pipeline engine (local main-thread implementation).
+  // In a future commit we can swap this for a WorkerPipelineEngine
+  // without touching UI/controller code.
+  const engine = new LocalPipelineEngine({
+    renderToSize,
+    edgeAwareSharpen,
+    softNormalizeLevels,
+    clamp255,
+    clampDitherStrength,
+    quantizeTo256,
+    quantizePixel256,
+    cleanupIndicesMajoritySafe,
+  });
+
   // Compute pipeline controller (separates compute from render)
   initPipelineController({
     getRefs: () => state.refs,
+
+    engine,
 
     getSourceImage: () => state.sourceImage,
     getCurrentMode: () => currentMode,
@@ -477,18 +494,8 @@ export function createApp() {
     getPixelPreset: () => settings.getPixelPreset(),
     getBrightness: () => settings.getBrightness(),
     getContrast: () => settings.getContrast(),
-    clamp255,
 
     getCroppedSource: () => state.cropController?.getCroppedSource() ?? null,
-
-    renderToSize,
-    edgeAwareSharpen,
-    softNormalizeLevels,
-
-    clampDitherStrength,
-    quantizeTo256,
-    quantizePixel256,
-    cleanupIndicesMajoritySafe,
 
     setPalette256: (p) => actions.setPalette256(state, p),
     setIconAlly8: (v) => actions.setIconAlly8(state, v),
