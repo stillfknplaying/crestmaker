@@ -1,54 +1,10 @@
 /**
  * IMPORTANT: No algorithms/pipeline/crop/preview logic is modified here — only wiring.
  */
+
+import type { ToolRefs } from "../app/dom";
 import type { Lang } from "../i18n";
 import type { Preset, PipelineMode, PixelPreset, CrestMode, CropAspect } from "../types/types";
-
-// These are re-declared minimal union types used by bindings.
-// Keep them aligned with main.ts.
-
-export type ToolRefs = {
-  themeToggle: HTMLInputElement;
-  fileInput: HTMLInputElement;
-  downloadBtn: HTMLButtonElement;
-
-  modeSel: HTMLSelectElement;
-
-  presetSel: HTMLSelectElement;
-  pipelineSel: HTMLSelectElement;
-
-  advancedChk: HTMLInputElement;
-  resetBtn: HTMLButtonElement;
-  advancedPanel: HTMLDivElement;
-
-  ditherSel: HTMLSelectElement;
-  twoStepChk: HTMLInputElement;
-  centerPaletteChk: HTMLInputElement;
-  ditherAmt: HTMLInputElement;
-  ditherAmtVal: HTMLSpanElement;
-
-  brightness: HTMLInputElement;
-  brightnessVal: HTMLSpanElement;
-  contrast: HTMLInputElement;
-  contrastVal: HTMLSpanElement;
-
-  oklabChk: HTMLInputElement;
-  noiseDitherChk: HTMLInputElement;
-  edgeSharpenChk: HTMLInputElement;
-  cleanupChk: HTMLInputElement;
-
-  rotL: HTMLButtonElement;
-  rotR: HTMLButtonElement;
-  invertBtn: HTMLButtonElement;
-
-  useCropChk: HTMLInputElement;
-
-  debugCard24: HTMLDivElement;
-  debugCard16: HTMLDivElement;
-  confirmModal: HTMLDivElement;
-  confirmYes: HTMLButtonElement;
-  confirmNo: HTMLButtonElement;
-};
 
 export interface ToolUIEventDeps {
   // refs + state

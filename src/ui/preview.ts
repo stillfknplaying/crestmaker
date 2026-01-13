@@ -1,43 +1,10 @@
 // Extracted preview rendering + recompute pipeline scheduling.
-
-import type {
-  DitherMode,
-  Preset,
-  PipelineMode,
-  PixelPreset,
-  CrestMode,
-  GameTemplate,
-} from "../types/types";
-
-
-type ToolRefs = {
-  // the module only uses a subset; main.ts can still have a wider ToolRefs
-  previewCanvas: HTMLCanvasElement;
-  previewCtx: CanvasRenderingContext2D;
-
-  pipelineSel: HTMLSelectElement;
-  presetSel: HTMLSelectElement;
-  ditherSel: HTMLSelectElement;
-  ditherAmt: HTMLInputElement;
-
-  twoStepChk: HTMLInputElement;
-  centerPaletteChk: HTMLInputElement;
-  oklabChk: HTMLInputElement;
-  noiseDitherChk: HTMLInputElement;
-  edgeSharpenChk: HTMLInputElement;
-  cleanupChk: HTMLInputElement;
-
-  // zoom canvases (new naming only; no legacy fallback)
-  dstZoom24Canvas: HTMLCanvasElement;
-  dstZoom24Ctx: CanvasRenderingContext2D;
-
-  dstZoom16Canvas: HTMLCanvasElement;
-  dstZoom16Ctx: CanvasRenderingContext2D;
-};
+import type { ToolRefs } from "../app/dom";
+import type {  DitherMode,  Preset,  PipelineMode,  PixelPreset,  CrestMode,  GameTemplate,} from "../types/types";
 
 type Deps = {
   // state getters
-  getRefs: () => any; // ToolRefs | null (use any to avoid drift with main's ToolRefs)
+  getRefs: () => ToolRefs | null; 
   getSourceImage: () => HTMLImageElement | null;
   getCurrentMode: () => CrestMode;
   getInvertColors: () => boolean;
