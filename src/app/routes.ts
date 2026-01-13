@@ -1,9 +1,9 @@
+// src/app/routes.ts
 import type { Lang } from "../i18n";
 
-type RouterInit = {
+export type RouterInit = {
   routeRoot: HTMLDivElement;
   getLang: () => Lang;
-  setLang: (lang: Lang) => void;
   t: (en: string, ru: string, ua: string) => string;
   escapeHtml: (s: string) => string;
   pages: {
@@ -14,11 +14,6 @@ type RouterInit = {
   };
   renderToolPage: () => void;
 };
-
-function pathFromHash(): string {
-  const hash = (location.hash || "#/").replace(/^#/, "");
-  return hash.startsWith("/") ? hash : "/" + hash;
-}
 
 export function initRoutes(cfg: RouterInit) {
   function renderPolicyPage(title: string, html: string) {
@@ -41,24 +36,33 @@ export function initRoutes(cfg: RouterInit) {
         <article class="md">${html}</article>
       </section>
     `;
-
-    cfg.routeRoot.querySelectorAll<HTMLButtonElement>("button[data-lang]").forEach((btn) => {
-      btn.addEventListener("click", () => cfg.setLang(btn.dataset.lang as Lang));
-    });
+    // Важно: здесь НЕТ addEventListener для кнопок языка.
+    // Это делается делегированием в src/app/policyEvents.ts (initPolicyLangEvents).
   }
 
   function renderRoute() {
-    const path = pathFromHash();
+    const hash = (location.hash || "#/").replace(/^#/, "");
+    const path = hash.startsWith("/") ? hash : "/" + hash;
+
     const lang = cfg.getLang();
 
     if (path === "/privacy") {
-      return renderPolicyPage(cfg.t("Privacy Policy","Политика конфиденциальности","Політика конфіденційності"), cfg.pages.privacy(lang));
+      return renderPolicyPage(
+        cfg.t("Privacy Policy", "Политика конфиденциальности", "Політика конфіденційності"),
+        cfg.pages.privacy(lang)
+      );
     }
     if (path === "/terms") {
-      return renderPolicyPage(cfg.t("Terms of Service","Пользовательское соглашение","Умови користування"), cfg.pages.terms(lang));
+      return renderPolicyPage(
+        cfg.t("Terms of Service", "Пользовательское соглашение", "Умови користування"),
+        cfg.pages.terms(lang)
+      );
     }
     if (path === "/about") {
-      return renderPolicyPage(cfg.t("About","О проекте","Про проєкт"), cfg.pages.about(lang));
+      return renderPolicyPage(
+        cfg.t("About", "О проекте", "Про проєкт"),
+        cfg.pages.about(lang)
+      );
     }
     if (path === "/gdpr") {
       return renderPolicyPage("GDPR", cfg.pages.gdpr(lang));

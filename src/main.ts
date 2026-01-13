@@ -18,6 +18,7 @@ import { initToolUIEvents } from "./ui/events";
 import { initBootstrap } from "./app/bootstrap";
 import { collectToolRefs, escapeHtml } from "./app/dom";
 import type { ToolRefs } from "./app/dom";
+import { initRoutes } from "./app/routes";
 
 
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
@@ -202,16 +203,21 @@ app.innerHTML = `
 const yearEl = document.querySelector<HTMLSpanElement>("#year")!;
 yearEl.textContent = String(new Date().getFullYear());
 
-
 // -------------------- I18N (EN/RU/UA) --------------------
+let renderRouteFn: () => void = () => {}; // будет назначено после initRoutes()
+
 function setLang(lang: Lang) {
   // Preserve advanced toggle state across language switches
   if (refs?.advancedChk) {
     advancedOpen = refs.advancedChk.checked;
     localStorage.setItem(ADV_OPEN_KEY, advancedOpen ? "1" : "0");
   }
+
   setLangCore(lang);
-  renderRoute();
+
+  // rerender current route
+  renderRouteFn();
+
   // re-render cookie banner text if visible
   renderCookieBannerIfNeeded();
   localizeCookieUI();
@@ -219,42 +225,27 @@ function setLang(lang: Lang) {
 
 // -------------------- ROUTES --------------------
 const routeRoot = document.querySelector<HTMLDivElement>("#routeRoot")!;
-initPolicyLangEvents({
+
+// policy page language buttons (delegated)
+initPolicyLangEvents({ routeRoot, setLang });
+
+// init router (single source of truth)
+const router = initRoutes({
   routeRoot,
-  setLang,
+  getLang: () => currentLang,
+  t,
+  escapeHtml,
+  pages: {
+    privacy: privacyPolicyHtml,
+    terms: termsHtml,
+    about: aboutHtml,
+    gdpr: gdprHtml,
+  },
+  renderToolPage,
 });
 
-function renderRoute() {
-  const hash = (location.hash || "#/").replace(/^#/, "");
-  const path = hash.startsWith("/") ? hash : "/" + hash;
-
-  if (path === "/privacy") return renderPolicyPage(t("Privacy Policy","Политика конфиденциальности","Політика конфіденційності"), privacyPolicyHtml(currentLang));
-  if (path === "/terms") return renderPolicyPage(t("Terms of Service","Пользовательское соглашение","Умови користування"), termsHtml(currentLang));
-  if (path === "/about") return renderPolicyPage(t("About","О проекте","Про проєкт"), aboutHtml(currentLang));
-  if (path === "/gdpr") return renderPolicyPage("GDPR", gdprHtml(currentLang));
-
-return renderToolPage();
-}
-
-function renderPolicyPage(title: string, html: string) {
-  routeRoot.innerHTML = `
-    <section class="page">
-      <div class="page-head">
-        <h2>${escapeHtml(title)}</h2>
-        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-          <div class="btn-group" style="display:flex; gap:8px;">
-            <button class="btn ${currentLang === "en" ? "active" : ""}" data-lang="en">EN</button>
-            <button class="btn ${currentLang === "ru" ? "active" : ""}" data-lang="ru">RU</button>
-            <button class="btn ${currentLang === "ua" ? "active" : ""}" data-lang="ua">UA</button>
-          </div>
-          <a class="btn" href="#/">← ${escapeHtml(t("Back to tool","Назад к инструменту","Назад до інструмента"))}</a>
-        </div>
-      </div>
-
-      <article class="md">${html}</article>
-    </section>
-  `;
-}
+// expose route renderer to the rest of the app
+renderRouteFn = router.renderRoute;
 
 function renderToolPage() {
   // Crop aspect is tied to Mode (no separate selector)
@@ -737,7 +728,7 @@ function initToolUI() {
     drawCropUI: () => { cropController?.drawCropUI(); },
     initCropEvents: () => { cropController?.initCropEvents(); },
 
-    renderRoute,
+    renderRoute: renderRouteFn,
 
     // display / preview
     getSourceImage: () => sourceImage,
@@ -1091,5 +1082,5 @@ function boot() {
 // MUST be the last thing in the module to avoid TDZ errors
 initBootstrap({
   boot,
-  renderRoute,
+  renderRoute: renderRouteFn,
 });
