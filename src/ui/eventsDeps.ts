@@ -78,6 +78,7 @@ export type EventsDeps = {
   loadFromFile: (file: File) => Promise<HTMLImageElement>;
   loadFromClipboard: (e: ClipboardEvent) => Promise<HTMLImageElement | null>;
   loadFromDataTransfer: (dt: DataTransfer | null) => Promise<HTMLImageElement | null>;
+  loadFromUrl: (url: string) => Promise<HTMLImageElement>;
 
   // downloads
   hasPalette: () => boolean;

@@ -150,6 +150,68 @@ body{
   font-size: 12px;
 }
 
+.url-load{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:6px;
+}
+
+.url-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding: 6px 8px;
+  border:1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255,255,255,.03);
+}
+
+.url-load input{
+  border:none;
+  outline:none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  padding: 4px 6px;
+  width: 260px;
+  max-width: 46vw;
+}
+.url-load #urlError{
+  font-size: 12px;
+  width: 100%;
+  max-width: none;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+/* URL loader error state */
+.url-load.error .url-row{
+  border-color: rgba(239,68,68,.75);
+  box-shadow: 0 0 0 2px rgba(239,68,68,.18);
+}
+.url-load.error #urlError{
+  color: rgba(239,68,68,.95);
+}
+.url-load input.input-error{
+  color: var(--text);
+}
+
+/* When used inside the toolbar, keep URL loader at the very bottom without affecting other controls */
+.url-load.toolbar-bottom{
+  flex: 1 1 100%;
+  width: 100%;
+}
+.url-load.toolbar-bottom .url-row{
+  flex-wrap: wrap;
+}
+.url-load.toolbar-bottom input{
+  flex: 1 1 260px;
+  width: auto;
+  max-width: 100%;
+}
+
 .lbl{ display:inline-flex; align-items:center; gap:6px; }
 select{
   border: none;
@@ -225,7 +287,8 @@ select option{
   border-radius: 10px;
   background: rgba(255,255,255,.03);
 }
-.range span{ color: var(--muted); font-size: 12px; min-width: 42px; }
+.range .lbl{ color: var(--muted); font-size: 12px; min-width: 42px; }
+.range .opt-name{ color: var(--muted); font-size: 12px; }
 .range b{ font-size: 12px; color: var(--muted); }
 .range input[type="range"]{ width: 140px; }
 
@@ -458,12 +521,8 @@ select option{
   .range input[type="range"]{ width: 120px; }
 }
 
-
 /* toggle disabled */
 .toggle input:disabled + .track{ opacity: 0.6; cursor: not-allowed; }
-
-
-/* ---------- HELP TOOLTIP ( ? ) ---------- */
 
 /* ---------- HELP ICON TOOLTIP ---------- */
 .helpwrap{
@@ -492,6 +551,7 @@ select option{
   display: block;
   fill: var(--muted);
 }
+.range .helpbtn svg { transform: translateY(-.25px); }
 .helptip{
   pointer-events: none;
   position: absolute;

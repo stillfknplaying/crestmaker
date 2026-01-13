@@ -22,7 +22,7 @@ import { initPipelineController, scheduleRecomputePipeline, recomputePipeline } 
 import { LocalPipelineEngine } from "./pipeline/localEngine";
 import { WorkerPipelineEngine } from "./pipeline/workerEngine";
 import * as settings from "./settings";
-import { loadImageFromClipboardEvent, loadImageFromDataTransfer, loadImageFromFile } from "./fileLoader";
+import { loadImageFromClipboardEvent, loadImageFromDataTransfer, loadImageFromFile, loadImageFromUrl as loadExternalImageFromUrl } from "./fileLoader";
 import type {  DitherMode,  Preset,  PipelineMode,  CrestMode,  CropAspect,  GameTemplate,} from "../types/types";
 
 export function createApp() {
@@ -237,6 +237,25 @@ export function createApp() {
             <button class="btn ${currentLang === "ua" ? "active" : ""}" data-lang="ua">UA</button>
           </div>
 
+          <!-- Load by URL: keep at the very end of the toolbar so it appears on the bottom row -->
+          <div class="url-load toolbar-bottom">
+            <div class="url-row">
+              <input
+                id="url"
+                class="input"
+                type="url"
+                placeholder="${escapeHtml(t("Image URL (http/https)","URL картинки (http/https)","URL картинки (http/https)"))}"
+                ${tipAttr(
+                  "Load an image from a direct URL. Some sites block access due to CORS.",
+                  "Загрузить картинку по прямому URL. Некоторые сайты блокируют доступ (CORS).",
+                  "Завантажити картинку за прямим URL. Деякі сайти блокують доступ (CORS)."
+                )}
+              />
+              <button id="loadUrl" class="btn">${escapeHtml(t("Load","Загрузить","Завантажити"))}</button>
+            </div>
+            <div id="urlError" class="muted hidden" aria-live="polite"></div>
+          </div>
+
         </div>
 
         <div id="advancedPanel" class="advanced ${advancedOpen ? "" : "hidden"}">
@@ -273,19 +292,27 @@ export function createApp() {
         </div>
 
         <div class="range" id="brightnessRow">
-          <span class="lbl">
-            ${escapeHtml(t("Brightness","Яркость","Яскравість"))}
-            ${helpHtml("Adjusts brightness before conversion.","Регулирует яркость перед конвертацией.","Регулює яскравість перед конвертацією.")}
-          </span>
+          <div class="opt-head">
+            <span class="opt-name">${escapeHtml(t("Brightness","Яркость","Яскравість"))}</span>
+            ${helpHtml(
+              "Adjusts brightness before conversion.",
+              "Регулирует яркость перед конвертацией.",
+              "Регулює яскравість перед конвертацією."
+            )}
+          </div>
           <input id="brightness" type="range" min="-50" max="50" value="0" />
           <b><span id="brightnessVal">0</span></b>
         </div>
 
         <div class="range" id="contrastRow">
-          <span class="lbl">
-            ${escapeHtml(t("Contrast","Контраст","Контраст"))}
-            ${helpHtml("Adjusts contrast before conversion.","Регулирует контраст перед конвертацией.","Регулює контраст перед конвертацією.")}
-          </span>
+          <div class="opt-head">
+            <span class="opt-name">${escapeHtml(t("Contrast","Контраст","Контраст"))}</span>
+            ${helpHtml(
+              "Adjusts contrast before conversion.",
+              "Регулирует контраст перед конвертацией.",
+              "Регулює контраст перед конвертацією."
+            )}
+          </div>
           <input id="contrast" type="range" min="-50" max="50" value="0" />
           <b><span id="contrastVal">0</span></b>
         </div>
@@ -690,6 +717,7 @@ export function createApp() {
       loadFromFile: loadImageFromFile,
       loadFromClipboard: loadImageFromClipboardEvent,
       loadFromDataTransfer: loadImageFromDataTransfer,
+      loadFromUrl: (url) => loadExternalImageFromUrl(url),
 
       // downloads
       hasPalette: () => hasPaletteFromState(state),
@@ -869,16 +897,6 @@ export function createApp() {
     setToggleVisible(r.cleanupChk, showCleanup);
   }
 
-  // -------------------- IMAGE LOADING --------------------
-  function loadImageFromUrl(url: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error("Failed to load image: " + url));
-      img.src = url;
-    });
-  }
-
   async function loadTemplate() {
     const tpl = getGameTemplate();
 
@@ -889,7 +907,7 @@ export function createApp() {
     }
 
     try {
-      actions.setGameTemplateImg(state, await loadImageFromUrl(tpl.src));
+      actions.setGameTemplateImg(state, await loadExternalImageFromUrl(tpl.src));
       actions.setLoadedTemplateSrc(state, tpl.src);
       renderController.renderPreview();
     } catch {

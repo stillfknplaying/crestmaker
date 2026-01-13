@@ -63,12 +63,49 @@ export async function loadImageFromClipboardEvent(e: ClipboardEvent): Promise<HT
 }
 
 // Optional helper for future "load by URL" feature.
-// NOTE: CORS may block pixel access if the server does not allow it.
 export async function loadImageFromUrl(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Failed to load image: " + url));
-    img.src = url;
-  });
+  const u = url.trim();
+  if (!u) {
+    throw new Error("URL is empty");
+  }
+
+  // Support data URLs (e.g. data:image/png;base64,...) so users can paste images directly.
+  // fetch() supports data: URLs in modern browsers.
+  if (u.startsWith("data:")) {
+    const res = await fetch(u);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch image (${res.status})`);
+    }
+    const blob = await res.blob();
+    if (!blob.type.startsWith("image/")) {
+      throw new Error("URL did not return an image");
+    }
+    return loadImageFromBlob(blob);
+  }
+
+  // Allow both absolute http(s) URLs and same-origin relative paths.
+  // This is important for built-in templates like /templates/...
+  let resolved: URL;
+  try {
+    resolved = new URL(u, window.location.href);
+  } catch {
+    throw new Error("Invalid URL");
+  }
+  // Allow http(s) and same-origin relative URLs resolved against the current page.
+  // Other protocols are not supported here.
+  if (resolved.protocol !== "http:" && resolved.protocol !== "https:") {
+    throw new Error("URL must be http(s)");
+  }
+
+  // Use fetch -> blob -> objectURL so the resulting canvas is not tainted.
+  // This still requires CORS from the remote server (otherwise fetch will fail).
+  const res = await fetch(resolved.toString(), { mode: "cors" });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch image (${res.status})`);
+  }
+  const blob = await res.blob();
+  if (!blob.type.startsWith("image/")) {
+    throw new Error("URL did not return an image");
+  }
+  return loadImageFromBlob(blob);
 }

@@ -1,6 +1,9 @@
 export type ToolRefs = {
   themeToggle: HTMLInputElement;
   fileInput: HTMLInputElement;
+  urlInput: HTMLInputElement;
+  urlLoadBtn: HTMLButtonElement;
+  urlError: HTMLDivElement;
   downloadBtn: HTMLButtonElement;
 
   modeSel: HTMLSelectElement;
@@ -59,6 +62,9 @@ export function collectToolRefs(root: Document = document): ToolRefs {
   return {
     themeToggle: root.querySelector<HTMLInputElement>("#themeToggle")!,
     fileInput: root.querySelector<HTMLInputElement>("#file")!,
+    urlInput: root.querySelector<HTMLInputElement>("#url")!,
+    urlLoadBtn: root.querySelector<HTMLButtonElement>("#loadUrl")!,
+    urlError: root.querySelector<HTMLDivElement>("#urlError")!,
     downloadBtn: root.querySelector<HTMLButtonElement>("#download")!,
 
     modeSel: root.querySelector<HTMLSelectElement>("#mode")!,
