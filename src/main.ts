@@ -1,14 +1,13 @@
 import "./style.css";
 import { renderToSize, edgeAwareSharpen, softNormalizeLevels, clampDitherStrength, quantizeTo256 } from "./pipeline/modern";
 import { cleanupIndicesMajoritySafe, quantizePixel256 } from "./pipeline/pixel";
-
+import { initPolicyLangEvents } from "./app/policyEvents";
 import { privacyPolicyHtml } from "./content/privacy";
 import { termsHtml } from "./content/terms";
 import { gdprHtml } from "./content/gdpr";
 import { aboutHtml } from "./content/about";
 import type { Lang } from "./i18n";
 import { currentLang, setLang as setLangCore, t, tipAttr, helpHtml } from "./i18n";
-
 import { downloadBMPs, makeBmp8bitIndexed, downloadBlob } from "./bmp/writer";
 import { initCookieConsentUI, renderCookieBannerIfNeeded, localizeCookieUI } from "./ui/cookieConsent";
 import { initHelpTooltips } from "./ui/helpTooltips";
@@ -16,6 +15,7 @@ import { createCropController, initCropToAspect } from "./ui/crop";
 import { initDisplayCanvas, rebuildDisplayCanvas } from "./ui/displayCanvas";
 import { initPreview, renderPreview, scheduleRecomputePreview, recomputePreview } from "./ui/preview";
 import { initToolUIEvents } from "./ui/events";
+
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
 // Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
 type Preset = "legacy" | "simple" | "balanced" | "complex";
@@ -215,6 +215,10 @@ function setLang(lang: Lang) {
 
 // -------------------- ROUTES --------------------
 const routeRoot = document.querySelector<HTMLDivElement>("#routeRoot")!;
+initPolicyLangEvents({
+  routeRoot,
+  setLang,
+});
 
 function renderRoute() {
   const hash = (location.hash || "#/").replace(/^#/, "");
@@ -246,10 +250,6 @@ function renderPolicyPage(title: string, html: string) {
       <article class="md">${html}</article>
     </section>
   `;
-
-  routeRoot.querySelectorAll<HTMLButtonElement>("button[data-lang]").forEach((btn) => {
-    btn.addEventListener("click", () => setLang(btn.dataset.lang as Lang));
-  });
 }
 
 function renderToolPage() {
@@ -1143,40 +1143,6 @@ async function loadTemplate() {
     renderPreview();
   }
 }
-
-// -------------------- DOWNSCALE TO 24×12 --------------------
-
-
-
-
-// -------------------- EDGE SHARPEN (LIGHT) --------------------
-
-
-
-// Very gentle levels normalization (kept intentionally subtle for tiny 24×12 / 16×12 icons).
-
-
-
-
-// ---------------- Pixel pipeline (fixed palette + ordered dither) ----------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // -------------------- DRAW TRUE SIZE + DEBUG --------------------
 function setTrueSizeCanvasDims(w: number, h: number) {
