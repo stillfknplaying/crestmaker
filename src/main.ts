@@ -10,7 +10,8 @@ import type { Lang } from "./i18n";
 import { currentLang, setLang as setLangCore, t, tipAttr, helpHtml } from "./i18n";
 
 import { downloadBMPs, makeBmp8bitIndexed, downloadBlob } from "./bmp/writer";
-import { initCookieConsentUI, renderCookieBannerIfNeeded, localizeCookieUI, initHelpTooltips } from "./ui/cookieConsent";
+import { initCookieConsentUI, renderCookieBannerIfNeeded, localizeCookieUI } from "./ui/cookieConsent";
+import { initHelpTooltips } from "./ui/helpTooltips";
 import { createCropController, initCropToAspect } from "./ui/crop";
 import { initDisplayCanvas, rebuildDisplayCanvas } from "./ui/displayCanvas";
 import { initPreview, renderPreview, scheduleRecomputePreview, recomputePreview } from "./ui/preview";
