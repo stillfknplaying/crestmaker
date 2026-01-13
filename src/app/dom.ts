@@ -7,7 +7,7 @@ export type ToolRefs = {
 
   presetSel: HTMLSelectElement;
   pipelineSel: HTMLSelectElement;
-advancedChk: HTMLInputElement;
+  advancedChk: HTMLInputElement;
   resetBtn: HTMLButtonElement;
   advancedPanel: HTMLDivElement;
 
@@ -65,7 +65,7 @@ export function collectToolRefs(root: Document = document): ToolRefs {
 
     presetSel: root.querySelector<HTMLSelectElement>("#preset")!,
     pipelineSel: root.querySelector<HTMLSelectElement>("#pipeline")!,
-advancedChk: root.querySelector<HTMLInputElement>("#advanced")!,
+    advancedChk: root.querySelector<HTMLInputElement>("#advanced")!,
     resetBtn: root.querySelector<HTMLButtonElement>("#reset")!,
     advancedPanel: root.querySelector<HTMLDivElement>("#advancedPanel")!,
 

@@ -10,9 +10,7 @@ import type { Lang } from "./i18n";
 import { currentLang, setLang as setLangCore, t, tipAttr, helpHtml } from "./i18n";
 
 import { downloadBMPs, makeBmp8bitIndexed, downloadBlob } from "./bmp/writer";
-import type { ToolRefs } from "./app/dom";
-import { collectToolRefs, escapeHtml } from "./app/dom";
-
+import { createCropController, initCropToAspect } from "./ui/crop";
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
 // Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
 type Preset = "legacy" | "simple" | "balanced" | "complex";
@@ -744,9 +742,66 @@ function renderToolPage() {
 }
 
 // -------------------- TOOL UI + STATE --------------------
-;
+type ToolRefs = {
+  themeToggle: HTMLInputElement;
+  fileInput: HTMLInputElement;
+  downloadBtn: HTMLButtonElement;
+
+  modeSel: HTMLSelectElement;
+
+  presetSel: HTMLSelectElement;
+  pipelineSel: HTMLSelectElement;
+advancedChk: HTMLInputElement;
+  resetBtn: HTMLButtonElement;
+  advancedPanel: HTMLDivElement;
+
+  ditherSel: HTMLSelectElement;
+  twoStepChk: HTMLInputElement;
+  centerPaletteChk: HTMLInputElement;
+  ditherAmt: HTMLInputElement;
+  ditherAmtVal: HTMLSpanElement;
+
+  brightness: HTMLInputElement;
+  brightnessVal: HTMLSpanElement;
+  contrast: HTMLInputElement;
+  contrastVal: HTMLSpanElement;
+
+  oklabChk: HTMLInputElement;
+  noiseDitherChk: HTMLInputElement;
+  edgeSharpenChk: HTMLInputElement;
+  cleanupChk: HTMLInputElement;
+
+  rotL: HTMLButtonElement;
+  rotR: HTMLButtonElement;
+  invertBtn: HTMLButtonElement;
+
+  useCropChk: HTMLInputElement;
+
+  cropCanvas: HTMLCanvasElement;
+  cropCtx: CanvasRenderingContext2D;
+
+  dstTrueCanvas: HTMLCanvasElement;
+  dstTrueCtx: CanvasRenderingContext2D;
+
+  dstZoom24Canvas: HTMLCanvasElement;
+  dstZoom24Ctx: CanvasRenderingContext2D;
+
+  dstZoom16Canvas: HTMLCanvasElement;
+  dstZoom16Ctx: CanvasRenderingContext2D;
+
+  previewCanvas: HTMLCanvasElement;
+  previewCtx: CanvasRenderingContext2D;
+
+  debugCard24: HTMLDivElement;
+  debugCard16: HTMLDivElement;
+  confirmModal: HTMLDivElement;
+  confirmYes: HTMLButtonElement;
+  confirmNo: HTMLButtonElement;
+};
 
 let refs: ToolRefs | null = null;
+let cropController: ReturnType<typeof createCropController> | null = null;
+
 
 function boot() {
   renderRoute();
@@ -789,8 +844,8 @@ const GAME_TEMPLATE_24: GameTemplate = {
   baseW: 2560,
   baseH: 1440,
   // NOTE: user tuned to match screenshot
-  slotX: 1160,
-  slotY: 218,
+  slotX: 1160.5,
+  slotY: 218.5,
   slotW: 48,
   slotH: 24,
 };
@@ -814,8 +869,81 @@ function initToolUI() {
   // Help tooltips (desktop hover + mobile tap)
   initHelpTooltips();
   // refs must be available only after tool HTML is rendered
-  refs = collectToolRefs(document);
+  refs = {
+    themeToggle: document.querySelector<HTMLInputElement>("#themeToggle")!,
+    fileInput: document.querySelector<HTMLInputElement>("#file")!,
+    downloadBtn: document.querySelector<HTMLButtonElement>("#download")!,
 
+    modeSel: document.querySelector<HTMLSelectElement>("#mode")!,
+
+    presetSel: document.querySelector<HTMLSelectElement>("#preset")!,
+    pipelineSel: document.querySelector<HTMLSelectElement>("#pipeline")!,
+advancedChk: document.querySelector<HTMLInputElement>("#advanced")!,
+    resetBtn: document.querySelector<HTMLButtonElement>("#reset")!,
+    advancedPanel: document.querySelector<HTMLDivElement>("#advancedPanel")!,
+
+    ditherSel: document.querySelector<HTMLSelectElement>("#dither")!,
+    twoStepChk: document.querySelector<HTMLInputElement>("#twoStep")!,
+    centerPaletteChk: document.querySelector<HTMLInputElement>("#centerPalette")!,
+    ditherAmt: document.querySelector<HTMLInputElement>("#ditherAmt")!,
+    ditherAmtVal: document.querySelector<HTMLSpanElement>("#ditherAmtVal")!,
+
+    brightness: document.querySelector<HTMLInputElement>("#brightness")!,
+    brightnessVal: document.querySelector<HTMLSpanElement>("#brightnessVal")!,
+    contrast: document.querySelector<HTMLInputElement>("#contrast")!,
+    contrastVal: document.querySelector<HTMLSpanElement>("#contrastVal")!,
+
+    oklabChk: document.querySelector<HTMLInputElement>("#oklab")!,
+    noiseDitherChk: document.querySelector<HTMLInputElement>("#noiseDither")!,
+    edgeSharpenChk: document.querySelector<HTMLInputElement>("#edgeSharpen")!,
+    cleanupChk: document.querySelector<HTMLInputElement>("#cleanup")!,
+
+    rotL: document.querySelector<HTMLButtonElement>("#rotL")!,
+    rotR: document.querySelector<HTMLButtonElement>("#rotR")!,
+    invertBtn: document.querySelector<HTMLButtonElement>("#invert")!,
+
+    useCropChk: document.querySelector<HTMLInputElement>("#useCrop")!,
+
+    cropCanvas: document.querySelector<HTMLCanvasElement>("#crop")!,
+    cropCtx: document.querySelector<HTMLCanvasElement>("#crop")!.getContext("2d")!,
+
+    dstTrueCanvas: document.querySelector<HTMLCanvasElement>("#dstTrue")!,
+    dstTrueCtx: document.querySelector<HTMLCanvasElement>("#dstTrue")!.getContext("2d")!,
+
+    dstZoom24Canvas: document.querySelector<HTMLCanvasElement>("#dstZoom24")!,
+    dstZoom24Ctx: document.querySelector<HTMLCanvasElement>("#dstZoom24")!.getContext("2d")!,
+
+    dstZoom16Canvas: document.querySelector<HTMLCanvasElement>("#dstZoom16")!,
+    dstZoom16Ctx: document.querySelector<HTMLCanvasElement>("#dstZoom16")!.getContext("2d")!,
+
+    previewCanvas: document.querySelector<HTMLCanvasElement>("#preview")!,
+    previewCtx: document.querySelector<HTMLCanvasElement>("#preview")!.getContext("2d")!,
+
+    debugCard24: document.querySelector<HTMLDivElement>("#debugCard24")!,
+    debugCard16: document.querySelector<HTMLDivElement>("#debugCard16")!,
+    confirmModal: document.querySelector<HTMLDivElement>("#confirmModal")!,
+    confirmYes: document.querySelector<HTMLButtonElement>("#confirmYes")!,
+    confirmNo: document.querySelector<HTMLButtonElement>("#confirmNo")!,
+  };
+
+
+  // Crop controller (moved to src/ui/crop.ts)
+  cropController = createCropController({
+    getRefs: () => refs,
+    getSourceImage: () => sourceImage,
+    getDisplayCanvas: () => displayCanvas,
+    rebuildDisplayCanvas,
+    getCropRect: () => cropRect,
+    setCropRect: (r) => { cropRect = r; },
+    scheduleRecomputePreview,
+
+    getCropDragMode: () => cropDragMode,
+    setCropDragMode: (m) => { cropDragMode = m; },
+    getDragStart: () => dragStart,
+    setDragStart: (v) => { dragStart = v; },
+    getDragAnchor: () => dragAnchor,
+    setDragAnchor: (v) => { dragAnchor = v; },
+  });
 
   // Pipeline persistence + UI toggles
   refs.pipelineSel.value = getPipeline();
@@ -1046,7 +1174,7 @@ function initToolUI() {
     rotation90 = ((rotation90 + 270) % 360) as any;
     rebuildDisplayCanvas();
     if (displayCanvas) cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
-    drawCropUI();
+    cropController?.drawCropUI();
     scheduleRecomputePreview(0);
   });
 
@@ -1055,7 +1183,7 @@ function initToolUI() {
     rotation90 = ((rotation90 + 90) % 360) as any;
     rebuildDisplayCanvas();
     if (displayCanvas) cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
-    drawCropUI();
+    cropController?.drawCropUI();
     scheduleRecomputePreview(0);
   });
 
@@ -1082,7 +1210,7 @@ function initToolUI() {
     if (!displayCanvas) return;
 
     cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
-    drawCropUI();
+    cropController?.drawCropUI();
 
     refs!.resetBtn.disabled = false;
     scheduleRecomputePreview(0);
@@ -1112,19 +1240,18 @@ function initToolUI() {
   ];
   for (const el of live) {
     el.addEventListener("change", () => {
-      drawCropUI();
+      cropController?.drawCropUI();
       updateControlAvailability(refs!.presetSel.value as Preset);
       scheduleRecomputePreview(70);
     });
     el.addEventListener("input", () => {
-      drawCropUI();
+      cropController?.drawCropUI();
       scheduleRecomputePreview(70);
     });
   }
 
   // crop interactions
-  initCropEvents();
-
+  cropController?.initCropEvents();
 // initial preview / restore state after re-render
   const trueW = currentMode === "only_clan" ? 16 : 24;
   const trueH = 12;
@@ -1135,7 +1262,7 @@ function initToolUI() {
 
     rebuildDisplayCanvas();
     if (displayCanvas && !cropRect) cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
-    drawCropUI();
+    cropController?.drawCropUI();
 
     refs.resetBtn.disabled = false;
     scheduleRecomputePreview(0);
@@ -1397,402 +1524,6 @@ function rebuildDisplayCanvas() {
   ctx.restore();
 }
 
-// -------------------- CROP UI HELPERS --------------------
-function clamp(v: number, a: number, b: number) {
-  return Math.max(a, Math.min(b, v));
-}
-function clamp255(x: number): number { return x < 0 ? 0 : x > 255 ? 255 : x; }
-
-function initCropToAspect(img: { width: number; height: number }, targetR: number): CropRect {
-  const iw = img.width, ih = img.height;
-  const r = iw / ih;
-
-  let w = iw, h = ih;
-  if (r > targetR) {
-    w = ih * targetR;
-    h = ih;
-  } else {
-    w = iw;
-    h = iw / targetR;
-  }
-
-  return { x: (iw - w) / 2, y: (ih - h) / 2, w, h };
-}
-
-
-function getContainTransformForCropCanvas(img: { width: number; height: number }, canvas: HTMLCanvasElement) {
-  const cw = canvas.width, ch = canvas.height;
-  const ir = img.width / img.height;
-  const cr = cw / ch;
-
-  let dw = cw, dh = ch;
-  if (ir > cr) dh = cw / ir;
-  else dw = ch * ir;
-
-  const dx = (cw - dw) / 2;
-  const dy = (ch - dh) / 2;
-
-  return { dx, dy, dw, dh };
-}
-
-function cropRectToCanvasRect(img: { width: number; height: number }, crop: CropRect, canvas: HTMLCanvasElement) {
-  const { dx, dy, dw, dh } = getContainTransformForCropCanvas(img, canvas);
-  const rx = dx + (crop.x / img.width) * dw;
-  const ry = dy + (crop.y / img.height) * dh;
-  const rw = (crop.w / img.width) * dw;
-  const rh = (crop.h / img.height) * dh;
-  return { rx, ry, rw, rh, dx, dy, dw, dh };
-}
-
-function hitCorner(mx: number, my: number, rx: number, ry: number, rw: number, rh: number) {
-  const handle = 10;
-  const corners: Array<[CropDragMode, number, number]> = [
-    ["nw", rx, ry],
-    ["ne", rx + rw, ry],
-    ["sw", rx, ry + rh],
-    ["se", rx + rw, ry + rh],
-  ];
-  for (const [mode, cx, cy] of corners) {
-    if (Math.abs(mx - cx) <= handle && Math.abs(my - cy) <= handle) return mode;
-  }
-  return null;
-}
-
-function drawCropUI() {
-  if (!refs) return;
-  const { cropCanvas, cropCtx, useCropChk } = refs;
-
-  cropCtx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
-  if (!sourceImage) return;
-
-  rebuildDisplayCanvas();
-  if (!displayCanvas) return;
-
-  const img = displayCanvas;
-  cropCtx.imageSmoothingEnabled = true;
-  cropCtx.imageSmoothingQuality = "high";
-
-  const { dx, dy, dw, dh } = getContainTransformForCropCanvas(img, cropCanvas);
-  cropCtx.drawImage(img, dx, dy, dw, dh);
-
-  if (!useCropChk.checked || !cropRect) return;
-
-  const { rx, ry, rw, rh } = cropRectToCanvasRect(img, cropRect, cropCanvas);
-
-  // dim outside
-  cropCtx.save();
-  cropCtx.fillStyle = "rgba(0,0,0,0.55)";
-  cropCtx.beginPath();
-  cropCtx.rect(0, 0, cropCanvas.width, cropCanvas.height);
-  cropCtx.rect(rx, ry, rw, rh);
-  cropCtx.fill("evenodd");
-  cropCtx.restore();
-
-  // border
-  cropCtx.save();
-  cropCtx.lineWidth = 3;
-  cropCtx.strokeStyle = "rgba(0,0,0,0.9)";
-  cropCtx.strokeRect(rx, ry, rw, rh);
-
-  cropCtx.lineWidth = 1.5;
-  cropCtx.strokeStyle = "rgba(255,255,255,0.95)";
-  cropCtx.strokeRect(rx + 0.5, ry + 0.5, rw - 1, rh - 1);
-  cropCtx.restore();
-
-  // thirds grid
-  cropCtx.save();
-  cropCtx.strokeStyle = "rgba(255,255,255,0.35)";
-  cropCtx.lineWidth = 1;
-  for (let i = 1; i <= 2; i++) {
-    const gx = rx + (rw * i) / 3;
-    const gy = ry + (rh * i) / 3;
-    cropCtx.beginPath();
-    cropCtx.moveTo(gx, ry);
-    cropCtx.lineTo(gx, ry + rh);
-    cropCtx.stroke();
-    cropCtx.beginPath();
-    cropCtx.moveTo(rx, gy);
-    cropCtx.lineTo(rx + rw, gy);
-    cropCtx.stroke();
-  }
-  cropCtx.restore();
-
-  // corner handles
-  cropCtx.save();
-  const handle = 8;
-  cropCtx.fillStyle = "rgba(255,255,255,0.95)";
-  cropCtx.strokeStyle = "rgba(0,0,0,0.9)";
-  cropCtx.lineWidth = 2;
-
-  const corners = [
-    [rx, ry],
-    [rx + rw, ry],
-    [rx, ry + rh],
-    [rx + rw, ry + rh],
-  ];
-
-  for (const [cx, cy] of corners) {
-    const x = cx - handle / 2;
-    const y = cy - handle / 2;
-    cropCtx.fillRect(x, y, handle, handle);
-    cropCtx.strokeRect(x, y, handle, handle);
-  }
-  cropCtx.restore();
-}
-
-function getCroppedSource(): HTMLCanvasElement | null {
-  if (!sourceImage) return null;
-  rebuildDisplayCanvas();
-  if (!displayCanvas) return null;
-  if (!refs?.useCropChk.checked || !cropRect) return displayCanvas;
-
-  const c = document.createElement("canvas");
-  c.width = Math.max(1, Math.round(cropRect.w));
-  c.height = Math.max(1, Math.round(cropRect.h));
-  const ctx = c.getContext("2d")!;
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-
-  ctx.drawImage(displayCanvas, cropRect.x, cropRect.y, cropRect.w, cropRect.h, 0, 0, c.width, c.height);
-  return c;
-}
-
-function initCropEvents() {
-  if (!refs) return;
-  const { cropCanvas } = refs;
-
-  // Pointer-based interactions for mouse + touch (mobile crop fix)
-  type Pt = { x: number; y: number };
-  const pointers = new Map<number, Pt>();
-  let pinchStart: null | { dist: number; rect: CropRect; cx: number; cy: number } = null;
-
-  const getCanvasPoint = (e: PointerEvent): Pt => {
-    const rect = cropCanvas.getBoundingClientRect();
-    const mxCss = e.clientX - rect.left;
-    const myCss = e.clientY - rect.top;
-    return {
-      x: mxCss * (cropCanvas.width / rect.width),
-      y: myCss * (cropCanvas.height / rect.height),
-    };
-  };
-
-  const updateCursor = (mx: number, my: number) => {
-    if (!sourceImage || !cropRect || !refs?.useCropChk.checked) {
-      cropCanvas.style.cursor = "default";
-      return;
-    }
-    if (cropDragMode !== "none") return;
-
-    rebuildDisplayCanvas();
-    if (!displayCanvas) return;
-
-    const { rx, ry, rw, rh } = cropRectToCanvasRect(displayCanvas, cropRect, cropCanvas);
-    const corner = hitCorner(mx, my, rx, ry, rw, rh);
-
-    if (corner === "nw" || corner === "se") cropCanvas.style.cursor = "nwse-resize";
-    else if (corner === "ne" || corner === "sw") cropCanvas.style.cursor = "nesw-resize";
-    else if (mx >= rx && mx <= rx + rw && my >= ry && my <= ry + rh) cropCanvas.style.cursor = "move";
-    else cropCanvas.style.cursor = "default";
-  };
-
-  cropCanvas.addEventListener("pointerdown", (e) => {
-    if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
-
-    cropCanvas.setPointerCapture(e.pointerId);
-    const pt = getCanvasPoint(e);
-    pointers.set(e.pointerId, pt);
-
-    // Pinch start (2 fingers)
-    if (pointers.size === 2) {
-      const arr = Array.from(pointers.values());
-      const dx = arr[0].x - arr[1].x;
-      const dy = arr[0].y - arr[1].y;
-      const dist = Math.max(1, Math.hypot(dx, dy));
-
-      rebuildDisplayCanvas();
-      if (!displayCanvas) return;
-
-      pinchStart = {
-        dist,
-        rect: { x: cropRect.x, y: cropRect.y, w: cropRect.w, h: cropRect.h },
-        cx: cropRect.x + cropRect.w / 2,
-        cy: cropRect.y + cropRect.h / 2,
-      };
-
-      cropDragMode = "none";
-      return;
-    }
-
-    // Single-pointer drag (move/resize)
-    rebuildDisplayCanvas();
-    if (!displayCanvas) return;
-
-    const { rx, ry, rw, rh } = cropRectToCanvasRect(displayCanvas, cropRect, cropCanvas);
-    const corner = hitCorner(pt.x, pt.y, rx, ry, rw, rh);
-
-    if (corner) {
-      cropDragMode = corner;
-      const start = { x: cropRect.x, y: cropRect.y, w: cropRect.w, h: cropRect.h };
-      let ax = 0, ay = 0;
-      if (corner === "nw") { ax = start.x + start.w; ay = start.y + start.h; }
-      if (corner === "ne") { ax = start.x;           ay = start.y + start.h; }
-      if (corner === "sw") { ax = start.x + start.w; ay = start.y; }
-      if (corner === "se") { ax = start.x;           ay = start.y; }
-      dragAnchor = { ax, ay, start };
-      return;
-    }
-
-    const inside = pt.x >= rx && pt.x <= rx + rw && pt.y >= ry && pt.y <= ry + rh;
-    if (!inside) return;
-
-    cropDragMode = "move";
-    dragStart = { mx: pt.x, my: pt.y, x: cropRect.x, y: cropRect.y };
-  });
-
-  cropCanvas.addEventListener("pointermove", (e) => {
-    const pt = getCanvasPoint(e);
-    pointers.set(e.pointerId, pt);
-
-    // Update cursor for mouse hover
-    if (e.pointerType === "mouse" && pointers.size === 1 && cropDragMode === "none") {
-      updateCursor(pt.x, pt.y);
-    }
-
-    if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
-
-    rebuildDisplayCanvas();
-    if (!displayCanvas) return;
-    const dc = displayCanvas;
-
-    // Pinch zoom (2 pointers)
-    if (pointers.size === 2 && pinchStart) {
-      const arr = Array.from(pointers.values());
-      const dx = arr[0].x - arr[1].x;
-      const dy = arr[0].y - arr[1].y;
-      const dist = Math.max(1, Math.hypot(dx, dy));
-      const ratio = dist / pinchStart.dist;
-
-      const r = aspectRatio(currentCropAspect);
-
-      let nw = pinchStart.rect.w / ratio; // pinch out -> ratio>1 -> nw smaller (zoom in)
-      nw = clamp(nw, 24, dc.width);
-      let nh = nw / r;
-      if (nh > dc.height) { nh = dc.height; nw = nh * r; }
-
-      cropRect.w = nw;
-      cropRect.h = nh;
-      cropRect.x = clamp(pinchStart.cx - nw / 2, 0, dc.width - nw);
-      cropRect.y = clamp(pinchStart.cy - nh / 2, 0, dc.height - nh);
-
-      drawCropUI();
-      scheduleRecomputePreview(60);
-      return;
-    }
-
-    if (cropDragMode === "none") return;
-
-    const { dx, dw, dy, dh } = getContainTransformForCropCanvas(dc, cropCanvas);
-
-    const canvasToSrcX = (val: number) => (val / dw) * dc.width;
-    const canvasToSrcY = (val: number) => (val / dh) * dc.height;
-
-    if (cropDragMode === "move") {
-      const deltaXCanvas = pt.x - dragStart.mx;
-      const deltaYCanvas = pt.y - dragStart.my;
-
-      cropRect.x = dragStart.x + canvasToSrcX(deltaXCanvas);
-      cropRect.y = dragStart.y + canvasToSrcY(deltaYCanvas);
-
-      cropRect.x = clamp(cropRect.x, 0, dc.width - cropRect.w);
-      cropRect.y = clamp(cropRect.y, 0, dc.height - cropRect.h);
-
-      drawCropUI();
-      scheduleRecomputePreview(60);
-      return;
-    }
-
-    // resize corner while keeping selected aspect
-    const nx = (pt.x - dx) / dw;
-    const ny = (pt.y - dy) / dh;
-    const px = clamp(nx, 0, 1) * dc.width;
-    const py = clamp(ny, 0, 1) * dc.height;
-
-    const { ax, ay } = dragAnchor;
-
-    const dxAbs = Math.abs(px - ax);
-    const dyAbs = Math.abs(py - ay);
-
-    const wFromX = dxAbs;
-    const r = aspectRatio(currentCropAspect);
-    const wFromY = r * dyAbs;
-
-    let w = Math.max(wFromX, wFromY);
-    const minW = 24;
-    w = Math.max(minW, w);
-    let h = w / r;
-
-    if (w > dc.width) { w = dc.width; h = w / r; }
-    if (h > dc.height) { h = dc.height; w = h * r; }
-
-    let x = 0, y = 0;
-    if (cropDragMode === "nw") { x = ax - w; y = ay - h; }
-    else if (cropDragMode === "ne") { x = ax; y = ay - h; }
-    else if (cropDragMode === "sw") { x = ax - w; y = ay; }
-    else { x = ax; y = ay; }
-
-    x = clamp(x, 0, dc.width - w);
-    y = clamp(y, 0, dc.height - h);
-
-    cropRect.x = x; cropRect.y = y; cropRect.w = w; cropRect.h = h;
-
-    drawCropUI();
-    scheduleRecomputePreview(60);
-  });
-
-  const endPointer = (e: PointerEvent) => {
-    pointers.delete(e.pointerId);
-    if (pointers.size < 2) pinchStart = null;
-    if (pointers.size === 0) cropDragMode = "none";
-  };
-
-  cropCanvas.addEventListener("pointerup", endPointer);
-  cropCanvas.addEventListener("pointercancel", endPointer);
-
-  // Mouse wheel zoom (desktop)
-  cropCanvas.addEventListener("wheel", (e) => {
-    if (!sourceImage || !cropRect || !refs?.useCropChk.checked) return;
-    rebuildDisplayCanvas();
-    if (!displayCanvas) return;
-
-    e.preventDefault();
-
-    const zoomIn = e.deltaY < 0;
-    const k = zoomIn ? 0.90 : 1.10;
-
-    const cx = cropRect.x + cropRect.w / 2;
-    const cy = cropRect.y + cropRect.h / 2;
-
-    let nw = cropRect.w * k;
-    nw = clamp(nw, 24, displayCanvas.width);
-    const rWheel = aspectRatio(currentCropAspect);
-    let nh = nw / rWheel;
-
-    if (nh > displayCanvas.height) {
-      nh = displayCanvas.height;
-      nw = nh * rWheel;
-    }
-
-    cropRect.w = nw;
-    cropRect.h = nh;
-
-    cropRect.x = clamp(cx - nw / 2, 0, displayCanvas.width - nw);
-    cropRect.y = clamp(cy - nh / 2, 0, displayCanvas.height - nh);
-
-    drawCropUI();
-    scheduleRecomputePreview(60);
-  }, { passive: false });
-}
-
 // -------------------- DOWNSCALE TO 24×12 --------------------
 
 
@@ -1988,7 +1719,7 @@ function recomputePreview() {
   const doEdgeSharpen = isPixel ? false : refs.edgeSharpenChk.checked;
   const doCleanup = refs.cleanupChk.checked;
 
-  const src = getCroppedSource();
+  const src = cropController?.getCroppedSource();
   if (!src) return;
 
   const baseW = currentMode === "only_clan" ? 16 : 24;
@@ -2123,4 +1854,15 @@ function recomputePreview() {
 
   // Update game preview with current output
   renderPreview();
+}
+
+// -------------------- SMALL UTIL --------------------
+function clamp255(x: number): number { return x < 0 ? 0 : x > 255 ? 255 : x; }
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
