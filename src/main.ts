@@ -17,9 +17,10 @@ import { initPreview, renderPreview, scheduleRecomputePreview, recomputePreview 
 import { initToolUIEvents } from "./ui/events";
 import { initBootstrap } from "./app/bootstrap";
 import { collectToolRefs, escapeHtml } from "./app/dom";
-import type { ToolRefs } from "./app/dom";
 import { initRoutes } from "./app/routes";
-import type {  DitherMode,  Preset,  PipelineMode,  PixelPreset,  CrestMode,  CropAspect,  CropRect,  CropDragMode,  GameTemplate,} from "./types/types";
+import { createInitialState } from "./app/state";
+import * as actions from "./app/actions";
+import type {  DitherMode,  Preset,  PipelineMode,  PixelPreset,  CrestMode,  CropAspect,  GameTemplate,} from "./types/types";
 
 // CrestMaker — beta 0.0.8.9
 const SITE_NAME = "CrestMaker";
@@ -182,13 +183,16 @@ app.innerHTML = `
 const yearEl = document.querySelector<HTMLSpanElement>("#year")!;
 yearEl.textContent = String(new Date().getFullYear());
 
+// Centralized runtime state (keeps main.ts glue-only as we refactor)
+const state = createInitialState();
+
 // -------------------- I18N (EN/RU/UA) --------------------
 let renderRouteFn: () => void = () => {}; // будет назначено после initRoutes()
 
 function setLang(lang: Lang) {
   // Preserve advanced toggle state across language switches
-  if (refs?.advancedChk) {
-    advancedOpen = refs.advancedChk.checked;
+  if (state.refs?.advancedChk) {
+    advancedOpen = state.refs.advancedChk.checked;
     localStorage.setItem(ADV_OPEN_KEY, advancedOpen ? "1" : "0");
   }
 
@@ -232,7 +236,7 @@ function renderToolPage() {
   if (currentCropAspect !== desired) {
     currentCropAspect = desired;
     setCropAspect(currentCropAspect);
-    if (displayCanvas) cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
+    if (state.displayCanvas) actions.setCropRect(state, initCropToAspect(state.displayCanvas, aspectRatio(currentCropAspect)));
   }
   const trueW = currentMode === "only_clan" ? 16 : 24;
   const trueH = 12;
@@ -510,52 +514,29 @@ function renderToolPage() {
 
 // -------------------- TOOL UI + STATE --------------------
 
-let refs: ToolRefs | null = null;
-let cropController: ReturnType<typeof createCropController> | null = null;
-
-// Images + pipeline state
-let sourceImage: HTMLImageElement | null = null;
-let displayCanvas: HTMLCanvasElement | null = null; // rotated view
-let rotation90: 0 | 90 | 180 | 270 = 0;
 
 initDisplayCanvas({
-  getSourceImage: () => sourceImage,
-  getRotation90: () => rotation90,
-  getDisplayCanvas: () => displayCanvas,
-  setDisplayCanvas: (c) => {
-    displayCanvas = c;
-  },
+  getSourceImage: () => state.sourceImage,
+  getRotation90: () => state.rotation90,
+  getDisplayCanvas: () => state.displayCanvas,
+  setDisplayCanvas: (c) => actions.setDisplayCanvas(state, c),
 });
-let invertColors = false;
-
-let cropRect: CropRect | null = null;
-let cropDragMode: CropDragMode = "none";
-let dragStart = { mx: 0, my: 0, x: 0, y: 0 };
-let dragAnchor = { ax: 0, ay: 0, start: { x: 0, y: 0, w: 0, h: 0 } };
-
-let iconCombined24x12Indexed: Uint8Array | null = null;
-let iconClan16x12Indexed: Uint8Array | null = null;
-let iconAlly8x12Indexed: Uint8Array | null = null;
-let palette256: Uint8Array | null = null;
-
-let gameTemplateImg: HTMLImageElement | null = null;
-let loadedTemplateSrc: string | null = null;
 
 initPreview({
-  getRefs: () => refs,
-  getSourceImage: () => sourceImage,
+  getRefs: () => state.refs,
+  getSourceImage: () => state.sourceImage,
   getCurrentMode: () => currentMode,
-  getInvertColors: () => invertColors,
+  getInvertColors: () => state.invertColors,
 
   getGameTemplate: () => getGameTemplate(),
-  getGameTemplateImg: () => gameTemplateImg,
+  getGameTemplateImg: () => state.gameTemplateImg,
 
   getPixelPreset: () => getPixelPreset(),
   getBrightness: () => getBrightness(),
   getContrast: () => getContrast(),
   clamp255,
 
-  getCroppedSource: () => cropController?.getCroppedSource() ?? null,
+  getCroppedSource: () => state.cropController?.getCroppedSource() ?? null,
 
   renderToSize,
   edgeAwareSharpen,
@@ -571,19 +552,23 @@ initPreview({
   drawZoomTo,
 
   // preview state storage (required by ui/preview Deps)
-  getPalette256: () => palette256,
-  setPalette256: (p) => { palette256 = p; },
+  getPalette256: () => state.palette256,
+  setPalette256: (p) => actions.setPalette256(state, p),
 
-  getIconAlly8: () => iconAlly8x12Indexed,
-  setIconAlly8: (v) => { iconAlly8x12Indexed = v; },
+  getIconAlly8: () => state.iconAlly8x12Indexed,
+  setIconAlly8: (v) => actions.setIconAlly8(state, v),
 
-  getIconClan16: () => iconClan16x12Indexed,
-  setIconClan16: (v) => { iconClan16x12Indexed = v; },
+  getIconClan16: () => state.iconClan16x12Indexed,
+  setIconClan16: (v) => actions.setIconClan16(state, v),
 
-  getIconCombined24: () => iconCombined24x12Indexed,
-  setIconCombined24: (v) => { iconCombined24x12Indexed = v; },
+  getIconCombined24: () => state.iconCombined24x12Indexed,
+  setIconCombined24: (v) => actions.setIconCombined24(state, v),
 
-  setCanDownload: (can) => {  const r = refs;  if (!r) return;  r.downloadBtn.disabled = !can;},
+  setCanDownload: (can) => {
+    const r = state.refs;
+    if (!r) return;
+    r.downloadBtn.disabled = !can;
+  },
 });
 
 
@@ -619,60 +604,63 @@ function initToolUI() {
   // Help tooltips (desktop hover + mobile tap)
   initHelpTooltips();
   // refs must be available only after tool HTML is rendered
-  refs = collectToolRefs(document);
+  actions.setRefs(state, collectToolRefs(document));
 
   // Crop controller (moved to src/ui/crop.ts)
-  cropController = createCropController({
-    getRefs: () => refs,
-    getSourceImage: () => sourceImage,
-    getDisplayCanvas: () => displayCanvas,
-    rebuildDisplayCanvas,
-    getCropRect: () => cropRect,
-    setCropRect: (r) => { cropRect = r; },
-    scheduleRecomputePreview,
+  actions.setCropController(
+    state,
+    createCropController({
+      getRefs: () => state.refs,
+      getSourceImage: () => state.sourceImage,
+      getDisplayCanvas: () => state.displayCanvas,
+      rebuildDisplayCanvas,
+      getCropRect: () => state.cropRect,
+      setCropRect: (r) => actions.setCropRect(state, r),
+      scheduleRecomputePreview,
 
-    getCropDragMode: () => cropDragMode,
-    setCropDragMode: (m) => { cropDragMode = m; },
-    getDragStart: () => dragStart,
-    setDragStart: (v) => { dragStart = v; },
-    getDragAnchor: () => dragAnchor,
-    setDragAnchor: (v) => { dragAnchor = v; },
-  });
+      getCropDragMode: () => state.cropDragMode,
+      setCropDragMode: (m) => actions.setCropDragMode(state, m),
+      getDragStart: () => state.dragStart,
+      setDragStart: (v) => actions.setDragStart(state, v),
+      getDragAnchor: () => state.dragAnchor,
+      setDragAnchor: (v) => actions.setDragAnchor(state, v),
+    })
+  );
 
   // Pipeline persistence + UI toggles
-  refs.pipelineSel.value = getPipeline();
+  state.refs!.pipelineSel.value = getPipeline();
 
   const applyPresetOptions = (p: PipelineMode) => {
     if (p === "pixel") {
       const px = getPixelPreset();
-      refs!.presetSel.innerHTML = `
+      state.refs!.presetSel.innerHTML = `
         <option value="pixel-clean" ${px === "pixel-clean" ? "selected" : ""}>Clean</option>
         <option value="pixel-crisp" ${px === "pixel-crisp" ? "selected" : ""}>Crisp</option>
         <option value="pixel-stable" ${px === "pixel-stable" ? "selected" : ""}>Stable</option>
         <option value="pixel-indexed" ${px === "pixel-indexed" ? "selected" : ""}>Indexed</option>
       `;
-      refs!.presetSel.value = px;
+      state.refs!.presetSel.value = px;
     } else {
       const mp = getModernPreset();
-      refs!.presetSel.innerHTML = `
+      state.refs!.presetSel.innerHTML = `
         <option value="balanced" ${mp === "balanced" ? "selected" : ""}>${escapeHtml(t("Balanced","Баланс","Баланс"))}</option>
         <option value="simple" ${mp === "simple" ? "selected" : ""}>${escapeHtml(t("Simple","Обычно","Простий"))}</option>
         <option value="complex" ${mp === "complex" ? "selected" : ""}>${escapeHtml(t("Complex","Сложная","Складна"))}</option>
         <option value="legacy" ${mp === "legacy" ? "selected" : ""}>${escapeHtml(t("Legacy","Legacy","Legacy"))}</option>
       `;
-      refs!.presetSel.value = mp;
+      state.refs!.presetSel.value = mp;
     }
   };
 
-  refs.pipelineSel.value = getPipeline();
-  applyPresetOptions(refs.pipelineSel.value as PipelineMode);
+  state.refs!.pipelineSel.value = getPipeline();
+  applyPresetOptions(state.refs!.pipelineSel.value as PipelineMode);
 
-  let prevPipeline: PipelineMode = refs!.pipelineSel.value as PipelineMode;
+  let prevPipeline: PipelineMode = state.refs!.pipelineSel.value as PipelineMode;
 
 
   // UI events / bindings (extracted to src/ui/events.ts)
   initToolUIEvents({
-    getRefs: () => refs,
+    getRefs: () => state.refs,
 
     getLangButtonsRoot: () => document,
 
@@ -702,33 +690,33 @@ function initToolUI() {
     setCurrentCropAspect: (a) => { currentCropAspect = a; },
     setCropAspectStorage: (a) => setCropAspect(a),
 
-    setCropRectNull: () => { cropRect = null; },
+    setCropRectNull: () => { actions.setCropRect(state, null); },
     rebuildCropRectToAspect: () => {
-      if (displayCanvas) cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
+      if (state.displayCanvas) actions.setCropRect(state, initCropToAspect(state.displayCanvas, aspectRatio(currentCropAspect)));
     },
-    drawCropUI: () => { cropController?.drawCropUI(); },
-    initCropEvents: () => { cropController?.initCropEvents(); },
+    drawCropUI: () => { state.cropController?.drawCropUI(); },
+    initCropEvents: () => { state.cropController?.initCropEvents(); },
 
     renderRoute: renderRouteFn,
 
     // display / preview
-    getSourceImage: () => sourceImage,
-    setSourceImage: (img) => { sourceImage = img; },
+    getSourceImage: () => state.sourceImage,
+    setSourceImage: (img) => { actions.setSourceImage(state, img); },
 
     rebuildDisplayCanvas: () => rebuildDisplayCanvas(),
 
-    getInvertColors: () => invertColors,
-    setInvertColors: (v) => { invertColors = v; },
+    getInvertColors: () => state.invertColors,
+    setInvertColors: (v) => { actions.setInvertColors(state, v); },
 
     rotateLeft: () => {
-      rotation90 = ((rotation90 + 270) % 360) as any;
+      actions.setRotation90(state, (((state.rotation90 + 270) % 360) as any));
       rebuildDisplayCanvas();
-      if (displayCanvas) cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
+      if (state.displayCanvas) actions.setCropRect(state, initCropToAspect(state.displayCanvas, aspectRatio(currentCropAspect)));
     },
     rotateRight: () => {
-      rotation90 = ((rotation90 + 90) % 360) as any;
+      actions.setRotation90(state, (((state.rotation90 + 90) % 360) as any));
       rebuildDisplayCanvas();
-      if (displayCanvas) cropRect = initCropToAspect(displayCanvas, aspectRatio(currentCropAspect));
+      if (state.displayCanvas) actions.setCropRect(state, initCropToAspect(state.displayCanvas, aspectRatio(currentCropAspect)));
     },
 
     loadTemplate,
@@ -757,17 +745,17 @@ function initToolUI() {
     loadImageFromFile,
 
     // downloads
-    hasPalette: () => !!palette256,
+    hasPalette: () => !!state.palette256,
     downloadCurrentMode: () => {
-      if (!palette256) return;
+      if (!state.palette256) return;
       if (currentMode === "only_clan") {
-        if (!iconClan16x12Indexed) return;
-        const clanBmp = makeBmp8bitIndexed(16, 12, palette256, iconClan16x12Indexed);
+        if (!state.iconClan16x12Indexed) return;
+        const clanBmp = makeBmp8bitIndexed(16, 12, state.palette256, state.iconClan16x12Indexed);
         downloadBlob(clanBmp, "clan_16x12_256.bmp");
         return;
       }
-      if (!iconCombined24x12Indexed || !iconClan16x12Indexed || !iconAlly8x12Indexed) return;
-      downloadBMPs(iconAlly8x12Indexed, iconClan16x12Indexed, iconCombined24x12Indexed, palette256);
+      if (!state.iconCombined24x12Indexed || !state.iconClan16x12Indexed || !state.iconAlly8x12Indexed) return;
+      downloadBMPs(state.iconAlly8x12Indexed, state.iconClan16x12Indexed, state.iconCombined24x12Indexed, state.palette256);
     },
   });
 }
@@ -775,7 +763,7 @@ function initToolUI() {
 // -------------------- PRESET DEFAULTS --------------------
 function applyPresetDefaults(p: Preset) {
   // `refs` is initialized after render; keep the function safe and TS-happy.
-  const r = refs;
+  const r = state.refs;
   if (!r) return;
 
   // Helper to set Strength slider consistently
@@ -839,7 +827,7 @@ function applyPresetDefaults(p: Preset) {
 
 
 function updateControlAvailability(p: Preset) {
-  const r = refs;
+  const r = state.refs;
   if (!r) return;
 
   const isPixel = (r.pipelineSel.value as PipelineMode) === "pixel";
@@ -976,41 +964,44 @@ async function loadTemplate() {
   const tpl = getGameTemplate();
 
   // Avoid reloading the same template on every render
-  if (loadedTemplateSrc === tpl.src && gameTemplateImg) {
+  if (state.loadedTemplateSrc === tpl.src && state.gameTemplateImg) {
     renderPreview();
     return;
   }
 
   try {
-    gameTemplateImg = await loadImageFromUrl(tpl.src);
-    loadedTemplateSrc = tpl.src;
+    actions.setGameTemplateImg(state, await loadImageFromUrl(tpl.src));
+    actions.setLoadedTemplateSrc(state, tpl.src);
     renderPreview();
   } catch {
-    gameTemplateImg = null;
-    loadedTemplateSrc = null;
+    actions.setGameTemplateImg(state, null);
+    actions.setLoadedTemplateSrc(state, null);
     renderPreview();
   }
 }
 
 // -------------------- DRAW TRUE SIZE + DEBUG --------------------
 function setTrueSizeCanvasDims(w: number, h: number) {
-  if (!refs) return;
-  if (refs.dstTrueCanvas.width !== w) refs.dstTrueCanvas.width = w;
-  if (refs.dstTrueCanvas.height !== h) refs.dstTrueCanvas.height = h;
+  const r = state.refs;
+  if (!r) return;
+  if (r.dstTrueCanvas.width !== w) r.dstTrueCanvas.width = w;
+  if (r.dstTrueCanvas.height !== h) r.dstTrueCanvas.height = h;
 }
 
 function drawTrueSizeEmpty(w: number, h: number) {
-  if (!refs) return;
+  const r = state.refs;
+  if (!r) return;
   setTrueSizeCanvasDims(w, h);
-  refs.dstTrueCtx.clearRect(0, 0, w, h);
-  refs.dstTrueCtx.fillStyle = "rgba(255,255,255,0.06)";
-  refs.dstTrueCtx.fillRect(0, 0, w, h);
+  r.dstTrueCtx.clearRect(0, 0, w, h);
+  r.dstTrueCtx.fillStyle = "rgba(255,255,255,0.06)";
+  r.dstTrueCtx.fillRect(0, 0, w, h);
 }
 
 function drawTrueSize(indices: Uint8Array, palette: Uint8Array, w: number, h: number) {
-  if (!refs) return;
+  const r = state.refs;
+  if (!r) return;
   setTrueSizeCanvasDims(w, h);
-  const img = refs.dstTrueCtx.createImageData(w, h);
+  const img = r.dstTrueCtx.createImageData(w, h);
   const data = img.data;
   for (let i = 0; i < w * h; i++) {
     const idx = indices[i];
@@ -1019,7 +1010,7 @@ function drawTrueSize(indices: Uint8Array, palette: Uint8Array, w: number, h: nu
     data[i * 4 + 2] = palette[idx * 3 + 2];
     data[i * 4 + 3] = 255;
   }
-  refs.dstTrueCtx.putImageData(img, 0, 0);
+  r.dstTrueCtx.putImageData(img, 0, 0);
 }
 
 function drawZoomTo(

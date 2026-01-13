@@ -477,3 +477,5 @@ export function createCropController(deps: CropDeps) {
 
   return { drawCropUI, getCroppedSource, initCropEvents };
 }
+
+export type CropController = ReturnType<typeof createCropController>;
