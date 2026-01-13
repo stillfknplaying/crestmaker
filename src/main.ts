@@ -23,6 +23,7 @@ import { createInitialState } from "./app/state";
 import * as actions from "./app/actions";
 import { initPipelineController, scheduleRecomputePipeline, recomputePipeline } from "./app/pipelineController";
 import * as settings from "./app/settings";
+import { loadImageFromClipboardEvent, loadImageFromDataTransfer, loadImageFromFile } from "./app/fileLoader";
 import type {  DitherMode,  Preset,  PipelineMode,  CrestMode,  CropAspect,  GameTemplate,} from "./types/types";
 
 // CrestMaker — beta 0.0.8.9
@@ -676,7 +677,9 @@ function initToolUI() {
     setLang,
 
     // file loading
-    loadImageFromFile,
+    loadFromFile: loadImageFromFile,
+    loadFromClipboard: loadImageFromClipboardEvent,
+    loadFromDataTransfer: loadImageFromDataTransfer,
 
     // downloads
     hasPalette: () => hasPaletteFromState(state),
@@ -857,19 +860,6 @@ function updateControlAvailability(p: Preset) {
 }
 
 // -------------------- IMAGE LOADING --------------------
-function loadImageFromFile(file: File): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(img);
-    };
-    img.onerror = () => reject(new Error("Failed to load image"));
-    img.src = url;
-  });
-}
-
 function loadImageFromUrl(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();

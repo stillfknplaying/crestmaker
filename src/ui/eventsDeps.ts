@@ -75,7 +75,9 @@ export type EventsDeps = {
   setLang: (l: Lang) => void;
 
   // file loading
-  loadImageFromFile: (file: File) => Promise<HTMLImageElement>;
+  loadFromFile: (file: File) => Promise<HTMLImageElement>;
+  loadFromClipboard: (e: ClipboardEvent) => Promise<HTMLImageElement | null>;
+  loadFromDataTransfer: (dt: DataTransfer | null) => Promise<HTMLImageElement | null>;
 
   // downloads
   hasPalette: () => boolean;

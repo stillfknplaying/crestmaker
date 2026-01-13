@@ -6,12 +6,68 @@ import type { Lang } from "../i18n";
 import type { PipelineMode, PixelPreset, Preset, CropAspect, CrestMode } from "../types/types";
 import type { EventsDeps } from "./eventsDeps";
 
+// Document-level listeners (paste / drag&drop) must be bound once.
+// We keep a pointer to the latest deps (set on every tool page render).
+let activeDeps: EventsDeps | null = null;
+let globalsBound = false;
+
+function applyLoadedImageWithActiveDeps(img: HTMLImageElement) {
+  const deps = activeDeps;
+  if (!deps) return;
+  const r = deps.getRefs();
+  if (!r) return;
+
+  deps.setSourceImage(img);
+
+  // Reset per-image transforms
+  deps.setInvertColors(false);
+  r.invertBtn.classList.remove("active");
+
+  deps.rebuildDisplayCanvas();
+  deps.rebuildCropRectToAspect();
+  deps.drawCropUI();
+
+  r.resetBtn.disabled = false;
+  deps.scheduleRecomputePipeline(0);
+}
+
+function bindGlobalFileListenersOnce() {
+  if (globalsBound) return;
+  globalsBound = true;
+
+  // Paste image from clipboard (Ctrl+V)
+  document.addEventListener("paste", async (e) => {
+    if (!activeDeps || !activeDeps.getRefs()) return;
+    const img = await activeDeps.loadFromClipboard(e);
+    if (!img) return;
+    e.preventDefault();
+    applyLoadedImageWithActiveDeps(img);
+  });
+
+  // Drag & Drop image file (anywhere on the page)
+  document.addEventListener("dragover", (e) => {
+    if (!activeDeps || !activeDeps.getRefs()) return;
+    e.preventDefault();
+  });
+  document.addEventListener("drop", async (e) => {
+    if (!activeDeps || !activeDeps.getRefs()) return;
+    e.preventDefault();
+    const img = await activeDeps.loadFromDataTransfer(e.dataTransfer);
+    if (!img) return;
+    applyLoadedImageWithActiveDeps(img);
+  });
+}
+
 /**
  * Binds ALL tool-page events. Call once per tool page render, after refs are assigned.
  */
 export function initToolUIEvents(deps: EventsDeps) {
+  activeDeps = deps;
+  bindGlobalFileListenersOnce();
   const refs = deps.getRefs();
   if (!refs) return;
+
+  const applyLoadedImage = (img: HTMLImageElement) => applyLoadedImageWithActiveDeps(img);
 
   const syncPipelineUI = () => {
     const r = deps.getRefs();
@@ -258,19 +314,8 @@ export function initToolUIEvents(deps: EventsDeps) {
     const file = r.fileInput.files?.[0];
     if (!file) return;
 
-    const img = await deps.loadImageFromFile(file);
-    deps.setSourceImage(img);
-
-    // Reset per-image transforms
-    deps.setInvertColors(false);
-    r.invertBtn.classList.remove("active");
-
-    deps.rebuildDisplayCanvas();
-    deps.rebuildCropRectToAspect();
-    deps.drawCropUI();
-
-    r.resetBtn.disabled = false;
-    deps.scheduleRecomputePipeline(0);
+    const img = await deps.loadFromFile(file);
+    applyLoadedImage(img);
   });
 
   // Download
