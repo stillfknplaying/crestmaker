@@ -1,6 +1,5 @@
 import "./style.css";
 import { buildPaletteSync, utils } from "image-q";
-import { initRoutes } from "./app/routes";
 
 import { privacyPolicyHtml } from "./content/privacy";
 import { termsHtml } from "./content/terms";
@@ -8,6 +7,8 @@ import { gdprHtml } from "./content/gdpr";
 import { aboutHtml } from "./content/about";
 import type { Lang } from "./i18n";
 import { currentLang, setLang as setLangCore, t, tipAttr, helpHtml } from "./i18n";
+
+import { downloadBMPs, makeBmp8bitIndexed, downloadBlob } from "./bmp/writer";
 
 type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
 // Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
@@ -421,21 +422,41 @@ function initCookieConsentUI() {
 // -------------------- ROUTES --------------------
 const routeRoot = document.querySelector<HTMLDivElement>("#routeRoot")!;
 
-// Router is extracted to src/app/routes.ts. It renders policy pages and delegates tool rendering back to main.ts.
-const { renderRoute } = initRoutes({
-  routeRoot,
-  getLang: () => currentLang,
-  setLang,
-  t,
-  escapeHtml,
-  pages: {
-    privacy: (lang) => privacyPolicyHtml(lang),
-    terms: (lang) => termsHtml(lang),
-    about: (lang) => aboutHtml(lang),
-    gdpr: (lang) => gdprHtml(lang),
-  },
-  renderToolPage: () => renderToolPage(),
-});
+function renderRoute() {
+  const hash = (location.hash || "#/").replace(/^#/, "");
+  const path = hash.startsWith("/") ? hash : "/" + hash;
+
+  if (path === "/privacy") return renderPolicyPage(t("Privacy Policy","Политика конфиденциальности","Політика конфіденційності"), privacyPolicyHtml(currentLang));
+  if (path === "/terms") return renderPolicyPage(t("Terms of Service","Пользовательское соглашение","Умови користування"), termsHtml(currentLang));
+  if (path === "/about") return renderPolicyPage(t("About","О проекте","Про проєкт"), aboutHtml(currentLang));
+  if (path === "/gdpr") return renderPolicyPage("GDPR", gdprHtml(currentLang));
+
+return renderToolPage();
+}
+
+function renderPolicyPage(title: string, html: string) {
+  routeRoot.innerHTML = `
+    <section class="page">
+      <div class="page-head">
+        <h2>${escapeHtml(title)}</h2>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <div class="btn-group" style="display:flex; gap:8px;">
+            <button class="btn ${currentLang === "en" ? "active" : ""}" data-lang="en">EN</button>
+            <button class="btn ${currentLang === "ru" ? "active" : ""}" data-lang="ru">RU</button>
+            <button class="btn ${currentLang === "ua" ? "active" : ""}" data-lang="ua">UA</button>
+          </div>
+          <a class="btn" href="#/">← ${escapeHtml(t("Back to tool","Назад к инструменту","Назад до інструмента"))}</a>
+        </div>
+      </div>
+
+      <article class="md">${html}</article>
+    </section>
+  `;
+
+  routeRoot.querySelectorAll<HTMLButtonElement>("button[data-lang]").forEach((btn) => {
+    btn.addEventListener("click", () => setLang(btn.dataset.lang as Lang));
+  });
+}
 
 function renderToolPage() {
   // Crop aspect is tied to Mode (no separate selector)
@@ -2590,17 +2611,6 @@ function renderPreview() {
   ctx.drawImage(tmp, tpl.slotX, tpl.slotY, tpl.slotW, tpl.slotH);
 }
 
-function downloadBMPs(ally8: Uint8Array, clan16: Uint8Array, combined24: Uint8Array, palette: Uint8Array) {
-  const h = 12;
-
-  const allyBmp = makeBmp8bitIndexed(8, h, palette, ally8);
-  const clanBmp = makeBmp8bitIndexed(16, h, palette, clan16);
-  const combinedBmp = makeBmp8bitIndexed(24, h, palette, combined24);
-
-  downloadBlob(allyBmp, "ally_8x12_256.bmp");
-  downloadBlob(clanBmp, "clan_16x12_256.bmp");
-  downloadBlob(combinedBmp, "crest_24x12_256.bmp");
-}
 
 
 function clampDitherStrength(preset: Preset, mode: DitherMode, v01: number): number {
@@ -2796,78 +2806,6 @@ function recomputePreview() {
 
   // Update game preview with current output
   renderPreview();
-}
-
-// -------------------- BMP WRITER + DOWNLOAD --------------------
-function makeBmp8bitIndexed(
-  width: number,
-  height: number,
-  paletteRGB: Uint8Array,
-  indices: Uint8Array
-): Blob {
-  const rowSize = Math.ceil(width / 4) * 4;
-  const pixelArraySize = rowSize * height;
-
-  const fileHeaderSize = 14;
-  const dibHeaderSize = 40;
-  const paletteSize = 256 * 4;
-  const pixelDataOffset = fileHeaderSize + dibHeaderSize + paletteSize;
-  const fileSize = pixelDataOffset + pixelArraySize;
-
-  const buf = new ArrayBuffer(fileSize);
-  const dv = new DataView(buf);
-  let p = 0;
-
-  dv.setUint8(p++, 0x42);
-  dv.setUint8(p++, 0x4D);
-  dv.setUint32(p, fileSize, true); p += 4;
-  dv.setUint16(p, 0, true); p += 2;
-  dv.setUint16(p, 0, true); p += 2;
-  dv.setUint32(p, pixelDataOffset, true); p += 4;
-
-  dv.setUint32(p, dibHeaderSize, true); p += 4;
-  dv.setInt32(p, width, true); p += 4;
-  dv.setInt32(p, height, true); p += 4;
-  dv.setUint16(p, 1, true); p += 2;
-  dv.setUint16(p, 8, true); p += 2;
-  dv.setUint32(p, 0, true); p += 4;
-  dv.setUint32(p, pixelArraySize, true); p += 4;
-  dv.setInt32(p, 2835, true); p += 4;
-  dv.setInt32(p, 2835, true); p += 4;
-  dv.setUint32(p, 256, true); p += 4;
-  dv.setUint32(p, 256, true); p += 4;
-
-  for (let i = 0; i < 256; i++) {
-    const r = paletteRGB[i * 3 + 0];
-    const g = paletteRGB[i * 3 + 1];
-    const b = paletteRGB[i * 3 + 2];
-    dv.setUint8(p++, b);
-    dv.setUint8(p++, g);
-    dv.setUint8(p++, r);
-    dv.setUint8(p++, 0);
-  }
-
-  const u8 = new Uint8Array(buf);
-  let pixOffset = pixelDataOffset;
-
-  for (let y = height - 1; y >= 0; y--) {
-    const rowStart = y * width;
-    for (let x = 0; x < width; x++) u8[pixOffset + x] = indices[rowStart + x];
-    for (let x = width; x < rowSize; x++) u8[pixOffset + x] = 0;
-    pixOffset += rowSize;
-  }
-
-  return new Blob([u8], { type: "image/bmp" });
-}
-
-function downloadBlob(blob: Blob, filename: string) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
 // -------------------- SMALL UTIL --------------------
