@@ -45,80 +45,78 @@ function hideCookieBanner() {
 }
 
 function openCookieModal() {
-  const modal = document.querySelector<HTMLDivElement>("#cookieModal")!;
+  const modal = document.querySelector<HTMLDivElement>("#cookieModal");
+  if (!modal) return;
   modal.classList.remove("hidden");
   syncCookieModalFromState();
   localizeCookieUI();
 }
 
 function closeCookieModal() {
-  const modal = document.querySelector<HTMLDivElement>("#cookieModal")!;
+  const modal = document.querySelector<HTMLDivElement>("#cookieModal");
+  if (!modal) return;
   modal.classList.add("hidden");
 }
 
 function syncCookieModalFromState() {
   const state = getConsent();
-  const analytics = document.querySelector<HTMLInputElement>("#cookieAnalytics")!;
-  const ads = document.querySelector<HTMLInputElement>("#cookieAds")!;
-  analytics.checked = state ? state.analytics : false;
-  ads.checked = state ? state.ads : false;
+  const analytics = document.querySelector<HTMLInputElement>("#cookieAnalytics");
+  const ads = document.querySelector<HTMLInputElement>("#cookieAds");
+  if (analytics) analytics.checked = state ? state.analytics : false;
+  if (ads) ads.checked = state ? state.ads : false;
 }
 
 export function localizeCookieUI() {
+  const setText = (selector: string, value: string) => {
+    const el = document.querySelector<HTMLElement>(selector);
+    if (el) el.textContent = value;
+  };
+
   const hasConsent = !!getConsent();
+  // Elements may not exist yet depending on render order; setText is safe.
 
-  const title = document.querySelector<HTMLHeadingElement>("#cookieModalTitle")!;
-  const desc = document.querySelector<HTMLParagraphElement>("#cookieModalDesc")!;
-  const essentialTitle = document.querySelector<HTMLElement>("#cookieEssentialTitle")!;
-  const essentialDesc = document.querySelector<HTMLElement>("#cookieEssentialDesc")!;
-  const essentialAlways = document.querySelector<HTMLElement>("#cookieEssentialAlways")!;
-  const analyticsTitle = document.querySelector<HTMLElement>("#cookieAnalyticsTitle")!;
-  const analyticsDesc = document.querySelector<HTMLElement>("#cookieAnalyticsDesc")!;
-  const adsTitle = document.querySelector<HTMLElement>("#cookieAdsTitle")!;
-  const adsDesc = document.querySelector<HTMLElement>("#cookieAdsDesc")!;
-  const cancel = document.querySelector<HTMLButtonElement>("#cookieCancel")!;
-  const save = document.querySelector<HTMLButtonElement>("#cookieSave")!;
-
-  title.textContent = t("Cookie preferences", "Настройки cookies", "Налаштування cookies");
-  desc.textContent = t(
+  setText("#cookieModalTitle", t("Cookie preferences", "Настройки cookies", "Налаштування cookies"));
+  setText("#cookieModalDesc", t(
     "Choose which cookies you allow. You can change your choice anytime.",
     "Выберите, какие cookies разрешить. Настройки можно изменить в любое время.",
     "Оберіть, які cookies дозволити. Налаштування можна змінити будь-коли."
-  );
+  ));
 
-  essentialTitle.textContent = t("Essential", "Необходимые", "Необхідні");
-  essentialDesc.textContent = t(
+  setText("#cookieEssentialTitle", t("Essential", "Необходимые", "Необхідні"));
+  setText("#cookieEssentialDesc", t(
     "Required for the site to work (saved settings).",
     "Нужны для работы сайта (сохранение настроек).",
     "Потрібні для роботи сайту (збереження налаштувань)."
-  );
-  essentialAlways.textContent = t("Always on", "Всегда включены", "Завжди увімкнені");
+  ));
+  setText("#cookieEssentialAlways", t("Always on", "Всегда включены", "Завжди увімкнені"));
 
-  analyticsTitle.textContent = t("Analytics", "Аналитика", "Аналітика");
-  analyticsDesc.textContent = t(
+  setText("#cookieAnalyticsTitle", t("Analytics", "Аналитика", "Аналітика"));
+  setText("#cookieAnalyticsDesc", t(
     "Helps us understand usage (if enabled in the future).",
     "Помогает понять использование (если будет подключено в будущем).",
     "Допомагає зрозуміти використання (якщо буде підключено в майбутньому)."
-  );
+  ));
 
-  adsTitle.textContent = t("Advertising", "Реклама", "Реклама");
-  adsDesc.textContent = t(
+  setText("#cookieAdsTitle", t("Advertising", "Реклама", "Реклама"));
+  setText("#cookieAdsDesc", t(
     "Used for ads personalization (e.g., Google AdSense) if enabled.",
     "Используется для персонализации рекламы (например, Google AdSense), если будет включено.",
     "Використовується для персоналізації реклами (наприклад, Google AdSense), якщо буде увімкнено."
-  );
+  ));
 
-  cancel.textContent = t("Cancel", "Отмена", "Скасувати");
-  save.textContent = hasConsent
+  setText("#cookieCancel", t("Cancel", "Отмена", "Скасувати"));
+  setText("#cookieSave", hasConsent
     ? t("Save", "Сохранить", "Зберегти")
-    : t("Save & continue", "Сохранить и продолжить", "Зберегти та продовжити");
+    : t("Save & continue", "Сохранить и продолжить", "Зберегти та продовжити"));
 }
 
 export function renderCookieBannerIfNeeded() {
   // Only show if no consent has been stored yet.
   if (getConsent()) return;
 
-  const root = document.querySelector<HTMLDivElement>("#cookieRoot")!;
+  const root = document.querySelector<HTMLDivElement>("#cookieRoot");
+  if (!root) return;
+
   root.innerHTML = `
     <div style="
       position:fixed;
@@ -130,63 +128,87 @@ export function renderCookieBannerIfNeeded() {
       z-index: 1200;
     ">
       <div style="max-width:1200px; margin:0 auto; display:flex; gap:12px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;">
-        <div style="min-width:240px; flex:1;">
-          <div style="font-weight:700; margin-bottom:6px;">${escapeHtml(t("Cookies & privacy", "Cookies и приватность", "Cookies і приватність"))}</div>
-          <div class="muted" style="font-size:12px; line-height:1.45;">
+        <div style="min-width:240px; max-width:820px;">
+          <div style="font-weight:700; margin-bottom:4px;">${escapeHtml(t("Cookies", "Cookies", "Cookies"))}</div>
+          <div class="muted" style="font-size:13px; line-height:1.35;">
             ${escapeHtml(t(
-              "We may use cookies to remember your preferences. If ads/analytics are enabled in the future, consent will be requested where required.",
-              "Мы можем использовать cookies для сохранения настроек. Если в будущем появятся реклама/аналитика, будет запрошено согласие там, где это требуется.",
-              "Ми можемо використовувати cookies для збереження налаштувань. Якщо у майбутньому з’являться реклама/аналітика, згоду буде запитано там, де це потрібно."
+              "We use cookies to remember your preferences and to improve the tool. You can accept all cookies or manage optional ones.",
+              "Мы используем cookies, чтобы запоминать ваши настройки и улучшать инструмент. Вы можете принять все cookies или настроить необязательные.",
+              "Ми використовуємо cookies, щоб запамʼятовувати ваші налаштування та покращувати інструмент. Ви можете прийняти всі cookies або налаштувати необов’язкові."
             ))}
+            <a href="#/privacy" style="margin-left:8px; text-decoration:underline;">${escapeHtml(t("Learn more", "Подробнее", "Детальніше"))}</a>
           </div>
         </div>
 
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
           <button class="btn" id="cookieManage">${escapeHtml(t("Manage options", "Настроить", "Налаштувати"))}</button>
-          <button class="btn" id="cookieReject">${escapeHtml(t("Reject non-essential", "Отклонить необязательные", "Відхилити необов’язкові"))}</button>
+          <button class="btn" id="cookieReject">${escapeHtml(t("Reject optional", "Отклонить необязательные", "Відхилити необов’язкові"))}</button>
           <button class="btn primary" id="cookieAccept">${escapeHtml(t("Accept all", "Принять все", "Прийняти все"))}</button>
         </div>
       </div>
     </div>
   `;
-
-  const manage = document.querySelector<HTMLButtonElement>("#cookieManage")!;
-  const reject = document.querySelector<HTMLButtonElement>("#cookieReject")!;
-  const accept = document.querySelector<HTMLButtonElement>("#cookieAccept")!;
-
-  manage.addEventListener("click", openCookieModal);
-  reject.addEventListener("click", () => setConsent({ essential: true, analytics: false, ads: false }));
-  accept.addEventListener("click", () => setConsent({ essential: true, analytics: true, ads: true }));
 }
 
+export let cookieUiBound = false;
+
 export function initCookieConsentUI() {
-  // Footer link
-  const link = document.querySelector<HTMLAnchorElement>("#cookieSettingsLink");
-  if (link) {
-    link.addEventListener("click", (e) => {
+  if (cookieUiBound) return;
+  cookieUiBound = true;
+
+  // Event delegation so it works regardless of render timing.
+  document.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    // Footer "Cookies" link
+    const footerLink = target.closest("#cookieSettingsLink");
+    if (footerLink) {
       e.preventDefault();
       openCookieModal();
-    });
-  }
+      return;
+    }
 
-  // Modal buttons
-  const cancel = document.querySelector<HTMLButtonElement>("#cookieCancel")!;
-  const save = document.querySelector<HTMLButtonElement>("#cookieSave")!;
-  cancel.addEventListener("click", closeCookieModal);
+    // Banner buttons
+    if (target.closest("#cookieManage")) {
+      e.preventDefault();
+      openCookieModal();
+      return;
+    }
+    if (target.closest("#cookieReject")) {
+      e.preventDefault();
+      setConsent({ essential: true, analytics: false, ads: false });
+      return;
+    }
+    if (target.closest("#cookieAccept")) {
+      e.preventDefault();
+      setConsent({ essential: true, analytics: true, ads: true });
+      return;
+    }
 
-  save.addEventListener("click", () => {
-    const analytics = document.querySelector<HTMLInputElement>("#cookieAnalytics")!.checked;
-    const ads = document.querySelector<HTMLInputElement>("#cookieAds")!.checked;
-    setConsent({ essential: true, analytics, ads });
-    closeCookieModal();
+    // Modal actions
+    if (target.closest("#cookieCancel")) {
+      e.preventDefault();
+      closeCookieModal();
+      return;
+    }
+    if (target.closest("#cookieSave")) {
+      e.preventDefault();
+      const analytics = document.querySelector<HTMLInputElement>("#cookieAnalytics")?.checked ?? false;
+      const ads = document.querySelector<HTMLInputElement>("#cookieAds")?.checked ?? false;
+      setConsent({ essential: true, analytics, ads });
+      closeCookieModal();
+      return;
+    }
+
+    // Click outside modal-card closes modal
+    const modal = document.querySelector<HTMLDivElement>("#cookieModal");
+    if (modal && target === modal) {
+      closeCookieModal();
+      return;
+    }
   });
 
-  // Click outside modal-card closes modal
-  const modal = document.querySelector<HTMLDivElement>("#cookieModal")!;
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) closeCookieModal();
-  });
-
-  // Render banner if needed
+  // Try to render banner now; if app hasn't rendered yet, it will be a no-op.
   renderCookieBannerIfNeeded();
 }
