@@ -1,6 +1,5 @@
 import type { ToolRefs } from "../app/dom";
-
-export type CropRect = { x: number; y: number; w: number; h: number };
+import type { CropRect, CropDragMode } from "../types/types";
 
 function clamp(v: number, a: number, b: number) {
   return Math.max(a, Math.min(b, v));
@@ -80,8 +79,6 @@ function hitCorner(
   }
   return null;
 }
-
-export type CropDragMode = "none" | "move" | "nw" | "ne" | "sw" | "se";
 
 export function createCropController(deps: {
   getRefs: () => ToolRefs | null;

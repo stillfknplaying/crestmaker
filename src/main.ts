@@ -19,23 +19,9 @@ import { initBootstrap } from "./app/bootstrap";
 import { collectToolRefs, escapeHtml } from "./app/dom";
 import type { ToolRefs } from "./app/dom";
 import { initRoutes } from "./app/routes";
+import type {  DitherMode,  Preset,  PipelineMode,  PixelPreset,  CrestMode,
+  CropAspect,  CropRect,  CropDragMode,  GameTemplate,} from "./types/types";
 
-
-type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
-// Presets are UX-facing "quality profiles". Keep this in sync with the <select id="preset">.
-type Preset = "legacy" | "simple" | "balanced" | "complex";
-type CropRect = { x: number; y: number; w: number; h: number }; // in source pixels; aspect controlled by UI
-type CropDragMode = "none" | "move" | "nw" | "ne" | "sw" | "se";
-
-type GameTemplate = {
-  src: string;
-  baseW: number;
-  baseH: number;
-  slotX: number;
-  slotY: number;
-  slotW: number;
-  slotH: number;
-};
 
 // CrestMaker — beta 0.0.8.5
 const SITE_NAME = "CrestMaker";
@@ -46,8 +32,6 @@ let advancedOpen = localStorage.getItem(ADV_OPEN_KEY) === "1";
 
 // Persist mode + crop aspect + pipeline
 const PIPELINE_KEY = "cm_pipeline_v1";
-type PipelineMode = "old" | "pixel";
-type PixelPreset = "pixel-clean" | "pixel-crisp" | "pixel-stable" | "pixel-indexed";
 
 function getPipeline(): PipelineMode {
   const v = localStorage.getItem(PIPELINE_KEY);
@@ -98,9 +82,6 @@ function setContrast(v: number) {
 
 const MODE_KEY = "cm_mode_v1";
 const CROP_ASPECT_KEY = "cm_crop_aspect_v1";
-
-type CrestMode = "ally_clan" | "only_clan";
-type CropAspect = "24x12" | "16x12";
 
 function getMode(): CrestMode {
   const v = localStorage.getItem(MODE_KEY);

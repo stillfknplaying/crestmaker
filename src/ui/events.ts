@@ -2,14 +2,10 @@
  * IMPORTANT: No algorithms/pipeline/crop/preview logic is modified here — only wiring.
  */
 import type { Lang } from "../i18n";
+import type { Preset, PipelineMode, PixelPreset, CrestMode, CropAspect } from "../types/types";
 
 // These are re-declared minimal union types used by bindings.
 // Keep them aligned with main.ts.
-export type Preset = "legacy" | "simple" | "balanced" | "complex";
-export type PipelineMode = "old" | "pixel";
-export type PixelPreset = "pixel-clean" | "pixel-crisp" | "pixel-stable" | "pixel-indexed";
-export type CrestMode = "ally_clan" | "only_clan";
-export type CropAspect = "24x12" | "16x12";
 
 export type ToolRefs = {
   themeToggle: HTMLInputElement;

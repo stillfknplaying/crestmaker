@@ -1,10 +1,14 @@
 // Extracted preview rendering + recompute pipeline scheduling.
 
-type DitherMode = "none" | "ordered4" | "ordered8" | "floyd" | "atkinson";
-type Preset = "legacy" | "simple" | "balanced" | "complex";
-type PipelineMode = "old" | "pixel";
-type PixelPreset = "pixel-clean" | "pixel-crisp" | "pixel-stable" | "pixel-indexed";
-type CrestMode = "ally_clan" | "only_clan";
+import type {
+  DitherMode,
+  Preset,
+  PipelineMode,
+  PixelPreset,
+  CrestMode,
+  GameTemplate,
+} from "../types/types";
+
 
 type ToolRefs = {
   // the module only uses a subset; main.ts can still have a wider ToolRefs
@@ -29,16 +33,6 @@ type ToolRefs = {
 
   dstZoom16Canvas: HTMLCanvasElement;
   dstZoom16Ctx: CanvasRenderingContext2D;
-};
-
-type GameTemplate = {
-  src: string;
-  baseW: number;
-  baseH: number;
-  slotX: number;
-  slotY: number;
-  slotW: number;
-  slotH: number;
 };
 
 type Deps = {
