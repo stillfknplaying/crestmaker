@@ -14,6 +14,7 @@ import { initHelpTooltips } from "./ui/helpTooltips";
 import { createCropController, initCropToAspect } from "./ui/crop";
 import { initDisplayCanvas, rebuildDisplayCanvas } from "./ui/displayCanvas";
 import { initPreview, renderPreview } from "./ui/preview";
+import { createResultsRenderer } from "./ui/resultsRender";
 import { initToolUIEvents } from "./ui/events";
 import { initBootstrap } from "./app/bootstrap";
 import { collectToolRefs, escapeHtml } from "./app/dom";
@@ -535,6 +536,13 @@ initPreview({
   getIconCombined24: () => state.iconCombined24x12Indexed,
 });
 
+const resultsRenderer = createResultsRenderer({
+  getRefs: () => state.refs,
+  getCurrentMode: () => currentMode,
+  renderPreview,
+});
+
+
 // Compute pipeline controller (separates compute from render)
 initPipelineController({
   getRefs: () => state.refs,
@@ -565,47 +573,7 @@ initPipelineController({
   setIconCombined24: (v) => actions.setIconCombined24(state, v),
 
   afterCompute: (res) => {
-    const r = state.refs;
-    if (!r) return;
-
-    // Download button
-    r.downloadBtn.disabled = !res?.canDownload;
-
-    // Draw true size
-    if (!res || !res.palette256) {
-      drawTrueSizeEmpty(24, 12);
-      r.dstZoom24Ctx.clearRect(0, 0, r.dstZoom24Canvas.width, r.dstZoom24Canvas.height);
-      r.dstZoom16Ctx.clearRect(0, 0, r.dstZoom16Canvas.width, r.dstZoom16Canvas.height);
-      renderPreview();
-      return;
-    }
-
-    const palette = res.palette256;
-
-    if (currentMode === "only_clan") {
-      if (res.iconClan16x12Indexed) {
-        drawTrueSize(res.iconClan16x12Indexed, palette, 16, 12);
-        drawZoomTo(r.dstZoom16Canvas, r.dstZoom16Ctx, res.iconClan16x12Indexed, palette, 16, 12);
-      } else {
-        drawTrueSizeEmpty(16, 12);
-      }
-      r.dstZoom24Ctx.clearRect(0, 0, r.dstZoom24Canvas.width, r.dstZoom24Canvas.height);
-    } else {
-      if (res.iconCombined24x12Indexed) {
-        drawTrueSize(res.iconCombined24x12Indexed, palette, 24, 12);
-        drawZoomTo(r.dstZoom24Canvas, r.dstZoom24Ctx, res.iconCombined24x12Indexed, palette, 24, 12);
-      } else {
-        drawTrueSizeEmpty(24, 12);
-      }
-      if (res.iconClan16x12Indexed) {
-        drawZoomTo(r.dstZoom16Canvas, r.dstZoom16Ctx, res.iconClan16x12Indexed, palette, 16, 12);
-      } else {
-        r.dstZoom16Ctx.clearRect(0, 0, r.dstZoom16Canvas.width, r.dstZoom16Canvas.height);
-      }
-    }
-
-    // final in-game preview stamp
-    renderPreview();
+    resultsRenderer.render(res);
   },
 });
 
@@ -763,7 +731,7 @@ function initToolUI() {
     recomputePipeline,
     renderPreview,
 
-    drawTrueSizeEmpty,
+    drawTrueSizeEmpty: resultsRenderer.drawTrueSizeEmpty,
 
     // advanced open
     getAdvancedOpen: () => advancedOpen,
@@ -1015,69 +983,6 @@ async function loadTemplate() {
     actions.setGameTemplateImg(state, null);
     actions.setLoadedTemplateSrc(state, null);
     renderPreview();
-  }
-}
-
-// -------------------- DRAW TRUE SIZE + DEBUG --------------------
-function setTrueSizeCanvasDims(w: number, h: number) {
-  const r = state.refs;
-  if (!r) return;
-  if (r.dstTrueCanvas.width !== w) r.dstTrueCanvas.width = w;
-  if (r.dstTrueCanvas.height !== h) r.dstTrueCanvas.height = h;
-}
-
-function drawTrueSizeEmpty(w: number, h: number) {
-  const r = state.refs;
-  if (!r) return;
-  setTrueSizeCanvasDims(w, h);
-  r.dstTrueCtx.clearRect(0, 0, w, h);
-  r.dstTrueCtx.fillStyle = "rgba(255,255,255,0.06)";
-  r.dstTrueCtx.fillRect(0, 0, w, h);
-}
-
-function drawTrueSize(indices: Uint8Array, palette: Uint8Array, w: number, h: number) {
-  const r = state.refs;
-  if (!r) return;
-  setTrueSizeCanvasDims(w, h);
-  const img = r.dstTrueCtx.createImageData(w, h);
-  const data = img.data;
-  for (let i = 0; i < w * h; i++) {
-    const idx = indices[i];
-    data[i * 4 + 0] = palette[idx * 3 + 0];
-    data[i * 4 + 1] = palette[idx * 3 + 1];
-    data[i * 4 + 2] = palette[idx * 3 + 2];
-    data[i * 4 + 3] = 255;
-  }
-  r.dstTrueCtx.putImageData(img, 0, 0);
-}
-
-function drawZoomTo(
-  canvas: HTMLCanvasElement,
-  ctx: CanvasRenderingContext2D,
-  indices: Uint8Array,
-  palette: Uint8Array,
-  w: number,
-  h: number
-) {
-  const zoom = 10;
-  // Ensure canvas size (w*zoom x h*zoom) matches expected
-  const cw = w * zoom;
-  const ch = h * zoom;
-  if (canvas.width !== cw) canvas.width = cw;
-  if (canvas.height !== ch) canvas.height = ch;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.imageSmoothingEnabled = false;
-
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const idx = indices[y * w + x];
-      const r = palette[idx * 3 + 0];
-      const g = palette[idx * 3 + 1];
-      const b = palette[idx * 3 + 2];
-      ctx.fillStyle = `rgb(${r},${g},${b})`;
-      ctx.fillRect(x * zoom, y * zoom, zoom, zoom);
-    }
   }
 }
 
