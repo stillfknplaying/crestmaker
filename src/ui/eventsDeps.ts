@@ -54,8 +54,8 @@ export type EventsDeps = {
 
   loadTemplate: () => void;
 
-  scheduleRecomputePreview: (delay?: number) => void;
-  recomputePreview: () => void;
+  scheduleRecomputePipeline: (delay?: number) => void;
+  recomputePipeline: () => void;
   renderPreview: () => void;
 
   drawTrueSizeEmpty: (w: number, h: number) => void;

@@ -88,7 +88,7 @@ export function createCropController(deps: CropDeps) {
     rebuildDisplayCanvas,
     getCropRect,
     setCropRect,
-    scheduleRecomputePreview,
+    scheduleRecomputePipeline,
     getCropDragMode,
     setCropDragMode,
     getDragStart,
@@ -330,7 +330,7 @@ export function createCropController(deps: CropDeps) {
 
         setCropRect(newRect);
         drawCropUI();
-        scheduleRecomputePreview();
+        scheduleRecomputePipeline();
         return;
       }
 
@@ -359,7 +359,7 @@ export function createCropController(deps: CropDeps) {
 
         setCropRect(next);
         drawCropUI();
-        scheduleRecomputePreview();
+        scheduleRecomputePipeline();
         return;
       }
 
@@ -403,7 +403,7 @@ export function createCropController(deps: CropDeps) {
 
       setCropRect(next);
       drawCropUI();
-      scheduleRecomputePreview();
+      scheduleRecomputePipeline();
     });
 
         // Mouse wheel zoom (desktop)
@@ -457,7 +457,7 @@ export function createCropController(deps: CropDeps) {
 
         setCropRect({ x: newX, y: newY, w: newW, h: newH });
         drawCropUI();
-        scheduleRecomputePreview();
+        scheduleRecomputePipeline();
       },
       { passive: false }
     );

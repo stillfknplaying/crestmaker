@@ -13,13 +13,14 @@ import { initCookieConsentUI, renderCookieBannerIfNeeded, localizeCookieUI } fro
 import { initHelpTooltips } from "./ui/helpTooltips";
 import { createCropController, initCropToAspect } from "./ui/crop";
 import { initDisplayCanvas, rebuildDisplayCanvas } from "./ui/displayCanvas";
-import { initPreview, renderPreview, scheduleRecomputePreview, recomputePreview } from "./ui/preview";
+import { initPreview, renderPreview } from "./ui/preview";
 import { initToolUIEvents } from "./ui/events";
 import { initBootstrap } from "./app/bootstrap";
 import { collectToolRefs, escapeHtml } from "./app/dom";
 import { initRoutes } from "./app/routes";
 import { createInitialState } from "./app/state";
 import * as actions from "./app/actions";
+import { initPipelineController, scheduleRecomputePipeline, recomputePipeline } from "./app/pipelineController";
 import type {  DitherMode,  Preset,  PipelineMode,  PixelPreset,  CrestMode,  CropAspect,  GameTemplate,} from "./types/types";
 
 // CrestMaker — beta 0.0.8.9
@@ -524,12 +525,23 @@ initDisplayCanvas({
 
 initPreview({
   getRefs: () => state.refs,
-  getSourceImage: () => state.sourceImage,
   getCurrentMode: () => currentMode,
-  getInvertColors: () => state.invertColors,
 
   getGameTemplate: () => getGameTemplate(),
   getGameTemplateImg: () => state.gameTemplateImg,
+
+  getPalette256: () => state.palette256,
+  getIconClan16: () => state.iconClan16x12Indexed,
+  getIconCombined24: () => state.iconCombined24x12Indexed,
+});
+
+// Compute pipeline controller (separates compute from render)
+initPipelineController({
+  getRefs: () => state.refs,
+
+  getSourceImage: () => state.sourceImage,
+  getCurrentMode: () => currentMode,
+  getInvertColors: () => state.invertColors,
 
   getPixelPreset: () => getPixelPreset(),
   getBrightness: () => getBrightness(),
@@ -547,27 +559,53 @@ initPreview({
   quantizePixel256,
   cleanupIndicesMajoritySafe,
 
-  drawTrueSizeEmpty,
-  drawTrueSize,
-  drawZoomTo,
-
-  // preview state storage (required by ui/preview Deps)
-  getPalette256: () => state.palette256,
   setPalette256: (p) => actions.setPalette256(state, p),
-
-  getIconAlly8: () => state.iconAlly8x12Indexed,
   setIconAlly8: (v) => actions.setIconAlly8(state, v),
-
-  getIconClan16: () => state.iconClan16x12Indexed,
   setIconClan16: (v) => actions.setIconClan16(state, v),
-
-  getIconCombined24: () => state.iconCombined24x12Indexed,
   setIconCombined24: (v) => actions.setIconCombined24(state, v),
 
-  setCanDownload: (can) => {
+  afterCompute: (res) => {
     const r = state.refs;
     if (!r) return;
-    r.downloadBtn.disabled = !can;
+
+    // Download button
+    r.downloadBtn.disabled = !res?.canDownload;
+
+    // Draw true size
+    if (!res || !res.palette256) {
+      drawTrueSizeEmpty(24, 12);
+      r.dstZoom24Ctx.clearRect(0, 0, r.dstZoom24Canvas.width, r.dstZoom24Canvas.height);
+      r.dstZoom16Ctx.clearRect(0, 0, r.dstZoom16Canvas.width, r.dstZoom16Canvas.height);
+      renderPreview();
+      return;
+    }
+
+    const palette = res.palette256;
+
+    if (currentMode === "only_clan") {
+      if (res.iconClan16x12Indexed) {
+        drawTrueSize(res.iconClan16x12Indexed, palette, 16, 12);
+        drawZoomTo(r.dstZoom16Canvas, r.dstZoom16Ctx, res.iconClan16x12Indexed, palette, 16, 12);
+      } else {
+        drawTrueSizeEmpty(16, 12);
+      }
+      r.dstZoom24Ctx.clearRect(0, 0, r.dstZoom24Canvas.width, r.dstZoom24Canvas.height);
+    } else {
+      if (res.iconCombined24x12Indexed) {
+        drawTrueSize(res.iconCombined24x12Indexed, palette, 24, 12);
+        drawZoomTo(r.dstZoom24Canvas, r.dstZoom24Ctx, res.iconCombined24x12Indexed, palette, 24, 12);
+      } else {
+        drawTrueSizeEmpty(24, 12);
+      }
+      if (res.iconClan16x12Indexed) {
+        drawZoomTo(r.dstZoom16Canvas, r.dstZoom16Ctx, res.iconClan16x12Indexed, palette, 16, 12);
+      } else {
+        r.dstZoom16Ctx.clearRect(0, 0, r.dstZoom16Canvas.width, r.dstZoom16Canvas.height);
+      }
+    }
+
+    // final in-game preview stamp
+    renderPreview();
   },
 });
 
@@ -616,7 +654,7 @@ function initToolUI() {
       rebuildDisplayCanvas,
       getCropRect: () => state.cropRect,
       setCropRect: (r) => actions.setCropRect(state, r),
-      scheduleRecomputePreview,
+      scheduleRecomputePipeline,
 
       getCropDragMode: () => state.cropDragMode,
       setCropDragMode: (m) => actions.setCropDragMode(state, m),
@@ -721,8 +759,8 @@ function initToolUI() {
 
     loadTemplate,
 
-    scheduleRecomputePreview,
-    recomputePreview,
+    scheduleRecomputePipeline,
+    recomputePipeline,
     renderPreview,
 
     drawTrueSizeEmpty,

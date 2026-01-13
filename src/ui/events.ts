@@ -74,7 +74,7 @@ export function initToolUIEvents(deps: EventsDeps) {
 
   refs.pipelineSel.addEventListener("change", () => {
     syncPipelineUI();
-    deps.recomputePreview();
+    deps.recomputePipeline();
   });
   syncPipelineUI();
 
@@ -138,7 +138,7 @@ export function initToolUIEvents(deps: EventsDeps) {
     r.debugCard16.classList.toggle("hidden", deps.getCurrentMode() !== "only_clan");
     r.resetBtn.classList.toggle("hidden", !on);
 
-    deps.scheduleRecomputePreview(0);
+    deps.scheduleRecomputePipeline(0);
   });
 
   // Reset with confirm
@@ -170,7 +170,7 @@ export function initToolUIEvents(deps: EventsDeps) {
       deps.updateControlAvailability("balanced");
     }
 
-    deps.scheduleRecomputePreview(0);
+    deps.scheduleRecomputePipeline(0);
   });
 
   // Preset defaults + change
@@ -193,7 +193,7 @@ export function initToolUIEvents(deps: EventsDeps) {
       deps.applyPresetDefaults(r.presetSel.value as Preset);
       deps.updateControlAvailability(r.presetSel.value as Preset);
     }
-    deps.scheduleRecomputePreview(0);
+    deps.scheduleRecomputePipeline(0);
   });
 
   // Brightness / Contrast (universal)
@@ -208,7 +208,7 @@ export function initToolUIEvents(deps: EventsDeps) {
     const v = Number(r.brightness.value) || 0;
     r.brightnessVal.textContent = String(v);
     deps.setBrightness(v);
-    deps.scheduleRecomputePreview(50);
+    deps.scheduleRecomputePipeline(50);
   });
 
   refs.contrast.addEventListener("input", () => {
@@ -217,14 +217,14 @@ export function initToolUIEvents(deps: EventsDeps) {
     const v = Number(r.contrast.value) || 0;
     r.contrastVal.textContent = String(v);
     deps.setContrast(v);
-    deps.scheduleRecomputePreview(50);
+    deps.scheduleRecomputePipeline(50);
   });
 
   refs.ditherAmt.addEventListener("input", () => {
     const r = deps.getRefs();
     if (!r) return;
     r.ditherAmtVal.textContent = String(r.ditherAmt.value);
-    deps.scheduleRecomputePreview(70);
+    deps.scheduleRecomputePipeline(70);
   });
 
   // Rotate buttons
@@ -232,14 +232,14 @@ export function initToolUIEvents(deps: EventsDeps) {
     if (!deps.getSourceImage()) return;
     deps.rotateLeft();
     deps.drawCropUI();
-    deps.scheduleRecomputePreview(0);
+    deps.scheduleRecomputePipeline(0);
   });
 
   refs.rotR.addEventListener("click", () => {
     if (!deps.getSourceImage()) return;
     deps.rotateRight();
     deps.drawCropUI();
-    deps.scheduleRecomputePreview(0);
+    deps.scheduleRecomputePipeline(0);
   });
 
   // Invert toggle button
@@ -247,7 +247,7 @@ export function initToolUIEvents(deps: EventsDeps) {
     const next = !deps.getInvertColors();
     deps.setInvertColors(next);
     deps.getRefs()?.invertBtn.classList.toggle("active", next);
-    deps.scheduleRecomputePreview(0);
+    deps.scheduleRecomputePipeline(0);
   });
 
   // File upload
@@ -270,7 +270,7 @@ export function initToolUIEvents(deps: EventsDeps) {
     deps.drawCropUI();
 
     r.resetBtn.disabled = false;
-    deps.scheduleRecomputePreview(0);
+    deps.scheduleRecomputePipeline(0);
   });
 
   // Download
@@ -294,11 +294,11 @@ export function initToolUIEvents(deps: EventsDeps) {
     el.addEventListener("change", () => {
       deps.drawCropUI();
       deps.updateControlAvailability(refs.presetSel.value as Preset);
-      deps.scheduleRecomputePreview(70);
+      deps.scheduleRecomputePipeline(70);
     });
     el.addEventListener("input", () => {
       deps.drawCropUI();
-      deps.scheduleRecomputePreview(70);
+      deps.scheduleRecomputePipeline(70);
     });
   }
 
@@ -316,7 +316,7 @@ export function initToolUIEvents(deps: EventsDeps) {
     deps.drawCropUI();
 
     refs.resetBtn.disabled = false;
-    deps.scheduleRecomputePreview(0);
+    deps.scheduleRecomputePipeline(0);
   } else {
     deps.renderPreview();
     deps.drawTrueSizeEmpty(trueW, trueH);

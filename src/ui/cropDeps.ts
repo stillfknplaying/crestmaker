@@ -11,7 +11,7 @@ export type CropDeps = {
   rebuildDisplayCanvas: () => void;
   getCropRect: () => CropRect | null;
   setCropRect: (r: CropRect | null) => void;
-  scheduleRecomputePreview: () => void;
+  scheduleRecomputePipeline: () => void;
 
   getCropDragMode: () => CropDragMode;
   setCropDragMode: (m: CropDragMode) => void;
