@@ -54,6 +54,7 @@ export type PipelineControllerDeps = {
 
 let deps: PipelineControllerDeps | null = null;
 let timer: number | null = null;
+let computeSeq = 0;
 
 export function initPipelineController(d: PipelineControllerDeps) {
   deps = d;
@@ -64,11 +65,11 @@ export function scheduleRecomputePipeline(delayMs = 120) {
   if (timer) window.clearTimeout(timer);
   timer = window.setTimeout(() => {
     timer = null;
-    requestAnimationFrame(() => recomputePipeline());
+    requestAnimationFrame(() => void recomputePipeline());
   }, delayMs);
 }
 
-export function recomputePipeline(): PipelineComputeResult | null {
+export async function recomputePipeline(): Promise<PipelineComputeResult | null> {
   if (!deps) return null;
 
   const refs = deps.getRefs();
@@ -103,11 +104,29 @@ export function recomputePipeline(): PipelineComputeResult | null {
     contrast: deps.getContrast(),
   };
 
-  const result = deps.engine.compute({
-    source: src,
-    settings,
-    crop: null,
-  });
+  // Always compute from an ImageBitmap to support Worker engines.
+  const seq = ++computeSeq;
+  let bitmap: ImageBitmap | null = null;
+  try {
+    bitmap = await createImageBitmap(src);
+  } catch {
+    return null;
+  }
+
+  let result: PipelineComputeResult;
+  try {
+    const maybe = deps.engine.compute({
+      source: bitmap,
+      settings,
+      crop: null,
+    });
+    result = (maybe instanceof Promise ? await maybe : maybe) as PipelineComputeResult;
+  } finally {
+    try { bitmap.close(); } catch { /* ignore */ }
+  }
+
+  // If a newer compute was scheduled while we were waiting, drop this result.
+  if (seq !== computeSeq) return null;
 
   // publish to state
   deps.setPalette256(result.palette256);

@@ -58,5 +58,6 @@ export type PipelineResult = {
 };
 
 export interface PipelineEngine {
-  compute(input: PipelineInput): PipelineResult;
+  // Local engine may be synchronous; worker engine will be async.
+  compute(input: PipelineInput): PipelineResult | Promise<PipelineResult>;
 }

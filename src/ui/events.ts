@@ -130,7 +130,7 @@ export function initToolUIEvents(deps: EventsDeps) {
 
   refs.pipelineSel.addEventListener("change", () => {
     syncPipelineUI();
-    deps.recomputePipeline();
+    void deps.recomputePipeline();
   });
   syncPipelineUI();
 
