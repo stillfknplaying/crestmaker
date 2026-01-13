@@ -13,8 +13,7 @@ import { initCookieConsentUI, renderCookieBannerIfNeeded, localizeCookieUI } fro
 import { initHelpTooltips } from "./ui/helpTooltips";
 import { createCropController, initCropToAspect } from "./ui/crop";
 import { initDisplayCanvas, rebuildDisplayCanvas } from "./ui/displayCanvas";
-import { initPreview, renderPreview } from "./ui/preview";
-import { createResultsRenderer } from "./ui/resultsRender";
+import { createRenderController } from "./ui/renderController";
 import { initToolUIEvents } from "./ui/events";
 import { initBootstrap } from "./app/bootstrap";
 import { collectToolRefs, escapeHtml } from "./app/dom";
@@ -455,7 +454,7 @@ initDisplayCanvas({
   setDisplayCanvas: (c) => actions.setDisplayCanvas(state, c),
 });
 
-initPreview({
+const renderController = createRenderController({
   getRefs: () => state.refs,
   getCurrentMode: () => currentMode,
 
@@ -465,12 +464,6 @@ initPreview({
   getPalette256: () => state.palette256,
   getIconClan16: () => state.iconClan16x12Indexed,
   getIconCombined24: () => state.iconCombined24x12Indexed,
-});
-
-const resultsRenderer = createResultsRenderer({
-  getRefs: () => state.refs,
-  getCurrentMode: () => currentMode,
-  renderPreview,
 });
 
 // Compute pipeline controller (separates compute from render)
@@ -502,9 +495,7 @@ initPipelineController({
   setIconClan16: (v) => actions.setIconClan16(state, v),
   setIconCombined24: (v) => actions.setIconCombined24(state, v),
 
-  afterCompute: (res) => {
-    resultsRenderer.render(res);
-  },
+  afterCompute: (res) => renderController.renderAfterCompute(res),
 });
 
 // Two templates: 24×12 uses the original, 16×12 uses the second one.
@@ -658,9 +649,9 @@ function initToolUI() {
 
     scheduleRecomputePipeline,
     recomputePipeline,
-    renderPreview,
+    renderPreview: renderController.renderPreview,
 
-    drawTrueSizeEmpty: resultsRenderer.drawTrueSizeEmpty,
+    drawTrueSizeEmpty: renderController.drawTrueSizeEmpty,
 
     // advanced open
     getAdvancedOpen: () => advancedOpen,
@@ -874,18 +865,18 @@ async function loadTemplate() {
 
   // Avoid reloading the same template on every render
   if (state.loadedTemplateSrc === tpl.src && state.gameTemplateImg) {
-    renderPreview();
+    renderController.renderPreview();
     return;
   }
 
   try {
     actions.setGameTemplateImg(state, await loadImageFromUrl(tpl.src));
     actions.setLoadedTemplateSrc(state, tpl.src);
-    renderPreview();
+    renderController.renderPreview();
   } catch {
     actions.setGameTemplateImg(state, null);
     actions.setLoadedTemplateSrc(state, null);
-    renderPreview();
+    renderController.renderPreview();
   }
 }
 
