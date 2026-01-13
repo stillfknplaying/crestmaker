@@ -1,5 +1,4 @@
 /**
- * UI events / bindings extracted from main.ts (Commit 11).
  * IMPORTANT: No algorithms/pipeline/crop/preview logic is modified here — only wiring.
  */
 import type { Lang } from "../i18n";
