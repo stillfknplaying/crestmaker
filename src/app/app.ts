@@ -75,6 +75,12 @@ export function createApp() {
           <a href="#/gdpr">GDPR</a>
           <a href="#" id="cookieSettingsLink">Cookies</a>
         </nav>
+
+          <div class="footer-contact">
+           Contact:
+            <a href="mailto:admin@crestmaker.org">admin@crestmaker.org</a>
+           </div>
+
         <div class="footer-copy">
           <span id="year"></span> © ${SITE_NAME}. All rights reserved.
         </div>
