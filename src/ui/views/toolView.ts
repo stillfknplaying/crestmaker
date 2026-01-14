@@ -28,6 +28,13 @@ export function renderToolView(ctx: ToolViewCtx): string {
 
   return `
       <section class="tool">
+        <div id="dropOverlay" class="drop-overlay" aria-hidden="true">
+          <div class="drop-overlay-card">
+            <div class="drop-overlay-title">${escapeHtml(t("Drop image to upload", "Отпустите, чтобы загрузить", "Відпустіть, щоб завантажити"))}</div>
+            <div class="drop-overlay-sub">${escapeHtml(t("You can also paste with Ctrl+V", "Также можно вставить через Ctrl+V", "Також можна вставити через Ctrl+V"))}</div>
+          </div>
+        </div>
+
         <div class="toolbar">
           <label class="btn primary">
             ${escapeHtml(t("Upload image","Загрузить","Завантажити"))}

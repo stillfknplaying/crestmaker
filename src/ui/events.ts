@@ -12,6 +12,21 @@ import type { EventsDeps } from "./eventsDeps";
 let activeDeps: EventsDeps | null = null;
 let globalsBound = false;
 
+let fileDragDepth = 0;
+
+function setDropOverlayVisible(visible: boolean) {
+  const deps = activeDeps;
+  if (!deps) return;
+  const r = deps.getRefs();
+  if (!r) return;
+  r.dropOverlay.classList.toggle("on", visible);
+}
+
+function resetFileDragState() {
+  fileDragDepth = 0;
+  setDropOverlayVisible(false);
+}
+
 function applyLoadedImageWithActiveDeps(img: HTMLImageElement) {
   const deps = activeDeps;
   if (!deps) return;
@@ -47,6 +62,30 @@ function bindGlobalFileListenersOnce() {
 
   // Drag & Drop image file (anywhere on the page)
   // Drag & Drop image file (anywhere on the page)
+  document.addEventListener("dragenter", (e) => {
+    if (!activeDeps || !activeDeps.getRefs()) return;
+    const dt = (e as DragEvent).dataTransfer;
+    const hasFiles = !!dt && Array.from(dt.types || []).includes("Files");
+    if (!hasFiles) return;
+    fileDragDepth += 1;
+    setDropOverlayVisible(true);
+  });
+  document.addEventListener("dragleave", (e) => {
+    if (!activeDeps || !activeDeps.getRefs()) return;
+    const dt = (e as DragEvent).dataTransfer;
+    const hasFiles = !!dt && Array.from(dt.types || []).includes("Files");
+    if (!hasFiles) return;
+
+    // If leaving the window (relatedTarget is null), reset immediately.
+    const re = e as DragEvent;
+    if (re.relatedTarget === null) {
+      resetFileDragState();
+      return;
+    }
+
+    fileDragDepth = Math.max(0, fileDragDepth - 1);
+    if (fileDragDepth === 0) setDropOverlayVisible(false);
+  });
   document.addEventListener("dragover", (e) => {
     if (!activeDeps || !activeDeps.getRefs()) return;
     const dt = e.dataTransfer;
@@ -68,6 +107,7 @@ function bindGlobalFileListenersOnce() {
     if (hasFiles) {
       // Prevent the browser from navigating away by opening the dropped file.
       e.preventDefault();
+      resetFileDragState();
     } else {
       // Allow dropping text (e.g., into inputs) without interference.
       return;
@@ -76,6 +116,9 @@ function bindGlobalFileListenersOnce() {
     if (!img) return;
     applyLoadedImageWithActiveDeps(img);
   });
+
+  // Ensure overlay can't get "stuck" in odd edge-cases.
+  document.addEventListener("dragend", () => resetFileDragState());
 }
 
 /**

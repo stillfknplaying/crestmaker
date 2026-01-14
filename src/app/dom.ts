@@ -1,4 +1,5 @@
 export type ToolRefs = {
+  dropOverlay: HTMLDivElement;
   themeToggle: HTMLInputElement;
   fileInput: HTMLInputElement;
   urlInput: HTMLInputElement;
@@ -60,6 +61,7 @@ export type ToolRefs = {
 
 export function collectToolRefs(root: Document = document): ToolRefs {
   return {
+    dropOverlay: root.querySelector<HTMLDivElement>("#dropOverlay")!,
     themeToggle: root.querySelector<HTMLInputElement>("#themeToggle")!,
     fileInput: root.querySelector<HTMLInputElement>("#file")!,
     urlInput: root.querySelector<HTMLInputElement>("#url")!,
