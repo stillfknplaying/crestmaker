@@ -1,9 +1,7 @@
 type Lang = "en" | "ru" | "ua";
 
 export function termsHtml(lang: Lang): string {
-  const en = `
-<h2>Terms of Service</h2>
-<p>This tool is provided "as is", without warranties of any kind.</p>
+  const en = `<p>This tool is provided "as is", without warranties of any kind.</p>
 
 <ul>
   <li>You use the tool at your own risk</li>
@@ -14,9 +12,7 @@ export function termsHtml(lang: Lang): string {
 <p>By using this tool, you agree to these terms.</p>
 `;
 
-  const ru = `
-<h2>Пользовательское соглашение</h2>
-<p>Инструмент предоставляется "как есть", без каких-либо гарантий.</p>
+  const ru = `<p>Инструмент предоставляется "как есть", без каких-либо гарантий.</p>
 
 <ul>
   <li>Вы используете инструмент на свой страх и риск</li>
@@ -27,9 +23,7 @@ export function termsHtml(lang: Lang): string {
 <p>Используя этот инструмент, вы соглашаетесь с условиями.</p>
 `;
 
-  const ua = `
-<h2>Умови користування</h2>
-<p>Інструмент надається "як є", без будь-яких гарантій.</p>
+  const ua = `<p>Інструмент надається "як є", без будь-яких гарантій.</p>
 
 <ul>
   <li>Ви використовуєте інструмент на власний ризик</li>

@@ -5,6 +5,7 @@ import { privacyPolicyHtml } from "../content/privacy";
 import { termsHtml } from "../content/terms";
 import { gdprHtml } from "../content/gdpr";
 import { aboutHtml } from "../content/about";
+import { faqHtml } from "../content/faq";
 import type { Lang } from "../i18n";
 import { currentLang, setLang as setLangCore, t, tipAttr, helpHtml } from "../i18n";
 import { downloadCurrentMode as downloadCurrentModeFromState, hasPalette as hasPaletteFromState } from "./downloads";
@@ -68,6 +69,7 @@ export function createApp() {
         <nav class="footer-links">
           <a href="#/">Tool</a>
           <a href="#/about">About</a>
+          <a href="#/faq">FAQ</a>
           <a href="#/privacy">Privacy Policy</a>
           <a href="#/terms">Terms of Service</a>
           <a href="#/gdpr">GDPR</a>
@@ -160,6 +162,7 @@ export function createApp() {
       terms: termsHtml,
       about: aboutHtml,
       gdpr: gdprHtml,
+      faq: faqHtml,
     },
     renderToolPage,
   });

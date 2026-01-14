@@ -11,6 +11,7 @@ export type RouterInit = {
     terms: (lang: Lang) => string;
     about: (lang: Lang) => string;
     gdpr: (lang: Lang) => string;
+    faq: (lang: Lang) => string;
   };
   renderToolPage: () => void;
 };
@@ -66,6 +67,13 @@ export function initRoutes(cfg: RouterInit) {
     }
     if (path === "/gdpr") {
       return renderPolicyPage("GDPR", cfg.pages.gdpr(lang));
+    }
+
+    if (path === "/faq") {
+      return renderPolicyPage(
+        cfg.t("FAQ", "FAQ", "FAQ"),
+        cfg.pages.faq(lang)
+      );
     }
 
     return cfg.renderToolPage();

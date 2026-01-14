@@ -1,9 +1,7 @@
 type Lang = "en" | "ru" | "ua";
 
 export function privacyPolicyHtml(lang: Lang): string {
-  const en = `
-<h2>Privacy Policy</h2>
-<p>We respect your privacy. This tool works entirely in your browser.</p>
+  const en = `<p>We respect your privacy. This tool works entirely in your browser.</p>
 
 <h3>What data we collect</h3>
 <ul>
@@ -22,9 +20,7 @@ export function privacyPolicyHtml(lang: Lang): string {
 <p>No tracking, analytics, or third-party cookies are used.</p>
 `;
 
-  const ru = `
-<h2>Политика конфиденциальности</h2>
-<p>Мы уважаем вашу конфиденциальность. Этот инструмент полностью работает в вашем браузере.</p>
+  const ru = `<p>Мы уважаем вашу конфиденциальность. Этот инструмент полностью работает в вашем браузере.</p>
 
 <h3>Какие данные мы собираем</h3>
 <ul>
@@ -43,9 +39,7 @@ export function privacyPolicyHtml(lang: Lang): string {
 <p>Мы не используем аналитику, трекеры или сторонние cookies.</p>
 `;
 
-  const ua = `
-<h2>Політика конфіденційності</h2>
-<p>Ми поважаємо вашу конфіденційність. Цей інструмент повністю працює у вашому браузері.</p>
+  const ua = `<p>Ми поважаємо вашу конфіденційність. Цей інструмент повністю працює у вашому браузері.</p>
 
 <h3>Які дані ми збираємо</h3>
 <ul>
