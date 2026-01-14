@@ -21,8 +21,7 @@ import { initRoutes } from "./routes";
 import { createInitialState } from "./state";
 import * as actions from "./actions";
 import { initPipelineController, scheduleRecomputePipeline, recomputePipeline } from "./pipelineController";
-import { LocalPipelineEngine } from "./pipeline/localEngine";
-import { WorkerPipelineEngine } from "./pipeline/workerEngine";
+import { createPipelineEngine } from "./engineFactory";
 import * as settings from "./settings";
 import { loadImageFromClipboardEvent, loadImageFromDataTransfer, loadImageFromFile, loadImageFromUrl as loadExternalImageFromUrl } from "./fileLoader";
 import type { DitherMode, Preset, PipelineMode, CrestMode, CropAspect } from "../types/types";
@@ -232,30 +231,16 @@ export function createApp() {
     getIconCombined24: () => state.iconCombined24x12Indexed,
   });
 
-  // Pipeline engine selection:
-  // - prefer Web Worker to keep UI responsive
-  // - fallback to local main-thread engine if unsupported
-  const engine = (() => {
-    try {
-      const canWorker = typeof Worker !== "undefined";
-      const canOffscreen = typeof (globalThis as any).OffscreenCanvas !== "undefined";
-      const canBitmap = typeof createImageBitmap !== "undefined";
-      if (canWorker && canOffscreen && canBitmap) return new WorkerPipelineEngine();
-    } catch {
-      // ignore and fallback
-    }
-
-    return new LocalPipelineEngine({
-      renderToSize,
-      edgeAwareSharpen,
-      softNormalizeLevels,
-      clamp255,
-      clampDitherStrength,
-      quantizeTo256,
-      quantizePixel256,
-      cleanupIndicesMajoritySafe,
-    });
-  })();
+  const engine = createPipelineEngine({
+    renderToSize,
+    edgeAwareSharpen,
+    softNormalizeLevels,
+    clamp255,
+    clampDitherStrength,
+    quantizeTo256,
+    quantizePixel256,
+    cleanupIndicesMajoritySafe,
+  });
 
   // Compute pipeline controller (separates compute from render)
   initPipelineController({
