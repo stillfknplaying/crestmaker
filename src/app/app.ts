@@ -25,8 +25,9 @@ import { LocalPipelineEngine } from "./pipeline/localEngine";
 import { WorkerPipelineEngine } from "./pipeline/workerEngine";
 import * as settings from "./settings";
 import { loadImageFromClipboardEvent, loadImageFromDataTransfer, loadImageFromFile, loadImageFromUrl as loadExternalImageFromUrl } from "./fileLoader";
-import type {  DitherMode,  Preset,  PipelineMode,  CrestMode,  CropAspect,  GameTemplate,} from "../types/types";
+import type { DitherMode, Preset, PipelineMode, CrestMode, CropAspect } from "../types/types";
 import { SITE_NAME } from "./constants";
+import { getGameTemplate } from "./templates";
 
 export function createApp() {
 
@@ -223,7 +224,7 @@ export function createApp() {
     getRefs: () => state.refs,
     getCurrentMode: () => currentMode,
 
-    getGameTemplate: () => getGameTemplate(),
+    getGameTemplate: () => getGameTemplate(currentMode === "only_clan" ? "16x12" : "24x12"),
     getGameTemplateImg: () => state.gameTemplateImg,
 
     getPalette256: () => state.palette256,
@@ -279,33 +280,6 @@ export function createApp() {
 
     afterCompute: (res) => renderController.renderAfterCompute(res),
   });
-
-  // Two templates: 24×12 uses the original, 16×12 uses the second one.
-  // Slot coords are the same (both screenshots are the same resolution/UI).
-  const GAME_TEMPLATE_24: GameTemplate = {
-    src: "/templates/l2_nameplate_01.jpg",
-    baseW: 2560,
-    baseH: 1440,
-    // NOTE: user tuned to match screenshot
-    slotX: 1160,
-    slotY: 218,
-    slotW: 48,
-    slotH: 24,
-  };
-
-  const GAME_TEMPLATE_16: GameTemplate = {
-    src: "/templates/l2_nameplate_02.jpg",
-    baseW: 2560,
-    baseH: 1440,
-    slotX: 1164,
-    slotY: 218,
-    slotW: 36,
-    slotH: 24,
-  };
-
-  function getGameTemplate(): GameTemplate {
-    return currentMode === "only_clan" ? GAME_TEMPLATE_16 : GAME_TEMPLATE_24;
-  }
 
   function initToolUI() {
 
@@ -634,7 +608,7 @@ export function createApp() {
   }
 
   async function loadTemplate() {
-    const tpl = getGameTemplate();
+    const tpl = getGameTemplate(currentMode === "only_clan" ? "16x12" : "24x12");
 
     // Avoid reloading the same template on every render
     if (state.loadedTemplateSrc === tpl.src && state.gameTemplateImg) {
