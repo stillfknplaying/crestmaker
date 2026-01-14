@@ -5,6 +5,48 @@ function clamp(v: number, a: number, b: number) {
   return Math.max(a, Math.min(b, v));
 }
 
+// All CrestMaker output sizes are 2:1 (24×12, 16×12, 8×12).
+// Crop UI is labeled "Crop 2:1" and should never drift away from 2:1.
+const CROP_ASPECT = 2; // width / height
+const MIN_CROP_PX = 10;
+
+function clampSizeToBoundsPreserveAspect(
+  desiredW: number,
+  aspect: number,
+  maxW: number,
+  maxH: number,
+  minW = MIN_CROP_PX
+) {
+  let w = Math.max(minW, desiredW);
+  let h = w / aspect;
+
+  // Clamp to max bounds while preserving aspect.
+  if (h > maxH) {
+    h = maxH;
+    w = h * aspect;
+  }
+  if (w > maxW) {
+    w = maxW;
+    h = w / aspect;
+  }
+
+  // Enforce min again (and re-fit if needed).
+  if (w < minW) {
+    w = minW;
+    h = w / aspect;
+  }
+  if (h > maxH) {
+    h = maxH;
+    w = h * aspect;
+  }
+  if (w > maxW) {
+    w = maxW;
+    h = w / aspect;
+  }
+
+  return { w, h };
+}
+
 export function initCropToAspect(
   img: { width: number; height: number },
   targetR: number
@@ -318,12 +360,21 @@ export function createCropController(deps: CropDeps) {
 
         const base = pinchStart.rect;
 
-        const newW = clamp(base.w / ratio, 10, dc.width);
-        const newH = clamp(base.h / ratio, 10, dc.height);
+        // Keep crop strictly 2:1 even when clamping to image bounds.
+        const sized = clampSizeToBoundsPreserveAspect(
+          base.w / ratio,
+          CROP_ASPECT,
+          dc.width,
+          dc.height
+        );
+        const newW = sized.w;
+        const newH = sized.h;
 
+        // Keep pinch point under the same relative location.
+        const scale = newW / base.w;
         const newRect: CropRect = {
-          x: clamp(px - (px - base.x) / ratio, 0, dc.width - newW),
-          y: clamp(py - (py - base.y) / ratio, 0, dc.height - newH),
+          x: clamp(px - (px - base.x) * scale, 0, dc.width - newW),
+          y: clamp(py - (py - base.y) * scale, 0, dc.height - newH),
           w: newW,
           h: newH,
         };
@@ -369,7 +420,7 @@ export function createCropController(deps: CropDeps) {
       const px = clamp(nx, 0, 1) * dc.width;
       const py = clamp(ny, 0, 1) * dc.height;
 
-      const { ax, ay, start } = getDragAnchor();
+      const { ax, ay } = getDragAnchor();
 
       const dxAbs = Math.abs(px - ax);
       const dyAbs = Math.abs(py - ay);
@@ -377,18 +428,17 @@ export function createCropController(deps: CropDeps) {
       const wFromX = dxAbs;
       const hFromY = dyAbs;
 
-      const aspect = start.w / start.h;
-      // compute size preserving aspect
-      let newW = wFromX;
-      let newH = newW / aspect;
-
-      if (newH < hFromY) {
-        newH = hFromY;
-        newW = newH * aspect;
-      }
-
-      newW = clamp(newW, 10, dc.width);
-      newH = clamp(newH, 10, dc.height);
+      // Keep crop strictly 2:1.
+      // Pick a size that satisfies both axes (drag point) while preserving aspect.
+      const desiredW = Math.max(wFromX, hFromY * CROP_ASPECT);
+      const sized = clampSizeToBoundsPreserveAspect(
+        desiredW,
+        CROP_ASPECT,
+        dc.width,
+        dc.height
+      );
+      const newW = sized.w;
+      const newH = sized.h;
 
       // build rect from anchor opposite
       let x = ax, y = ay;
@@ -442,18 +492,20 @@ export function createCropController(deps: CropDeps) {
         const zoomIn = e.deltaY < 0;
         const factor = zoomIn ? 1 / 1.1 : 1.1;
 
-        const aspect = cropRect.w / cropRect.h;
-
-        let newW = cropRect.w * factor;
-        let newH = newW / aspect;
-
-        // clamp
-        newW = clamp(newW, 10, dc.width);
-        newH = clamp(newH, 10, dc.height);
+        // Keep crop strictly 2:1 even when clamping to image bounds.
+        const sized = clampSizeToBoundsPreserveAspect(
+          cropRect.w * factor,
+          CROP_ASPECT,
+          dc.width,
+          dc.height
+        );
+        const newW = sized.w;
+        const newH = sized.h;
 
         // keep mouse point under cursor
-        const newX = clamp(px - (px - cropRect.x) * (newW / cropRect.w), 0, dc.width - newW);
-        const newY = clamp(py - (py - cropRect.y) * (newH / cropRect.h), 0, dc.height - newH);
+        const scale = newW / cropRect.w;
+        const newX = clamp(px - (px - cropRect.x) * scale, 0, dc.width - newW);
+        const newY = clamp(py - (py - cropRect.y) * scale, 0, dc.height - newH);
 
         setCropRect({ x: newX, y: newY, w: newW, h: newH });
         drawCropUI();
