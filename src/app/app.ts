@@ -7,16 +7,12 @@ import { gdprHtml } from "../content/gdpr";
 import { aboutHtml } from "../content/about";
 import { faqHtml } from "../content/faq";
 import type { Lang } from "../i18n";
-import { currentLang, setLang as setLangCore, t, tipAttr, helpHtml } from "../i18n";
+import { currentLang, setLang as setLangCore, t } from "../i18n";
 import { downloadCurrentMode as downloadCurrentModeFromState, hasPalette as hasPaletteFromState } from "./downloads";
 import { initCookieConsentUI, renderCookieBannerIfNeeded, localizeCookieUI } from "../ui/cookieConsent";
-import { initHelpTooltips } from "../ui/helpTooltips";
-import { createCropController, initCropToAspect } from "../ui/crop";
 import { initDisplayCanvas, rebuildDisplayCanvas } from "../ui/displayCanvas";
 import { createRenderController } from "../ui/renderController";
-import { initToolUIEvents } from "../ui/events";
-import { renderToolView } from "../ui/views/toolView";
-import { collectToolRefs, escapeHtml } from "./dom";
+import { escapeHtml } from "./dom";
 import { initRoutes } from "./routes";
 import { createInitialState } from "./state";
 import * as actions from "./actions";
@@ -24,9 +20,10 @@ import { initPipelineController, scheduleRecomputePipeline, recomputePipeline } 
 import { createPipelineEngine } from "./engineFactory";
 import * as settings from "./settings";
 import { loadImageFromClipboardEvent, loadImageFromDataTransfer, loadImageFromFile, loadImageFromUrl as loadExternalImageFromUrl } from "./fileLoader";
-import type { DitherMode, Preset, PipelineMode, CrestMode, CropAspect } from "../types/types";
+import type { CrestMode, CropAspect } from "../types/types";
 import { getGameTemplate } from "./templates";
 import { renderShell } from "./shell";
+import { createToolPage } from "./toolPage";
 
 export function createApp() {
 
@@ -87,47 +84,11 @@ export function createApp() {
       gdpr: gdprHtml,
       faq: faqHtml,
     },
-    renderToolPage,
+    renderToolPage: () => toolPage.renderToolPage(),
   });
 
   // expose route renderer to the rest of the app
   renderRouteFn = router.renderRoute;
-
-  function renderToolPage() {
-    // Crop aspect is tied to Mode (no separate selector)
-    const desired: CropAspect = currentMode === "only_clan" ? "16x12" : "24x12";
-    if (currentCropAspect !== desired) {
-      currentCropAspect = desired;
-      settings.setCropAspect(currentCropAspect);
-      if (state.displayCanvas) actions.setCropRect(state, initCropToAspect(state.displayCanvas, aspectRatio(currentCropAspect)));
-    }
-    const trueW = currentMode === "only_clan" ? 16 : 24;
-    const trueH = 12;
-    const cropLabel = currentCropAspect === "16x12" ? "4:3" : "2:1";
-    const pipeline = settings.getPipeline();
-    const pixelPreset = settings.getPixelPreset();
-    const templateName = currentMode === "only_clan" ? "l2_nameplate_02.jpg" : "l2_nameplate_01.jpg";
-
-    routeRoot.innerHTML = renderToolView({
-      t,
-      escapeHtml,
-      tipAttr,
-      helpHtml,
-
-      currentLang,
-      currentMode,
-      pipeline,
-      pixelPreset,
-      advancedOpen,
-
-      cropLabel,
-      trueW,
-      trueH,
-      templateName,
-    });
-
-    initToolUI();
-  }
 
   // -------------------- TOOL UI + STATE --------------------
   initDisplayCanvas({
@@ -184,351 +145,54 @@ export function createApp() {
     afterCompute: (res) => renderController.renderAfterCompute(res),
   });
 
-  function initToolUI() {
+  const toolPage = createToolPage({
+    routeRoot,
+    state,
 
-    // Help tooltips (desktop hover + mobile tap)
-    initHelpTooltips();
-    // refs must be available only after tool HTML is rendered
-    actions.setRefs(state, collectToolRefs(document));
+    // language / routing
+    getCurrentLang: () => currentLang,
+    setLang,
+    getRenderRoute: () => renderRouteFn,
 
-    // Crop controller (moved to src/ui/crop.ts)
-    actions.setCropController(
-      state,
-      createCropController({
-        getRefs: () => state.refs,
-        getSourceImage: () => state.sourceImage,
-        getDisplayCanvas: () => state.displayCanvas,
-        rebuildDisplayCanvas,
-        getCropRect: () => state.cropRect,
-        setCropRect: (r) => actions.setCropRect(state, r),
-        scheduleRecomputePipeline,
+    // mode + aspect
+    getCurrentMode: () => currentMode,
+    setCurrentMode: (m) => { currentMode = m; },
+    setModeStorage: (m) => settings.setMode(m),
 
-        getCropDragMode: () => state.cropDragMode,
-        setCropDragMode: (m) => actions.setCropDragMode(state, m),
-        getDragStart: () => state.dragStart,
-        setDragStart: (v) => actions.setDragStart(state, v),
-        getDragAnchor: () => state.dragAnchor,
-        setDragAnchor: (v) => actions.setDragAnchor(state, v),
-      })
-    );
+    getCurrentCropAspect: () => currentCropAspect,
+    setCurrentCropAspect: (a) => { currentCropAspect = a; },
+    setCropAspectStorage: (a) => settings.setCropAspect(a),
+    aspectRatio,
 
-    // Pipeline persistence + UI toggles
-    state.refs!.pipelineSel.value = settings.getPipeline();
+    // advanced toggle
+    getAdvancedOpen: () => advancedOpen,
+    setAdvancedOpen: (v) => { advancedOpen = v; },
+    persistAdvancedOpen: (v) => settings.setAdvancedOpen(v),
 
-    const applyPresetOptions = (p: PipelineMode) => {
-      if (p === "pixel") {
-        const px = settings.getPixelPreset();
-        state.refs!.presetSel.innerHTML = `
-          <option value="pixel-clean" ${px === "pixel-clean" ? "selected" : ""}>Clean</option>
-          <option value="pixel-crisp" ${px === "pixel-crisp" ? "selected" : ""}>Crisp</option>
-          <option value="pixel-stable" ${px === "pixel-stable" ? "selected" : ""}>Stable</option>
-          <option value="pixel-indexed" ${px === "pixel-indexed" ? "selected" : ""}>Indexed</option>
-        `;
-        state.refs!.presetSel.value = px;
-      } else {
-        const mp = settings.getModernPreset();
-        state.refs!.presetSel.innerHTML = `
-          <option value="balanced" ${mp === "balanced" ? "selected" : ""}>${escapeHtml(t("Balanced","Баланс","Баланс"))}</option>
-          <option value="simple" ${mp === "simple" ? "selected" : ""}>${escapeHtml(t("Simple","Обычно","Простий"))}</option>
-          <option value="complex" ${mp === "complex" ? "selected" : ""}>${escapeHtml(t("Complex","Сложная","Складна"))}</option>
-          <option value="legacy" ${mp === "legacy" ? "selected" : ""}>${escapeHtml(t("Legacy","Legacy","Legacy"))}</option>
-        `;
-        state.refs!.presetSel.value = mp;
-      }
-    };
+    // display/crop
+    rebuildDisplayCanvas,
 
-    state.refs!.pipelineSel.value = settings.getPipeline();
-    applyPresetOptions(state.refs!.pipelineSel.value as PipelineMode);
+    // compute
+    scheduleRecomputePipeline,
+    recomputePipeline: async () => { await recomputePipeline(); },
 
-    let prevPipeline: PipelineMode = state.refs!.pipelineSel.value as PipelineMode;
+    // preview/controller
+    renderPreview: () => renderController.renderPreview(),
+    drawTrueSizeEmpty: (w, h) => renderController.drawTrueSizeEmpty(w, h),
 
+    // template loading
+    loadImageFromUrl: (url) => loadExternalImageFromUrl(url),
 
-    // UI events / bindings (extracted to src/ui/events.ts)
-    initToolUIEvents({
-      getRefs: () => state.refs,
+    // file loading
+    loadFromFile: loadImageFromFile,
+    loadFromClipboard: loadImageFromClipboardEvent,
+    loadFromDataTransfer: loadImageFromDataTransfer,
+    loadFromUrlExternal: (url) => loadExternalImageFromUrl(url),
 
-      getLangButtonsRoot: () => document,
-
-      // pipeline/presets
-      getPrevPipeline: () => prevPipeline,
-      setPrevPipeline: (p) => { prevPipeline = p; },
-
-      getPipeline: () => settings.getPipeline(),
-      setPipeline: (p) => settings.setPipeline(p),
-
-      getPixelPreset: () => settings.getPixelPreset(),
-      setPixelPreset: (p) => settings.setPixelPreset(p),
-
-      getModernPreset: () => settings.getModernPreset(),
-      setModernPreset: (p) => settings.setModernPreset(p),
-
-      applyPresetOptions,
-      applyPresetDefaults,
-      updateControlAvailability,
-
-      // mode/crop
-      getCurrentMode: () => currentMode,
-      setCurrentMode: (m) => { currentMode = m; },
-      setModeStorage: (m) => settings.setMode(m),
-
-      getCurrentCropAspect: () => currentCropAspect,
-      setCurrentCropAspect: (a) => { currentCropAspect = a; },
-      setCropAspectStorage: (a) => settings.setCropAspect(a),
-
-      setCropRectNull: () => { actions.setCropRect(state, null); },
-      rebuildCropRectToAspect: () => {
-        if (state.displayCanvas) actions.setCropRect(state, initCropToAspect(state.displayCanvas, aspectRatio(currentCropAspect)));
-      },
-      drawCropUI: () => { state.cropController?.drawCropUI(); },
-      initCropEvents: () => { state.cropController?.initCropEvents(); },
-
-      renderRoute: renderRouteFn,
-
-      // display / preview
-      getSourceImage: () => state.sourceImage,
-      setSourceImage: (img) => { actions.setSourceImage(state, img); },
-
-      rebuildDisplayCanvas: () => rebuildDisplayCanvas(),
-
-      getInvertColors: () => state.invertColors,
-      setInvertColors: (v) => { actions.setInvertColors(state, v); },
-
-      rotateLeft: () => {
-        actions.setRotation90(state, (((state.rotation90 + 270) % 360) as any));
-        rebuildDisplayCanvas();
-        if (state.displayCanvas) actions.setCropRect(state, initCropToAspect(state.displayCanvas, aspectRatio(currentCropAspect)));
-      },
-      rotateRight: () => {
-        actions.setRotation90(state, (((state.rotation90 + 90) % 360) as any));
-        rebuildDisplayCanvas();
-        if (state.displayCanvas) actions.setCropRect(state, initCropToAspect(state.displayCanvas, aspectRatio(currentCropAspect)));
-      },
-
-      loadTemplate,
-
-      scheduleRecomputePipeline,
-      recomputePipeline: () => { void recomputePipeline(); },
-      renderPreview: renderController.renderPreview,
-
-      drawTrueSizeEmpty: renderController.drawTrueSizeEmpty,
-
-      // advanced open
-      getAdvancedOpen: () => advancedOpen,
-      setAdvancedOpen: (v) => { advancedOpen = v; },
-      persistAdvancedOpen: (v) => settings.setAdvancedOpen(v),
-
-      // brightness/contrast
-      getBrightness: () => settings.getBrightness(),
-      setBrightness: (v) => settings.setBrightness(v),
-      getContrast: () => settings.getContrast(),
-      setContrast: (v) => settings.setContrast(v),
-
-      // language
-      setLang,
-
-      // file loading
-      loadFromFile: loadImageFromFile,
-      loadFromClipboard: loadImageFromClipboardEvent,
-      loadFromDataTransfer: loadImageFromDataTransfer,
-      loadFromUrl: (url) => loadExternalImageFromUrl(url),
-
-      // downloads
-      hasPalette: () => hasPaletteFromState(state),
-      downloadCurrentMode: () => downloadCurrentModeFromState(state, currentMode),
-    });
-  }
-
-  // -------------------- PRESET DEFAULTS --------------------
-  function applyPresetDefaults(p: Preset) {
-    // `refs` is initialized after render; keep the function safe and TS-happy.
-    const r = state.refs;
-    if (!r) return;
-
-    // Helper to set Strength slider consistently
-    const setStrength = (val: number) => {
-      const v = String(Math.max(0, Math.min(100, Math.round(val))));
-      r.ditherAmt.value = v;
-      r.ditherAmtVal.textContent = v;
-    };
-
-    // Defaults that most presets share
-    r.oklabChk.checked = true;
-    r.cleanupChk.checked = true;
-
-    switch (p) {
-      case "legacy":
-        r.ditherSel.value = "none";
-        setStrength(0);
-        r.twoStepChk.checked = false;
-        r.centerPaletteChk.checked = false;
-        r.oklabChk.checked = false;
-        r.noiseDitherChk.checked = false;
-        r.edgeSharpenChk.checked = false;
-        r.cleanupChk.checked = false;
-        break;
-
-      case "simple":
-        r.ditherSel.value = "none";
-        setStrength(25);
-        r.twoStepChk.checked = true;
-        r.centerPaletteChk.checked = true;
-        r.oklabChk.checked = true;
-        r.noiseDitherChk.checked = false;
-        r.edgeSharpenChk.checked = true;
-        r.cleanupChk.checked = true;
-        break;
-
-      case "balanced":
-        r.ditherSel.value = "ordered4";
-        setStrength(45);
-        r.twoStepChk.checked = true;
-        r.centerPaletteChk.checked = true; // "Balance colors"
-        r.oklabChk.checked = true;
-        r.noiseDitherChk.checked = true;
-        r.edgeSharpenChk.checked = true;
-        r.cleanupChk.checked = true;
-        break;
-
-      case "complex":
-      default:
-        r.ditherSel.value = "floyd";
-        setStrength(22);
-        r.twoStepChk.checked = true;
-        r.centerPaletteChk.checked = false;
-        r.oklabChk.checked = true;
-        r.noiseDitherChk.checked = false;
-        r.edgeSharpenChk.checked = false;
-        r.cleanupChk.checked = true;
-        break;
-    }
-  }
-
-  function updateControlAvailability(p: Preset) {
-    const r = state.refs;
-    if (!r) return;
-
-    const isPixel = (r.pipelineSel.value as PipelineMode) === "pixel";
-
-    // Helper: hide/show whole control rows without changing layout structure elsewhere
-    const setRowVisibleByInput = (input: HTMLElement, visible: boolean) => {
-      const row =
-        input.closest(".adv-opt") ||
-        input.closest(".range") ||
-        input.closest(".select");
-      if (!row) return;
-      row.classList.toggle("hidden", !visible);
-    };
-
-    const setToggleVisible = (el: HTMLInputElement, visible: boolean, forceOffWhenHidden = true) => {
-      setRowVisibleByInput(el, visible);
-      if (!visible && forceOffWhenHidden) el.checked = false;
-    };
-
-    // -----------------
-    // 1) Strength slider: currently observed as non-functional across all presets -> hide entirely
-    // -----------------
-    const strengthRow = document.getElementById("strengthRow");
-    if (strengthRow) strengthRow.classList.add("hidden");
-    r.ditherAmt.disabled = true;
-
-    // -----------------
-    // 2) Color smoothing options: MUST BE ALWAYS HIDDEN
-    // -----------------
-
-    const smoothingRow = document.getElementById("smoothingRow");
-    if (smoothingRow) smoothingRow.classList.add("hidden");
-
-    const allowedDithersByPreset: Record<Preset, DitherMode[]> = {
-      legacy: ["none", "ordered4", "ordered8", "atkinson", "floyd"],
-      simple: ["none"],
-      balanced: ["none", "ordered4", "ordered8", "atkinson", "floyd"],
-      complex: ["none"],
-    };
-
-    const ditherLabel = (v: DitherMode) => {
-      switch (v) {
-        case "none":
-          return t("Off", "Выкл", "Вимк");
-        case "ordered4":
-          return t("Pattern 4×4", "Шаблон 4×4", "Візерунок 4×4");
-        case "ordered8":
-          return t("Pattern 8×8", "Шаблон 8×8", "Візерунок 8×8");
-        case "atkinson":
-          return t("Smooth (Atkinson)", "Плавно (Atkinson)", "Плавно (Atkinson)");
-        case "floyd":
-          return t("Smooth (Floyd–Steinberg)", "Плавно (Floyd–Steinberg)", "Плавно (Floyd–Steinberg)");
-      }
-    };
-
-    const allowed = allowedDithersByPreset[p];
-    // Rebuild options only if needed (keeps selection stable when possible)
-    const current = (r.ditherSel.value as DitherMode) || "none";
-    const allowedSafe = allowed ?? ["none"];
-    const nextValue: DitherMode = allowedSafe.includes(current) ? current : "none";
-
-    r.ditherSel.innerHTML = allowedSafe
-      .map((v) => `<option value="${v}">${escapeHtml(ditherLabel(v))}</option>`)
-      .join("");
-
-    r.ditherSel.value = nextValue;
-
-    // If preset supports only Off, keep the dropdown visible but make it non-interactive (no misleading choices)
-    r.ditherSel.disabled = allowedSafe.length <= 1;
-
-    // -----------------
-    // 3) Advanced toggles: hide those that have no effect in the current preset (based on current implementation)
-    // -----------------
-    // Your observed behavior matrix:
-    // - Legacy: only Smoother resize affects output (color smoothing selection itself affects output)
-    // - Simple: Smoother resize + Sharpen edges
-    // - Balanced: Smoother resize + Balance colors + Subtle noise + Sharpen edges + Strength (but Strength is globally hidden for now)
-    // - Complex: Smoother resize + Sharpen edges
-    //
-    // Global dead / not wired:
-    // - Better color match (OKLab) -> hide everywhere
-    // - Cleanup pixels -> hide everywhere (currently no visible impact)
-    // In Pixel conversion these controls must be completely hidden and must not re-appear
-    // when switching Pixel presets.
-    const showSmootherResize = !isPixel;
-    const showBalance = !isPixel && p === "balanced";
-    const showSubtleNoise = !isPixel && p === "balanced";
-    const showSharpen = !isPixel && p !== "legacy";
-    const showBetterMatch = false;
-    const showCleanup = false;
-
-    // Smoother resize stays visible always
-    setToggleVisible(r.twoStepChk, showSmootherResize, false);
-
-    // Hide per-preset controls
-    setToggleVisible(r.centerPaletteChk, showBalance);
-    setToggleVisible(r.noiseDitherChk, showSubtleNoise);
-
-    setToggleVisible(r.edgeSharpenChk, showSharpen);
-
-    // Dead / disabled globally
-    setToggleVisible(r.oklabChk, showBetterMatch);
-    setToggleVisible(r.cleanupChk, showCleanup);
-  }
-
-  async function loadTemplate() {
-    const tpl = getGameTemplate(currentMode === "only_clan" ? "16x12" : "24x12");
-
-    // Avoid reloading the same template on every render
-    if (state.loadedTemplateSrc === tpl.src && state.gameTemplateImg) {
-      renderController.renderPreview();
-      return;
-    }
-
-    try {
-      actions.setGameTemplateImg(state, await loadExternalImageFromUrl(tpl.src));
-      actions.setLoadedTemplateSrc(state, tpl.src);
-      renderController.renderPreview();
-    } catch {
-      actions.setGameTemplateImg(state, null);
-      actions.setLoadedTemplateSrc(state, null);
-      renderController.renderPreview();
-    }
-  }
+    // downloads
+    hasPalette: () => hasPaletteFromState(state),
+    downloadCurrentMode: () => downloadCurrentModeFromState(state, currentMode),
+  });
 
   // -------------------- SMALL UTIL --------------------
   function clamp255(x: number): number { return x < 0 ? 0 : x > 255 ? 255 : x; }
