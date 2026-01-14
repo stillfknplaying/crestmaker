@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://crestmaker.org/sitemap.xml
