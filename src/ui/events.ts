@@ -46,14 +46,33 @@ function bindGlobalFileListenersOnce() {
   });
 
   // Drag & Drop image file (anywhere on the page)
+  // Drag & Drop image file (anywhere on the page)
   document.addEventListener("dragover", (e) => {
     if (!activeDeps || !activeDeps.getRefs()) return;
+    const dt = e.dataTransfer;
+    // Only intercept file drags. Let normal text/URL drags behave as usual.
+    const hasFiles = !!dt && Array.from(dt.types || []).includes("Files");
+    if (!hasFiles) return;
     e.preventDefault();
+    // Hint the browser that we accept the drop as a copy.
+    try {
+      dt!.dropEffect = "copy";
+    } catch {
+      // ignore
+    }
   });
   document.addEventListener("drop", async (e) => {
     if (!activeDeps || !activeDeps.getRefs()) return;
-    e.preventDefault();
-    const img = await activeDeps.loadFromDataTransfer(e.dataTransfer);
+    const dt = e.dataTransfer;
+    const hasFiles = !!dt && Array.from(dt.types || []).includes("Files");
+    if (hasFiles) {
+      // Prevent the browser from navigating away by opening the dropped file.
+      e.preventDefault();
+    } else {
+      // Allow dropping text (e.g., into inputs) without interference.
+      return;
+    }
+    const img = await activeDeps.loadFromDataTransfer(dt);
     if (!img) return;
     applyLoadedImageWithActiveDeps(img);
   });
