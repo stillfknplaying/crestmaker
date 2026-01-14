@@ -26,11 +26,10 @@ import { WorkerPipelineEngine } from "./pipeline/workerEngine";
 import * as settings from "./settings";
 import { loadImageFromClipboardEvent, loadImageFromDataTransfer, loadImageFromFile, loadImageFromUrl as loadExternalImageFromUrl } from "./fileLoader";
 import type {  DitherMode,  Preset,  PipelineMode,  CrestMode,  CropAspect,  GameTemplate,} from "../types/types";
+import { SITE_NAME } from "./constants";
 
 export function createApp() {
 
-  // CrestMaker — beta 0.0.8.9
-  const SITE_NAME = "CrestMaker";
 
   // Persisted UI settings
   let advancedOpen = settings.getAdvancedOpen();
