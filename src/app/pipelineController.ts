@@ -13,7 +13,7 @@ import type {
   Preset,
 } from "../types/types";
 
-import type { PipelineEngine, PipelineSettings } from "./pipeline/engine";
+import type { PipelineEngine, PipelineSettings } from "../engines/engine";
 
 export type PipelineComputeResult = {
   palette256: Uint8Array;

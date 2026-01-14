@@ -1,6 +1,6 @@
-import type { PipelineEngine } from "./pipeline/engine";
-import { LocalPipelineEngine } from "./pipeline/localEngine";
-import { WorkerPipelineEngine } from "./pipeline/workerEngine";
+import type { PipelineEngine } from "../engines/engine";
+import { LocalPipelineEngine } from "../engines/localEngine";
+import { WorkerPipelineEngine } from "../engines/workerEngine";
 
 export type EngineFactoryDeps = ConstructorParameters<typeof LocalPipelineEngine>[0];
 

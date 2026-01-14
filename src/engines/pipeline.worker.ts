@@ -3,14 +3,14 @@
 import type { PipelineInput, PipelineResult } from "./engine";
 import { LocalPipelineEngine } from "./localEngine";
 
-import type { Preset } from "../../types/types";
+import type { Preset } from "../types/types";
 import {
   edgeAwareSharpen,
   softNormalizeLevels,
   clampDitherStrength,
   quantizeTo256,
-} from "../../pipeline/modern";
-import { quantizePixel256, cleanupIndicesMajoritySafe } from "../../pipeline/pixel";
+} from "../pipeline/modern";
+import { quantizePixel256, cleanupIndicesMajoritySafe } from "../pipeline/pixel";
 
 type WorkerRequest = {
   id: number;

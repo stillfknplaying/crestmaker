@@ -1,4 +1,4 @@
-import type { DitherMode, PixelPreset, Preset } from "../../types/types";
+import type { DitherMode, PixelPreset, Preset } from "../types/types";
 import type { PipelineEngine, PipelineInput, PipelineResult } from "./engine";
 
 export type QuantizeResult = { palette: Uint8Array; indices: Uint8Array };

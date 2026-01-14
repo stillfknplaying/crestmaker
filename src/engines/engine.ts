@@ -5,7 +5,7 @@ import type {
   PixelPreset,
   PipelineMode,
   Preset,
-} from "../../types/types";
+} from "../types/types";
 
 // Contract for pipeline computation.
 //
