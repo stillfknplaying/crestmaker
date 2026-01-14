@@ -83,6 +83,14 @@ body{
   align-items:center;
 }
 
+.toolbarhint{
+  flex-basis: 100%;
+  font-size: 12px;
+  line-height: 1.3;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
 
 .toolbar-right{
   margin-left: auto;

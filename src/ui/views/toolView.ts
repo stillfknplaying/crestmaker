@@ -120,7 +120,11 @@ export function renderToolView(ctx: ToolViewCtx): string {
             </div>
             <div id="urlError" class="muted hidden" aria-live="polite"></div>
           </div>
-        </div>
+        
+          <div class="toolbarhint muted">
+            ${escapeHtml(t("Tip: paste (Ctrl+V) or drag & drop an image anywhere on the page.", "Подсказка: вставьте (Ctrl+V) или перетащите картинку в любое место страницы.", "Підказка: вставте (Ctrl+V) або перетягніть картинку в будь-яке місце сторінки."))}
+          </div>
+</div>
 
         <div id="advancedPanel" class="advanced ${ctx.advancedOpen ? "" : "hidden"}">
           <div class="adv-top">
