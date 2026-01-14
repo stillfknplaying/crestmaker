@@ -5,9 +5,7 @@ function clamp(v: number, a: number, b: number) {
   return Math.max(a, Math.min(b, v));
 }
 
-// All CrestMaker output sizes are 2:1 (24×12, 16×12, 8×12).
-// Crop UI is labeled "Crop 2:1" and should never drift away from 2:1.
-const CROP_ASPECT = 2; // width / height
+// Crop aspect ratio is controlled by the current Mode (2:1 for 24×12, 4:3 for 16×12).
 const MIN_CROP_PX = 10;
 
 function clampSizeToBoundsPreserveAspect(
@@ -138,6 +136,8 @@ export function createCropController(deps: CropDeps) {
     getDragAnchor,
     setDragAnchor,
   } = deps;
+  const getAspect = () => deps.getCropAspectRatio();
+
 
   function drawCropUI() {
     const refs = getRefs();
@@ -360,10 +360,10 @@ export function createCropController(deps: CropDeps) {
 
         const base = pinchStart.rect;
 
-        // Keep crop strictly 2:1 even when clamping to image bounds.
+        // Keep crop strictly at the current aspect even when clamping to image bounds.
         const sized = clampSizeToBoundsPreserveAspect(
           base.w / ratio,
-          CROP_ASPECT,
+          getAspect(),
           dc.width,
           dc.height
         );
@@ -428,12 +428,12 @@ export function createCropController(deps: CropDeps) {
       const wFromX = dxAbs;
       const hFromY = dyAbs;
 
-      // Keep crop strictly 2:1.
+      // Keep crop strictly at the current aspect.
       // Pick a size that satisfies both axes (drag point) while preserving aspect.
-      const desiredW = Math.max(wFromX, hFromY * CROP_ASPECT);
+      const desiredW = Math.max(wFromX, hFromY * getAspect());
       const sized = clampSizeToBoundsPreserveAspect(
         desiredW,
-        CROP_ASPECT,
+        getAspect(),
         dc.width,
         dc.height
       );
@@ -492,10 +492,10 @@ export function createCropController(deps: CropDeps) {
         const zoomIn = e.deltaY < 0;
         const factor = zoomIn ? 1 / 1.1 : 1.1;
 
-        // Keep crop strictly 2:1 even when clamping to image bounds.
+        // Keep crop strictly at the current aspect even when clamping to image bounds.
         const sized = clampSizeToBoundsPreserveAspect(
           cropRect.w * factor,
-          CROP_ASPECT,
+          getAspect(),
           dc.width,
           dc.height
         );

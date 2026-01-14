@@ -120,6 +120,7 @@ export function createToolPage(deps: ToolPageDeps) {
         getCropRect: () => state.cropRect,
         setCropRect: (r) => actions.setCropRect(state, r),
         scheduleRecomputePipeline: deps.scheduleRecomputePipeline,
+        getCropAspectRatio: () => deps.aspectRatio(deps.getCurrentCropAspect()),
 
         getCropDragMode: () => state.cropDragMode,
         setCropDragMode: (m) => actions.setCropDragMode(state, m),

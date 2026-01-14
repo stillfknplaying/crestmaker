@@ -13,6 +13,9 @@ export type CropDeps = {
   setCropRect: (r: CropRect | null) => void;
   scheduleRecomputePipeline: () => void;
 
+  /** Current crop aspect ratio (width / height). */
+  getCropAspectRatio: () => number;
+
   getCropDragMode: () => CropDragMode;
   setCropDragMode: (m: CropDragMode) => void;
   getDragStart: () => { mx: number; my: number; x: number; y: number };
