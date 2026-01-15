@@ -3,7 +3,7 @@ import type { GameTemplate } from "../types/types";
 // Game UI preview templates (screenshots)
 
 export const GAME_TEMPLATE_24: GameTemplate = {
-  src: "/templates/l2_nameplate_01.jpg",
+  src: "/templates/l2_nameplate_01.webp",
   baseW: 2560,
   baseH: 1440,
   slotX: 1160,
@@ -13,7 +13,7 @@ export const GAME_TEMPLATE_24: GameTemplate = {
 };
 
 export const GAME_TEMPLATE_16: GameTemplate = {
-  src: "/templates/l2_nameplate_02.jpg",
+  src: "/templates/l2_nameplate_02.webp",
   baseW: 2560,
   baseH: 1440,
   slotX: 1164,
