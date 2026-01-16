@@ -13,7 +13,9 @@ export function renderShell(app: HTMLElement): ShellRefs {
     <div class="wrap">
       <header class="header">
         <div class="brand">
-          <h1>${SITE_NAME}</h1>
+          <a data-testid="brand-home" class="brand-link" href="#/" aria-label="Go to home">
+            <h1>${SITE_NAME}</h1>
+          </a>
           <p class="muted hidden">BMP 8-bit (256-color) emblem converter — 24×12 (ally 8×12 + clan 16×12).</p>
         </div>
 
