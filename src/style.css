@@ -628,3 +628,73 @@ select option{
 :root[data-theme="light"] .helpbtn svg{ fill: rgba(16,24,40,.55); }
 :root[data-theme="light"] .helptip{ background: #ffffff; }
 
+/* ---------- GUIDE: SPOILERS + MEDIA ---------- */
+details.spoiler { margin: 14px 0; }
+
+details.spoiler > summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #c6cad8;
+  color: #1a1f2b;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+details.spoiler > summary:hover { filter: brightness(0.98); }
+details.spoiler[open] > summary { background: #b9bfd1; }
+
+details.spoiler > summary::-webkit-details-marker { display: none; }
+details.spoiler > summary::marker { content: ""; }
+
+.spoiler-body {
+  margin-top: 12px;
+}
+
+.guide-media {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* Keep guide video at 720p layout (16:9), avoid oversized stretching */
+.guide-video {
+  max-width: 1280px;
+}
+
+.guide-video video.guide-media {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  background: rgba(0,0,0,0.45);
+}
+
+.crest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 10px;
+  align-items: center;
+}
+
+.crest {
+  width: 100%;
+  image-rendering: pixelated;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+}
+
+:root[data-theme="light"] details.spoiler > summary {
+  background: #cfd4e1;
+  color: #0f172a;
+}
+:root[data-theme="light"] details.spoiler[open] > summary {
+  background: #c3cadb;
+}
+

@@ -6,6 +6,7 @@ import { termsHtml } from "../content/terms";
 import { gdprHtml } from "../content/gdpr";
 import { aboutHtml } from "../content/about";
 import { faqHtml } from "../content/faq";
+import { guideHtml } from "../content/guide";
 import type { Lang } from "../i18n";
 import { currentLang, setLang as setLangCore, t } from "../i18n";
 import { downloadCurrentMode as downloadCurrentModeFromState, hasPalette as hasPaletteFromState } from "./downloads";
@@ -83,6 +84,7 @@ export function createApp() {
       about: aboutHtml,
       gdpr: gdprHtml,
       faq: faqHtml,
+      guide: guideHtml,
     },
     renderToolPage: () => toolPage.renderToolPage(),
   });

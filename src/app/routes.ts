@@ -12,11 +12,55 @@ export type RouterInit = {
     about: (lang: Lang) => string;
     gdpr: (lang: Lang) => string;
     faq: (lang: Lang) => string;
+    guide: (lang: Lang) => string;
   };
   renderToolPage: () => void;
 };
 
 export function initRoutes(cfg: RouterInit) {
+  function initDeferredMedia(root: HTMLElement) {
+    // Loads heavy media only when a spoiler is opened.
+    const spoilers = Array.from(root.querySelectorAll<HTMLDetailsElement>("details.spoiler"));
+    for (const d of spoilers) {
+      d.addEventListener("toggle", () => {
+        if (!d.open) return;
+
+        // Images
+        for (const img of Array.from(d.querySelectorAll<HTMLImageElement>("img[data-src]"))) {
+          if (!img.getAttribute("src")) {
+            const src = img.dataset.src;
+            if (src) img.setAttribute("src", src);
+          }
+        }
+
+        // Video (single src)
+        for (const v of Array.from(d.querySelectorAll<HTMLVideoElement>("video[data-src]"))) {
+          if (!v.getAttribute("src")) {
+            const src = v.dataset.src;
+            if (src) v.setAttribute("src", src);
+          }
+          // Encourage the browser to start fetching metadata once opened.
+          if (v.preload === "none") v.preload = "metadata";
+          // Ensure the browser re-evaluates sources after we assign src.
+          try { v.load(); } catch { /* noop */ }
+        }
+
+        // <source data-src="..."> inside video (supported as well)
+        for (const s of Array.from(d.querySelectorAll<HTMLSourceElement>("source[data-src]"))) {
+          if (!s.getAttribute("src")) {
+            const src = (s as any).dataset?.src as string | undefined;
+            if (src) s.setAttribute("src", src);
+          }
+          const video = s.closest("video");
+          if (video) {
+            if (video.preload === "none") video.preload = "metadata";
+            try { video.load(); } catch { /* noop */ }
+          }
+        }
+      });
+    }
+  }
+
   function renderPolicyPage(title: string, html: string) {
     const currentLang = cfg.getLang();
 
@@ -39,9 +83,15 @@ export function initRoutes(cfg: RouterInit) {
     `;
     // Важно: здесь НЕТ addEventListener для кнопок языка.
     // Это делается делегированием в src/app/policyEvents.ts (initPolicyLangEvents).
+
+    // If the page contains deferred media (guide), activate handlers.
+    initDeferredMedia(cfg.routeRoot);
   }
 
   function renderRoute() {
+    // When navigating between routes in SPA, always reset viewport.
+    window.scrollTo(0, 0);
+
     const hash = (location.hash || "#/").replace(/^#/, "");
     const path = hash.startsWith("/") ? hash : "/" + hash;
 
@@ -73,6 +123,13 @@ export function initRoutes(cfg: RouterInit) {
       return renderPolicyPage(
         cfg.t("FAQ", "FAQ", "FAQ"),
         cfg.pages.faq(lang)
+      );
+    }
+
+    if (path === "/guide" || path === "/how-to-use") {
+      return renderPolicyPage(
+        cfg.t("How to use", "Как пользоваться", "Як користуватися"),
+        cfg.pages.guide(lang)
       );
     }
 

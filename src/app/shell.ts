@@ -32,6 +32,7 @@ export function renderShell(app: HTMLElement): ShellRefs {
       <footer class="footer">
         <nav class="footer-links">
           <a href="#/">Tool</a>
+          <a href="#/guide">Guide</a>
           <a href="#/about">About</a>
           <a href="#/faq">FAQ</a>
           <a href="#/privacy">Privacy Policy</a>
