@@ -14,7 +14,16 @@ export function renderShell(app: HTMLElement): ShellRefs {
       <header class="header">
         <div class="brand">
           <a data-testid="brand-home" class="brand-link" href="#/" aria-label="Go to home">
-            <h1>${SITE_NAME}</h1>
+            <h1 class="brand-title">
+              <img
+                class="brand-logo"
+                src="/icons/crestmaker.svg"
+                alt="${SITE_NAME}"
+                height="28"
+                loading="eager"
+                decoding="async"
+              />
+            </h1>
           </a>
           <p class="muted hidden">BMP 8-bit (256-color) emblem converter — 24×12 (ally 8×12 + clan 16×12).</p>
         </div>
@@ -33,7 +42,9 @@ export function renderShell(app: HTMLElement): ShellRefs {
 
       <footer class="footer">
         <nav class="footer-links">
-          <a href="#/">Tool</a>
+          <a href="#/" aria-label="CrestMaker home">
+          <img src="/icons/crestmaker.svg" alt="CrestMaker" class="footer-logo" width="16" height="16" loading="lazy" />
+          </a>
           <a href="#/guide">Guide</a>
           <a href="#/about">About</a>
           <a href="#/faq">FAQ</a>
@@ -43,10 +54,28 @@ export function renderShell(app: HTMLElement): ShellRefs {
           <a data-testid="cookie-settings-link" href="#" id="cookieSettingsLink">Cookies</a>
         </nav>
 
-          <div class="footer-contact">
-           Contact:
-            <a href="mailto:admin@crestmaker.org">admin@crestmaker.org</a>
-           </div>
+        <div class="footer-share" aria-label="Share CrestMaker">
+          <span class="footer-label">Share:</span>
+          <a id="shareTelegramLink" href="#" target="_blank" rel="noopener noreferrer" title="Share on Telegram" aria-label="Share on Telegram">
+            <img src="/icons/telegram.svg" alt="Telegram" width="16" height="16" loading="lazy" />
+          </a>
+          <a id="shareXLink" href="#" target="_blank" rel="noopener noreferrer" title="Share on X" aria-label="Share on X">
+            <img src="/icons/x.svg" alt="X" width="16" height="16" loading="lazy" />
+          </a>
+          <a href="https://www.facebook.com/sharer/sharer.php?u=https://crestmaker.org" target="_blank" rel="noopener noreferrer" title="Share on Facebook" aria-label="Share on Facebook">
+            <img src="/icons/facebook.svg" alt="Facebook" width="16" height="16" loading="lazy" />
+          </a>
+          <button type="button" id="shareDiscordBtn" title="Copy link for Discord" aria-label="Copy link for Discord">
+            <img src="/icons/discord.svg" alt="Discord" width="16" height="16" loading="lazy" />
+          </button>
+        </div>
+
+        <div class="footer-contact">
+          <a class="footer-contact-icon" href="mailto:admin@crestmaker.org" title="Email admin@crestmaker.org" aria-label="Email admin@crestmaker.org">
+            <img src="/icons/gmail.svg" alt="Email" width="16" height="16" loading="lazy" />
+          </a>
+          <a href="mailto:admin@crestmaker.org">admin@crestmaker.org</a>
+        </div>
 
         <div class="footer-copy">
           <span id="year"></span> © ${SITE_NAME}. All rights reserved.
