@@ -118,7 +118,7 @@ export function renderCookieBannerIfNeeded() {
   if (!root) return;
 
   root.innerHTML = `
-    <div style="
+    <div data-testid="cookie-banner" style="
       position:fixed;
       left:0; right:0; bottom:0;
       padding: 12px 12px 14px;
@@ -141,9 +141,9 @@ export function renderCookieBannerIfNeeded() {
         </div>
 
         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-          <button class="btn" id="cookieManage">${escapeHtml(t("Manage options", "Настроить", "Налаштувати"))}</button>
-          <button class="btn" id="cookieReject">${escapeHtml(t("Reject optional", "Отклонить необязательные", "Відхилити необов’язкові"))}</button>
-          <button class="btn primary" id="cookieAccept">${escapeHtml(t("Accept all", "Принять все", "Прийняти все"))}</button>
+          <button data-testid="cookie-manage" class="btn" id="cookieManage">${escapeHtml(t("Manage options", "Настроить", "Налаштувати"))}</button>
+          <button data-testid="cookie-reject" class="btn" id="cookieReject">${escapeHtml(t("Reject optional", "Отклонить необязательные", "Відхилити необов’язкові"))}</button>
+          <button data-testid="cookie-accept" class="btn primary" id="cookieAccept">${escapeHtml(t("Accept all", "Принять все", "Прийняти все"))}</button>
         </div>
       </div>
     </div>

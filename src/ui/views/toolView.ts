@@ -38,10 +38,10 @@ export function renderToolView(ctx: ToolViewCtx): string {
         <div class="toolbar">
           <label class="btn primary">
             ${escapeHtml(t("Upload image","Загрузить","Завантажити"))}
-            <input id="file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+            <input data-testid="upload-input" id="file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
           </label>
 
-          <button id="download" class="btn primary" disabled>${escapeHtml(t("Download BMPs","Скачать BMP","Завантажити BMP"))}</button>
+          <button data-testid="download" id="download" class="btn primary" disabled>${escapeHtml(t("Download BMPs","Скачать BMP","Завантажити BMP"))}</button>
 
           <div class="sep"></div>
 
@@ -51,7 +51,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
             "Оберіть розмір: 24×12 (повний) або 16×12 (лише клан)."
           )}>
             <span>${escapeHtml(t("Size","Размер","Розмір"))}</span>
-            <select id="mode">
+            <select data-testid="mode" id="mode">
               <option value="ally_clan" ${ctx.currentMode === "ally_clan" ? "selected" : ""}>${escapeHtml(t("24×12","24×12","24×12"))}</option>
               <option value="only_clan" ${ctx.currentMode === "only_clan" ? "selected" : ""}>${escapeHtml(t("16×12","16×12","16×12"))}</option>
             </select>
@@ -63,7 +63,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
             "Оберіть тип конвертації: Modern (image-q) або Pixel (фікс. палітра 256 + ordered dither)"
           )}>
             <span>${escapeHtml(t("Mode","Режим","Режим"))}</span>
-            <select id="pipeline">
+            <select data-testid="pipeline" id="pipeline">
               <option value="old" ${ctx.pipeline === "old" ? "selected" : ""}>Modern</option>
               <option value="pixel" ${ctx.pipeline === "pixel" ? "selected" : ""}>Pixel</option>
             </select>
@@ -75,7 +75,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
             "Швидкі налаштування конвертації в BMP 256 кольорів (залежать від Конвертації)"
           )}>
             <span>${escapeHtml(t("Preset","Пресет","Пресет"))}</span>
-            <select id="preset">
+            <select data-testid="preset" id="preset">
               ${isPixel
                 ? `
                   <option value="pixel-clean" ${ctx.pixelPreset === "pixel-clean" ? "selected" : ""}>Clean</option>
@@ -97,11 +97,11 @@ export function renderToolView(ctx: ToolViewCtx): string {
             "Більше налаштувань конвертації для іконки 24×12"
           )}>
             <span>${escapeHtml(t("Settings","Настройки","Налаштування"))}</span>
-            <input id="advanced" type="checkbox" ${ctx.advancedOpen ? "checked" : ""} />
+            <input data-testid="advanced" id="advanced" type="checkbox" ${ctx.advancedOpen ? "checked" : ""} />
             <span class="track"><span class="thumb"></span></span>
           </label>
 
-          <button id="reset" class="btn ${ctx.advancedOpen ? "" : "hidden"}" disabled>${escapeHtml(t("Reset","Сброс","Скинути"))}</button>
+          <button data-testid="reset" id="reset" class="btn ${ctx.advancedOpen ? "" : "hidden"}" disabled>${escapeHtml(t("Reset","Сброс","Скинути"))}</button>
 
           <div class="toolbar-right">
             <button class="btn ${ctx.currentLang === "en" ? "active" : ""}" data-lang="en">EN</button>
@@ -113,6 +113,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
           <div class="url-load toolbar-bottom">
             <div class="url-row">
               <input
+                data-testid="url-input"
                 id="url"
                 class="input"
                 type="url"
@@ -123,9 +124,9 @@ export function renderToolView(ctx: ToolViewCtx): string {
                   "Завантажити картинку за прямим URL. Деякі сайти блокують доступ (CORS)."
                 )}
               />
-              <button id="loadUrl" class="btn">${escapeHtml(t("Load","Загрузить","Завантажити"))}</button>
+              <button data-testid="load-url" id="loadUrl" class="btn">${escapeHtml(t("Load","Загрузить","Завантажити"))}</button>
             </div>
-            <div id="urlError" class="muted hidden" aria-live="polite"></div>
+            <div data-testid="url-error" id="urlError" class="muted hidden" aria-live="polite"></div>
           </div>
         
           <div class="toolbarhint muted">
@@ -298,28 +299,28 @@ export function renderToolView(ctx: ToolViewCtx): string {
               <h3>${escapeHtml(t("Crop","Crop","Crop"))} ${ctx.cropLabel}</h3>
               <label class="toggle compact">
                 <span>Use crop</span>
-                <input id="useCrop" type="checkbox" checked />
+                <input data-testid="use-crop" id="useCrop" type="checkbox" checked />
                 <span class="track"><span class="thumb"></span></span>
               </label>
             </div>
-            <canvas id="crop" width="480" height="240"></canvas>
+            <canvas data-testid="canvas-crop" id="crop" width="480" height="240"></canvas>
           </div>
 
           <div class="card">
             <h3>${escapeHtml(t("True size","True size","True size"))} ${ctx.trueW}×${ctx.trueH}</h3>
             <div class="true-wrap">
-              <canvas id="dstTrue" width="${ctx.trueW}" height="${ctx.trueH}"></canvas>
+              <canvas data-testid="canvas-true" id="dstTrue" width="${ctx.trueW}" height="${ctx.trueH}"></canvas>
             </div>
           </div>
 
           <div class="card" id="debugCard24">
             <h3>Result 24×12 (zoom)</h3>
-            <canvas id="dstZoom24" width="240" height="120"></canvas>
+            <canvas data-testid="canvas-result-24" id="dstZoom24" width="240" height="120"></canvas>
           </div>
 
           <div class="card" id="debugCard16">
             <h3>Result 16×12 (zoom)</h3>
-            <canvas id="dstZoom16" width="160" height="120"></canvas>
+            <canvas data-testid="canvas-result-16" id="dstZoom16" width="160" height="120"></canvas>
           </div>
 
           <div class="card full" id="previewCard">
@@ -328,18 +329,18 @@ export function renderToolView(ctx: ToolViewCtx): string {
               <div class="muted hidden">Template: <b>${ctx.templateName}</b> (2560×1440, UI=1280×720)</div>
             </div>
             <div class="preview-wrap">
-              <canvas id="preview"></canvas>
+              <canvas data-testid="canvas-preview" id="preview"></canvas>
             </div>
           </div>
         </div>
 
-        <div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true">
+        <div data-testid="reset-modal" id="confirmModal" class="modal hidden" role="dialog" aria-modal="true">
           <div class="modal-card">
             <h3>Reset advanced settings?</h3>
             <p class="muted">This will restore default values for the current preset.</p>
             <div class="modal-actions">
-              <button id="confirmNo" class="btn">Cancel</button>
-              <button id="confirmYes" class="btn primary">Reset</button>
+              <button data-testid="reset-cancel" id="confirmNo" class="btn">Cancel</button>
+              <button data-testid="reset-confirm" id="confirmYes" class="btn primary">Reset</button>
             </div>
           </div>
         </div>

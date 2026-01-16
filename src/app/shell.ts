@@ -38,7 +38,7 @@ export function renderShell(app: HTMLElement): ShellRefs {
           <a href="#/privacy">Privacy Policy</a>
           <a href="#/terms">Terms of Service</a>
           <a href="#/gdpr">GDPR</a>
-          <a href="#" id="cookieSettingsLink">Cookies</a>
+          <a data-testid="cookie-settings-link" href="#" id="cookieSettingsLink">Cookies</a>
         </nav>
 
           <div class="footer-contact">
@@ -51,9 +51,9 @@ export function renderShell(app: HTMLElement): ShellRefs {
         </div>
       </footer>
 
-      <div id="cookieRoot"></div>
+      <div data-testid="cookie-root" id="cookieRoot"></div>
 
-      <div id="cookieModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cookieModalTitle">
+      <div data-testid="cookie-modal" id="cookieModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cookieModalTitle">
         <div class="modal-card">
           <h3 id="cookieModalTitle">Cookie preferences</h3>
           <p class="muted" id="cookieModalDesc"></p>
@@ -82,8 +82,8 @@ export function renderShell(app: HTMLElement): ShellRefs {
           </div>
 
           <div class="modal-actions">
-            <button id="cookieCancel" class="btn">Cancel</button>
-            <button id="cookieSave" class="btn primary">Save</button>
+            <button data-testid="cookie-cancel" id="cookieCancel" class="btn">Cancel</button>
+            <button data-testid="cookie-save" id="cookieSave" class="btn primary">Save</button>
           </div>
         </div>
       </div>
