@@ -194,8 +194,14 @@ export function renderToolView(ctx: ToolViewCtx): string {
             </div>
 
             <div class="btn-group adv-actions">
-              <button id="rotL" class="btn">${escapeHtml(t("Rotate","Повернуть","Повернути"))} ⟲</button>
-              <button id="rotR" class="btn">${escapeHtml(t("Rotate","Повернуть","Повернути"))} ⟳</button>
+              <button id="rotL" class="btn" aria-label="${escapeHtml(t("Rotate left","Повернуть влево","Повернути ліворуч"))}">
+                <span class="rot-label">${escapeHtml(t("Rotate","Повернуть","Повернути"))}</span>
+                <span class="rot-icon" aria-hidden="true">⟲</span>
+              </button>
+              <button id="rotR" class="btn" aria-label="${escapeHtml(t("Rotate right","Повернуть вправо","Повернути праворуч"))}">
+                <span class="rot-label">${escapeHtml(t("Rotate","Повернуть","Повернути"))}</span>
+                <span class="rot-icon" aria-hidden="true">⟳</span>
+              </button>
               <button id="invert" class="btn">${escapeHtml(t("Invert","Инвертировать","Інвертувати"))}</button>
             </div>
           </div>

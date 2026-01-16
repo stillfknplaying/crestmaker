@@ -41,15 +41,24 @@ export function renderShell(app: HTMLElement): ShellRefs {
       <main id="routeRoot"></main>
 
       <footer class="footer">
-        <nav class="footer-links">
+        <div class="footer-brand">
           <a href="#/" aria-label="CrestMaker home">
-          <img src="/icons/crestmaker.svg" alt="CrestMaker" class="footer-logo" width="16" height="16" loading="lazy" />
+            <img
+              src="/icons/crestmaker.svg"
+              alt="CrestMaker"
+              class="footer-logo"
+              width="16"
+              height="16"
+              loading="lazy"
+            />
           </a>
+        </div>
+
+        <nav class="footer-links">
           <a href="#/guide">Guide</a>
-          <a href="#/about">About</a>
           <a href="#/faq">FAQ</a>
-          <a href="#/privacy">Privacy Policy</a>
-          <a href="#/terms">Terms of Service</a>
+          <a href="#/privacy">Privacy</a>
+          <a href="#/terms">Terms</a>
           <a href="#/gdpr">GDPR</a>
           <a data-testid="cookie-settings-link" href="#" id="cookieSettingsLink">Cookies</a>
         </nav>
