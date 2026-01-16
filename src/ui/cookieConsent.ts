@@ -1,5 +1,15 @@
 import { t } from "../i18n";
 
+const SHARE_URL = "https://crestmaker.org";
+
+function getShareText(): string {
+  return t(
+    "CrestMaker is a free online tool for creating Lineage 2 clan and alliance crests. Convert images to BMP 256-color crests (24x12 / 16x12) directly in your browser - no install, no registration.",
+    "CrestMaker - бесплатный онлайн-инструмент для создания клановых и альянс-иконок Lineage 2. Конвертирует изображения в BMP 256 цветов (24x12 / 16x12) прямо в браузере, без установки и регистрации.",
+    "CrestMaker - безкоштовний онлайн-інструмент для створення кланових та альянс-іконок Lineage 2. Конвертація зображень у BMP 256 кольорів (24x12 / 16x12) прямо в браузері, без встановлення та реєстрації."
+  );
+}
+
 type ConsentState = {
   essential: true;
   analytics: boolean;
@@ -157,7 +167,7 @@ export function initCookieConsentUI() {
   cookieUiBound = true;
 
   // Event delegation so it works regardless of render timing.
-  document.addEventListener("click", (e) => {
+  document.addEventListener("click", async (e) => {
     const target = e.target as HTMLElement | null;
     if (!target) return;
 
@@ -166,6 +176,48 @@ export function initCookieConsentUI() {
     if (footerLink) {
       e.preventDefault();
       openCookieModal();
+      return;
+    }
+
+    // Footer "Share" links (Telegram / X)
+    const shareTelegramLink = target.closest("#shareTelegramLink");
+    if (shareTelegramLink) {
+      e.preventDefault();
+      const text = encodeURIComponent(getShareText());
+      const url = encodeURIComponent(SHARE_URL);
+      const shareUrl = `https://t.me/share/url?url=${url}&text=${text}`;
+      window.open(shareUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    const shareXLink = target.closest("#shareXLink");
+    if (shareXLink) {
+      e.preventDefault();
+      const text = encodeURIComponent(getShareText());
+      const url = encodeURIComponent(SHARE_URL);
+      const shareUrl = `https://x.com/intent/post?url=${url}&text=${text}`;
+      window.open(shareUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    // Footer "Share: Discord" button (copies link)
+    const shareDiscordBtn = target.closest("#shareDiscordBtn");
+    if (shareDiscordBtn) {
+      e.preventDefault();
+      const btnEl = shareDiscordBtn as HTMLButtonElement;
+      const payload = `${getShareText()}\n\n${SHARE_URL}`;
+      try {
+        await navigator.clipboard.writeText(payload);
+        const prevTitle = btnEl.title;
+        btnEl.classList.add("is-copied");
+        btnEl.title = "Copied!";
+        window.setTimeout(() => {
+          btnEl.classList.remove("is-copied");
+          btnEl.title = prevTitle;
+        }, 1200);
+      } catch {
+        // ignore
+      }
       return;
     }
 
