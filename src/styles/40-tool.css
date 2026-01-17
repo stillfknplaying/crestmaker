@@ -1,3 +1,9 @@
+/* =====================================================================
+   CrestMaker CSS module: 40-tool.css
+   NOTE: Rule order preserved from original src/style.css.
+   Do not reorder selectors or media blocks unless intentionally changing UI.
+   ===================================================================== */
+
 /* ---------- TOOLBAR ---------- */
 .toolbar{
   display:flex;
@@ -56,14 +62,12 @@
   color: var(--muted);
 }
 
-
 .toolbar-right{
   margin-left: auto;
   display:flex;
   gap:8px;
   align-items:center;
 }
-
 
 .sep{
   width: 1px;
@@ -108,15 +112,21 @@
   display:none;
 }
 
+/* ---------- CONTROL CONTAINERS (shared) ---------- */
+.select,
+.url-row,
+.range{
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255,255,255,.03);
+}
+
 /* ---------- SELECTS ---------- */
 .select{
   display:flex;
   gap:8px;
   align-items:center;
-  padding: 6px 8px;
-  border:1px solid var(--border);
-  border-radius: 10px;
-  background: rgba(255,255,255,.03);
 }
 .select span{
   color: var(--muted);
@@ -134,10 +144,6 @@
   display:flex;
   align-items:center;
   gap:8px;
-  padding: 6px 8px;
-  border:1px solid var(--border);
-  border-radius: 10px;
-  background: rgba(255,255,255,.03);
 }
 
 .url-load input{
@@ -240,7 +246,6 @@ select option{
   border-color: rgba(0,0,0,.18);
 }
 
-
 /* Light theme: make OFF toggles visible on white backgrounds */
 :root[data-theme="light"] .toggle .track{
   background: #e5e7eb;
@@ -255,10 +260,6 @@ select option{
   display:flex;
   align-items:center;
   gap:8px;
-  padding: 6px 8px;
-  border:1px solid var(--border);
-  border-radius: 10px;
-  background: rgba(255,255,255,.03);
 }
 .range .lbl{ color: var(--muted); font-size: 12px; min-width: 42px; }
 .range .opt-name{ color: var(--muted); font-size: 12px; }
@@ -289,7 +290,6 @@ select option{
   line-height: 1;
   flex: 0 0 auto;
 }
-
 
 /* ---------- ADVANCED PANEL ---------- */
 .advanced{
@@ -383,10 +383,6 @@ select option{
 
 .adv-right{ display:flex; gap:8px; align-items:center; justify-content:flex-end; white-space:nowrap; }
 
-@media (max-width: 860px){
-  .adv-grid{ grid-template-columns: 1fr; }
-  .adv-right{ justify-content:flex-start; }
-}
 .btn-group{
   display:flex;
   gap:8px;

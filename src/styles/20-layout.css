@@ -1,3 +1,9 @@
+/* =====================================================================
+   CrestMaker CSS module: 20-layout.css
+   NOTE: Rule order preserved from original src/style.css.
+   Do not reorder selectors or media blocks unless intentionally changing UI.
+   ===================================================================== */
+
 /* ---------- LAYOUT ---------- */
 .wrap{
   max-width: 1200px;
