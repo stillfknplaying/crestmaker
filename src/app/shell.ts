@@ -92,6 +92,8 @@ export function renderShell(app: HTMLElement): ShellRefs {
       </footer>
 
       <div data-testid="cookie-root" id="cookieRoot"></div>
+      <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
 
       <div data-testid="cookie-modal" id="cookieModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cookieModalTitle">
         <div class="modal-card">

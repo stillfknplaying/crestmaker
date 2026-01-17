@@ -68,13 +68,13 @@ export function initRoutes(cfg: RouterInit) {
       <section class="page">
         <div class="page-head">
           <h2>${cfg.escapeHtml(title)}</h2>
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <div class="btn-group" style="display:flex; gap:8px;">
+          <div class="page-actions">
+            <div class="btn-group lang-group">
               <button class="btn ${currentLang === "en" ? "active" : ""}" data-lang="en">EN</button>
               <button class="btn ${currentLang === "ru" ? "active" : ""}" data-lang="ru">RU</button>
               <button class="btn ${currentLang === "ua" ? "active" : ""}" data-lang="ua">UA</button>
             </div>
-            <a class="btn" href="#/">← ${cfg.escapeHtml(cfg.t("Back to tool","Назад к инструменту","Назад до інструмента"))}</a>
+            <a class="btn back-link" href="#/">← ${cfg.escapeHtml(cfg.t("Back","Назад","Назад"))}</a>
           </div>
         </div>
 
