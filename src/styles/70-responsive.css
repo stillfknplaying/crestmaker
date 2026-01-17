@@ -1,0 +1,387 @@
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 980px){
+  .grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+  /* URL loader: keep input+button on one line for tablets too */
+  .url-row{ flex-wrap: nowrap; }
+  .url-row input{ flex: 1 1 auto; min-width: 0; }
+  .url-row .btn{ margin-left: auto; white-space: nowrap; }
+
+  /* Policy pages: languages left, Back right (single row) */
+  .page-actions{ width: 100%; justify-content: space-between; flex-wrap: nowrap; }
+  .page-actions .btn{ width: auto; }
+
+  /* Brightness/Contrast: keep label + help + controls in one row */
+  #brightnessRow .opt-head,
+  #contrastRow .opt-head{ flex-direction: row; }
+  /* Keep the label/help column the same width in both rows so the "-" and "+"
+     buttons align vertically (Brightness above Contrast). */
+  #brightnessRow .opt-head,
+  #contrastRow .opt-head{ flex: 0 0 112px; width: 112px; min-width: 112px; }
+  #brightnessRow .range-step,
+  #contrastRow .range-step{ flex: 1 1 auto; min-width: 0; }
+  #brightnessRow b,
+  #contrastRow b{ flex: 0 0 40px; text-align: right; }
+
+  /* Prevent + button from overlapping the value on tight widths */
+  #brightnessRow .range-step input[type="range"],
+  #contrastRow .range-step input[type="range"]{ min-width: 88px; }
+
+  /* Reset on mobile/tablets: keep it in the same row as Rotate / Invert */
+  #resetToolbar.reset-toolbar{ display: none; }
+  #reset.reset-adv{ display: inline-flex; }
+}
+
+@media (min-width: 981px){
+  .reset-adv{ display: inline-flex; }
+  #resetToolbar.reset-toolbar{ display: none; }
+  #reset.reset-adv{ display: inline-flex; }
+}
+@media (max-width: 640px){
+  .grid{ grid-template-columns: 1fr; }
+  .sep{ display:none; }
+
+  /* Toolbar: make layout less "ragged" on phones */
+  .toolbar{ gap: 10px; }
+  .toolbar > label.btn.primary,
+  .toolbar > button.btn.primary{
+    flex: 1 1 calc(50% - 5px);
+    justify-content: center;
+    padding: 12px 12px;
+  }
+
+  /* Stack selects to full width */
+  .toolbar .select{
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .toolbar .select select{ flex: 1 1 auto; min-width: 0; }
+
+  /* Settings toggle + language buttons: full width blocks */
+  .toolbar .toggle.compact{
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .toolbar-right{
+    flex: 1 1 100%;
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+  .toolbar-right .btn{ flex: 1 1 0; justify-content: center; }
+
+  /* URL loader: input takes full row, button stays on the right */
+  .url-load input{ width: 100%; max-width: 100%; }
+  .url-row{ flex-wrap: nowrap; }
+  .url-row input{ flex: 1 1 auto; min-width: 0; }
+  .url-row .btn{ margin-left: auto; white-space: nowrap; }
+
+  /* Ranges: same sizing, input grows */
+  .range{ width: 100%; }
+  .range input[type="range"]{ flex: 1 1 auto; width: auto; min-width: 120px; }
+
+  /* Brightness / Contrast: keep label + help + buttons in one row */
+  #brightnessRow,
+  #contrastRow{
+    flex-wrap: nowrap;
+  }
+  #brightnessRow .opt-head,
+  #contrastRow .opt-head{
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    white-space: nowrap;
+  }
+  /* Same-width label column on phones too */
+  #brightnessRow .opt-head,
+  #contrastRow .opt-head{ flex: 0 0 112px; width: 112px; min-width: 112px; }
+  #brightnessRow .range-step,
+  #contrastRow .range-step{
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  #brightnessRow .btn.step,
+  #contrastRow .btn.step{
+    width: 30px;
+    height: 30px;
+  }
+  #brightnessRow b,
+  #contrastRow b{
+    flex: 0 0 40px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Prevent + button from overlapping the value on tight widths */
+  #brightnessRow .range-step input[type="range"],
+  #contrastRow .range-step input[type="range"]{ min-width: 84px; }
+
+  /* Advanced: make controls fit phone width */
+  .adv-top{ flex-direction: column; align-items: stretch; }
+  .adv-actions{ width: 100%; }
+  .adv-actions .btn{ flex: 1 1 0; justify-content: center; }
+
+  /* Rotate buttons: show only the icon on mobile, make it bigger */
+  .rot-label{ display: none; }
+  .rot-icon{ font-size: 16px; line-height: 1; }
+  #rotL, #rotR{ padding: 10px 12px; }
+
+  /* Allow page scroll when touching the crop canvas area */
+  #crop{ touch-action: pan-y; }
+
+  /* Pages: headers should use full width */
+  .page-head{ flex-direction: column; align-items: stretch; }
+  .page-head .btn{ width: 100%; justify-content: center; }
+
+  /* But keep language buttons + Back on one line (mobile/tablet) */
+  .page-actions{ flex-direction: row; justify-content: space-between; align-items: center; width: 100%; }
+  .page-actions .btn{ width: auto; }
+
+  /* Footer: 2-column links, other blocks full width */
+  .footer{
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "brand contact"
+      "links links"
+      "share share"
+      "copy copy";
+    row-gap: 12px;
+  }
+
+  .footer-brand{
+    grid-area: brand;
+    align-self: center;
+  }
+  /* Make footer logo the same visual size as other icons on mobile */
+  .footer-logo{ height: 24px; }
+  .footer-links{
+    grid-area: links;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(3, auto);
+    justify-items: center;
+    align-items: center;
+    text-align: center;
+    gap: 10px 18px;
+  }
+
+  .footer-contact{
+    grid-area: contact;
+    justify-self: end;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .footer-share{
+    grid-area: share;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: 10px;
+    column-gap: 12px;
+  }
+  .footer-label{
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+  }
+  .footer-share a,
+  .footer-share button{
+    flex: 1 1 0;
+  }
+  .footer-share img{
+    width: 32px;
+    height: 32px;
+  }
+  .footer-share a,
+  .footer-share button{
+    justify-content: center;
+  }
+
+  .footer-copy{
+    grid-area: copy;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Make footer link items align nicely */
+  .footer-links a{ display: inline-flex; align-items: center; justify-content: center; }
+}
+
+/* toggle disabled */
+.toggle input:disabled + .track{ opacity: 0.6; cursor: not-allowed; }
+
+/* ---------- HELP ICON TOOLTIP ---------- */
+.helpwrap{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.helpbtn{
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.06);
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: .85;
+}
+.helpbtn:hover{ opacity: 1; }
+.helpbtn:active{ transform: translateY(1px); }
+.helpbtn svg{
+  width: 10px;
+  height: 10px;
+  display: block;
+  fill: var(--muted);
+}
+.range .helpbtn svg { transform: translateY(-.25px); }
+.helptip{
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.25;
+  min-width: 220px;
+  max-width: 320px;
+  z-index: 50;
+  display: none;
+}
+.helpwrap:hover .helptip,
+.helpwrap:focus-within .helptip,
+.helpwrap.open .helptip{
+  display: block;
+}
+:root[data-theme="light"] .helpbtn{
+  border-color: rgba(16,24,40,.18);
+  background: rgba(16,24,40,.04);
+}
+:root[data-theme="light"] .helpbtn svg{ fill: rgba(16,24,40,.55); }
+:root[data-theme="light"] .helptip{ background: #ffffff; }
+
+/* ---------- GUIDE: SPOILERS + MEDIA ---------- */
+details.spoiler { margin: 14px 0; }
+
+details.spoiler > summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #c6cad8;
+  color: #1a1f2b;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+details.spoiler > summary:hover { filter: brightness(0.98); }
+details.spoiler[open] > summary { background: #b9bfd1; }
+
+details.spoiler > summary::-webkit-details-marker { display: none; }
+details.spoiler > summary::marker { content: ""; }
+
+.spoiler-body {
+  margin-top: 12px;
+}
+
+.guide-media {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* Keep guide video at 720p layout (16:9), avoid oversized stretching */
+.guide-video {
+  max-width: 1280px;
+}
+
+.guide-video video.guide-media {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  background: rgba(0,0,0,0.45);
+}
+
+.crest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 10px;
+  align-items: center;
+}
+
+.crest {
+  width: 100%;
+  image-rendering: pixelated;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+}
+
+:root[data-theme="light"] details.spoiler > summary {
+  background: #cfd4e1;
+  color: #0f172a;
+}
+:root[data-theme="light"] details.spoiler[open] > summary {
+  background: #c3cadb;
+}
+
+.brand-logo{
+  height: 32px;
+  width: auto;
+  display: block;
+}
+
+:root:not([data-theme="light"]) .brand-logo{
+  filter: invert(1);
+}
+
+
+@media (min-width: 981px){
+  #resetToolbar.reset-toolbar{ display:none; }
+  #reset.reset-adv{ display:inline-flex; }
+}
+
+/* ================================
+   Desktop: unify Rotate / Invert / Reset button height
+   ================================ */
+@media (min-width: 1025px){
+  .adv-actions .btn,
+  .adv-actions button{
+    height: 36px;
+    min-height: 36px;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* иконки не должны раздувать высоту */
+  .adv-actions svg{
+    display: block;
+  }
+}
+
