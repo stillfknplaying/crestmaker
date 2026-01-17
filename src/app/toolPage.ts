@@ -60,6 +60,12 @@ export type ToolPageDeps = {
   // downloads
   hasPalette: () => boolean;
   downloadCurrentMode: () => void;
+
+  // share
+  shareCurrentMode: () => Promise<boolean>;
+
+  // optional hook after each render (useful for syncing controller state)
+  onAfterRender?: () => void;
 };
 
 export function createToolPage(deps: ToolPageDeps) {
@@ -255,7 +261,12 @@ export function createToolPage(deps: ToolPageDeps) {
       // downloads
       hasPalette: deps.hasPalette,
       downloadCurrentMode: deps.downloadCurrentMode,
+
+      // share
+      shareCurrentMode: deps.shareCurrentMode,
     });
+
+    deps.onAfterRender?.();
   }
 
   // -------------------- PRESET DEFAULTS --------------------

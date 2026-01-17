@@ -6,6 +6,7 @@ export type ToolRefs = {
   urlLoadBtn: HTMLButtonElement;
   urlError: HTMLDivElement;
   downloadBtn: HTMLButtonElement;
+  shareBtn: HTMLButtonElement;
 
   modeSel: HTMLSelectElement;
 
@@ -62,6 +63,20 @@ export type ToolRefs = {
   confirmModal: HTMLDivElement;
   confirmYes: HTMLButtonElement;
   confirmNo: HTMLButtonElement;
+
+  // Editor
+  undoBtn: HTMLButtonElement;
+  redoBtn: HTMLButtonElement;
+  toolPickerBtn: HTMLButtonElement;
+  toolPencilBtn: HTMLButtonElement;
+  gridToggleBtn: HTMLButtonElement;
+  zoomCursor24: HTMLDivElement;
+  zoomCursorImg24: HTMLImageElement;
+  zoomCursor16: HTMLDivElement;
+  zoomCursorImg16: HTMLImageElement;
+  editorPopularColors: HTMLDivElement;
+  editorColorSwatch: HTMLSpanElement;
+  editorColorLabel: HTMLSpanElement;
 }
 
 export function collectToolRefs(root: Document = document): ToolRefs {
@@ -73,6 +88,7 @@ export function collectToolRefs(root: Document = document): ToolRefs {
     urlLoadBtn: root.querySelector<HTMLButtonElement>("#loadUrl")!,
     urlError: root.querySelector<HTMLDivElement>("#urlError")!,
     downloadBtn: root.querySelector<HTMLButtonElement>("#download")!,
+    shareBtn: root.querySelector<HTMLButtonElement>("#share")!,
 
     modeSel: root.querySelector<HTMLSelectElement>("#mode")!,
 
@@ -129,6 +145,19 @@ export function collectToolRefs(root: Document = document): ToolRefs {
     confirmModal: root.querySelector<HTMLDivElement>("#confirmModal")!,
     confirmYes: root.querySelector<HTMLButtonElement>("#confirmYes")!,
     confirmNo: root.querySelector<HTMLButtonElement>("#confirmNo")!,
+
+    undoBtn: root.querySelector<HTMLButtonElement>("#undo")!,
+    redoBtn: root.querySelector<HTMLButtonElement>("#redo")!,
+    toolPickerBtn: root.querySelector<HTMLButtonElement>("#toolPicker")!,
+    toolPencilBtn: root.querySelector<HTMLButtonElement>("#toolPencil")!,
+    gridToggleBtn: root.querySelector<HTMLButtonElement>("#gridToggle")!,
+    zoomCursor24: root.querySelector<HTMLDivElement>("#zoomCursor24")!,
+    zoomCursorImg24: root.querySelector<HTMLImageElement>("#zoomCursorImg24")!,
+    zoomCursor16: root.querySelector<HTMLDivElement>("#zoomCursor16")!,
+    zoomCursorImg16: root.querySelector<HTMLImageElement>("#zoomCursorImg16")!,
+    editorPopularColors: root.querySelector<HTMLDivElement>("#editorPopularColors")!,
+    editorColorSwatch: root.querySelector<HTMLSpanElement>("#editorColorSwatch")!,
+    editorColorLabel: root.querySelector<HTMLSpanElement>("#editorColorLabel")!,
   
   };
 }

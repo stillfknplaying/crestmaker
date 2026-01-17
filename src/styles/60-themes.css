@@ -1,9 +1,5 @@
-/* =====================================================================
-   CrestMaker CSS module: 60-themes.css
-   NOTE: Rule order preserved from original src/style.css.
-   Do not reorder selectors or media blocks unless intentionally changing UI.
-   ===================================================================== */
+:root[data-theme="dark"] img.ico{filter:invert(1);}
+:root[data-theme="light"] img.ico{filter:none;}
 
-/* Theme-specific overrides
-   (currently empty)
-*/
+/* Icons inside primary action buttons (Upload/Download/Send) must stay black on both themes */
+img.ico.ico-fixed-black{filter:none !important;}

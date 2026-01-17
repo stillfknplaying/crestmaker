@@ -30,10 +30,10 @@ export function renderShell(app: HTMLElement): ShellRefs {
 
         <div class="top-actions">
           <label class="toggle compact" title="Switch theme">
-            <span>Dark</span>
+            <img class="ico" src="/icons/theme-dark.svg" width="16" height="16" alt="Dark"/>
             <input id="themeToggle" type="checkbox" />
             <span class="track"><span class="thumb"></span></span>
-            <span>Light</span>
+            <img class="ico" src="/icons/theme-light.svg" width="16" height="16" alt="Light"/>
           </label>
         </div>
       </header>
@@ -64,7 +64,7 @@ export function renderShell(app: HTMLElement): ShellRefs {
         </nav>
 
         <div class="footer-share" aria-label="Share CrestMaker">
-          <span class="footer-label">Share:</span>
+          <img class="ico" src="/icons/share.svg" width="16" height="16" alt="Share"/>
           <a id="shareTelegramLink" href="#" target="_blank" rel="noopener noreferrer" title="Share on Telegram" aria-label="Share on Telegram">
             <img src="/icons/telegram.svg" alt="Telegram" width="16" height="16" loading="lazy" />
           </a>

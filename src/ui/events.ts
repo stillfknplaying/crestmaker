@@ -668,6 +668,12 @@ export function initToolUIEvents(deps: EventsDeps) {
     deps.downloadCurrentMode();
   });
 
+  // Share (mobile-first, fallback to Download)
+  refs.shareBtn.addEventListener("click", () => {
+    if (!deps.hasPalette()) return;
+    void deps.shareCurrentMode();
+  });
+
   // Live recompute for advanced controls
   const live: Array<HTMLElement> = [
     refs.ditherSel,

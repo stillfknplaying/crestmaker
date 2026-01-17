@@ -83,4 +83,7 @@ export type EventsDeps = {
   // downloads
   hasPalette: () => boolean;
   downloadCurrentMode: () => void;
+
+  // share
+  shareCurrentMode: () => Promise<boolean>;
 };

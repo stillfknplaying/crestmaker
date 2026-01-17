@@ -145,6 +145,10 @@ export function createCropController(deps: CropDeps) {
 
     const { cropCanvas, cropCtx, useCropChk } = refs;
 
+    // Mobile UX: if an image is loaded, crop canvas is interaction-only (no page scroll).
+    // If no image, allow the area to be used for scrolling.
+    cropCanvas.style.touchAction = getSourceImage() ? "none" : "pan-y";
+
     cropCtx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
     if (!getSourceImage()) return;
 
@@ -278,6 +282,9 @@ export function createCropController(deps: CropDeps) {
       const cropRect = getCropRect();
       if (!refs || !getSourceImage() || !cropRect || !refs.useCropChk.checked) return;
 
+      // Prevent page scrolling on touch devices while cropping.
+      e.preventDefault();
+
       cropCanvas.setPointerCapture(e.pointerId);
       const pt = getCanvasPoint(e);
       pointers.set(e.pointerId, pt);
@@ -337,6 +344,9 @@ export function createCropController(deps: CropDeps) {
       const refs = getRefs();
       let cropRect = getCropRect();
       if (!refs || !getSourceImage() || !cropRect || !refs.useCropChk.checked) return;
+
+      // Prevent page scrolling on touch devices while cropping.
+      e.preventDefault();
 
       rebuildDisplayCanvas();
       const dc = getDisplayCanvas();

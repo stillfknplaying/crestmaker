@@ -1,6 +1,7 @@
 import type { ToolState } from "./state";
 import type { CrestMode } from "../types/types";
-import { downloadBMPs, downloadBlob, makeBmp8bitIndexed } from "../bmp/writer";
+import { downloadBMPs, downloadBlob } from "../bmp/writer";
+import { exportBmp } from "../post/postProcess";
 
 /**
  * Downloads controller (export-only).
@@ -20,7 +21,7 @@ export function downloadCurrentMode(state: ToolState, mode: CrestMode): void {
   if (mode === "only_clan") {
     const clan = state.iconClan16x12Indexed;
     if (!clan) return;
-    const clanBmp = makeBmp8bitIndexed(16, 12, palette, clan);
+    const clanBmp = exportBmp(16, 12, palette, clan);
     downloadBlob(clanBmp, "clan_16x12_256.bmp");
     return;
   }

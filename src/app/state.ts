@@ -30,6 +30,12 @@ export type ToolState = {
   // Game preview template cache
   gameTemplateImg: HTMLImageElement | null;
   loadedTemplateSrc: string | null;
+
+  // Editor-only view options
+  editorGrid: boolean;
+
+  // Guards
+  suspendRecompute: boolean; // used during i18n re-render to avoid wiping editor progress
 };
 
 export function createInitialState(): ToolState {
@@ -54,5 +60,9 @@ export function createInitialState(): ToolState {
 
     gameTemplateImg: null,
     loadedTemplateSrc: null,
+
+    editorGrid: false,
+
+    suspendRecompute: false,
   };
 }

@@ -1,5 +1,6 @@
 import type { DitherMode, PixelPreset, Preset } from "../types/types";
 import type { PipelineEngine, PipelineInput, PipelineResult } from "./engine";
+import { applyBrightnessContrast } from "../post/postProcess";
 
 export type QuantizeResult = { palette: Uint8Array; indices: Uint8Array };
 
@@ -96,27 +97,8 @@ export class LocalPipelineEngine implements PipelineEngine {
       }
     }
 
-    // 3) brightness + contrast (universal)
-    const brightness = s.brightness;
-    const contrast = s.contrast;
-    if (brightness !== 0 || contrast !== 0) {
-      // NOTE: existing math expects contrast in [-255..255]
-      const c = contrast;
-      const k = (259 * (c + 255)) / (255 * (259 - c));
-      for (let i = 0; i < imgBase.data.length; i += 4) {
-        let rr = imgBase.data[i] + brightness;
-        let gg = imgBase.data[i + 1] + brightness;
-        let bb = imgBase.data[i + 2] + brightness;
-
-        rr = this.deps.clamp255((rr - 128) * k + 128);
-        gg = this.deps.clamp255((gg - 128) * k + 128);
-        bb = this.deps.clamp255((bb - 128) * k + 128);
-
-        imgBase.data[i] = rr;
-        imgBase.data[i + 1] = gg;
-        imgBase.data[i + 2] = bb;
-      }
-    }
+    // 3) brightness + contrast (universal post-process)
+    applyBrightnessContrast(imgBase.data, s.brightness, s.contrast, this.deps.clamp255);
 
     // 4) modern-only normalize & sharpen
     let imgForQuant: ImageData = imgBase;
