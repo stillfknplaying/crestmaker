@@ -37,11 +37,22 @@ export function renderToolView(ctx: ToolViewCtx): string {
 
         <div class="toolbar">
           <label class="btn primary">
+            <img class="ico ico-fixed-black" src="/icons/upload.svg" width="16" height="16" alt="" aria-hidden="true"/>
             ${escapeHtml(t("Upload image","Загрузить","Завантажити"))}
             <input data-testid="upload-input" id="file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
           </label>
 
-          <button data-testid="download" id="download" class="btn primary" disabled>${escapeHtml(t("Download BMPs","Скачать BMP","Зберегти BMP"))}</button>
+          <button data-testid="download" id="download" class="btn primary" disabled>
+            <img class="ico ico-fixed-black" src="/icons/download.svg" width="16" height="16" alt="" aria-hidden="true"/>
+            ${escapeHtml(t("Download BMPs","Скачать BMP","Зберегти BMP"))}
+          </button>
+
+          <div class="share-wrap">
+            <button data-testid="share" id="share" class="btn primary" disabled>
+              <img class="ico ico-fixed-black" src="/icons/send.svg" width="16" height="16" alt="" aria-hidden="true"/>
+              ${escapeHtml(t("Send","Отправить","Надіслати"))}
+            </button>
+          </div>
 
           <div class="sep"></div>
 
@@ -50,7 +61,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
             "Выберите размер: 24×12 (полный) или 16×12 (только клан).",
             "Оберіть розмір: 24×12 (повний) або 16×12 (лише клан)."
           )}>
-            <span>${escapeHtml(t("Size","Размер","Розмір"))}</span>
+            <span class="lbl-ico"><img class="ico" src="/icons/size.svg" width="18" height="18" alt="" aria-hidden="true"/></span>
             <select data-testid="mode" id="mode">
               <option value="ally_clan" ${ctx.currentMode === "ally_clan" ? "selected" : ""}>${escapeHtml(t("24×12","24×12","24×12"))}</option>
               <option value="only_clan" ${ctx.currentMode === "only_clan" ? "selected" : ""}>${escapeHtml(t("16×12","16×12","16×12"))}</option>
@@ -62,7 +73,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
             "Выберите тип конвертации: Modern (image-q) или Pixel (фикс. палитра 256 + ordered dither)",
             "Оберіть тип конвертації: Modern (image-q) або Pixel (фікс. палітра 256 + ordered dither)"
           )}>
-            <span>${escapeHtml(t("Mode","Режим","Режим"))}</span>
+            <span class="lbl-ico"><img class="ico" src="/icons/mode.svg" width="18" height="18" alt="" aria-hidden="true"/></span>
             <select data-testid="pipeline" id="pipeline">
               <option value="old" ${ctx.pipeline === "old" ? "selected" : ""}>Modern</option>
               <option value="pixel" ${ctx.pipeline === "pixel" ? "selected" : ""}>Pixel</option>
@@ -74,7 +85,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
             "Быстрые настройки конвертации в BMP 256 цветов (зависят от Конвертации)",
             "Швидкі налаштування конвертації в BMP 256 кольорів (залежать від Конвертації)"
           )}>
-            <span>${escapeHtml(t("Preset","Пресет","Пресет"))}</span>
+            <span class="lbl-ico"><img class="ico" src="/icons/preset.svg" width="18" height="18" alt="" aria-hidden="true"/></span>
             <select data-testid="preset" id="preset">
               ${isPixel
                 ? `
@@ -96,7 +107,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
             "Больше настроек конвертации для иконки 24×12",
             "Більше налаштувань конвертації для іконки 24×12"
           )}>
-            <span>${escapeHtml(t("Settings","Настройки","Налаштування"))}</span>
+            <span class="lbl-ico"><img class="ico" src="/icons/settings.svg" width="16" height="16" alt="" aria-hidden="true"/>${escapeHtml(t("Advances","Дополнительно","Додатково"))}</span>
             <input data-testid="advanced" id="advanced" type="checkbox" ${ctx.advancedOpen ? "checked" : ""} />
             <span class="track"><span class="thumb"></span></span>
           </label>
@@ -169,7 +180,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
 
             <div class="range" id="brightnessRow">
               <div class="opt-head">
-                <span class="opt-name">${escapeHtml(t("Brightness","Яркость","Яскравість"))}</span>
+                <span class="opt-name" aria-label="${escapeHtml(t("Brightness","Яркость","Яскравість"))}"><img class="ico" src="/icons/brightness.svg" width="16" height="16" alt="${escapeHtml(t("Brightness","Яркость","Яскравість"))}"/></span>
                 ${helpHtml(
                   "Adjusts brightness before conversion.",
                   "Регулирует яркость перед конвертацией.",
@@ -186,7 +197,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
 
             <div class="range" id="contrastRow">
               <div class="opt-head">
-                <span class="opt-name">${escapeHtml(t("Contrast","Контраст","Контраст"))}</span>
+                <span class="opt-name" aria-label="${escapeHtml(t("Contrast","Контраст","Контраст"))}"><img class="ico" src="/icons/contrast.svg" width="16" height="16" alt="${escapeHtml(t("Contrast","Контраст","Контраст"))}"/></span>
                 ${helpHtml(
                   "Adjusts contrast before conversion.",
                   "Регулирует контраст перед конвертацией.",
@@ -203,20 +214,15 @@ export function renderToolView(ctx: ToolViewCtx): string {
 
             <div class="btn-group adv-actions">
               <button id="rotL" class="btn" aria-label="${escapeHtml(t("Rotate left","Повернуть влево","Повернути ліворуч"))}">
-                <span class="rot-label">${escapeHtml(t("Rotate","Повернуть","Повернути"))}</span>
-                <span class="rot-icon" aria-hidden="true">⟲</span>
+                <img class="ico" src="/icons/rotate-left.svg" width="16" height="16" alt="" aria-hidden="true"/>
+                <span class="rot-label">90°</span>
               </button>
               <button id="rotR" class="btn" aria-label="${escapeHtml(t("Rotate right","Повернуть вправо","Повернути праворуч"))}">
-                <span class="rot-label">${escapeHtml(t("Rotate","Повернуть","Повернути"))}</span>
-                <span class="rot-icon" aria-hidden="true">⟳</span>
+                <img class="ico" src="/icons/rotate-right.svg" width="16" height="16" alt="" aria-hidden="true"/>
+                <span class="rot-label">90°</span>
               </button>
               <button id="invert" class="btn invert-btn" aria-label="${escapeHtml(t("Invert colors","Инвертировать цвета","Інвертувати кольори"))}">
-                <span class="invert-label">${escapeHtml(t("Invert","Инвертировать","Інвертувати"))}</span>
-                <span class="invert-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="16" height="16" focusable="false" aria-hidden="true">
-                    <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20V2zm0 18a8 8 0 0 1 0-16v16z"/>
-                  </svg>
-                </span>
+                <img class="ico" src="/icons/invert.svg" width="16" height="16" alt="" aria-hidden="true"/>
               </button>
               <button data-testid="reset" id="reset" class="btn reset-adv ${ctx.advancedOpen ? "" : "hidden"}" disabled>${escapeHtml(t("Reset","Сброс","Скинути"))}</button>
             </div>
@@ -298,6 +304,39 @@ export function renderToolView(ctx: ToolViewCtx): string {
               </label>
             </div>
 
+            <!-- Editor (inline, Result-only) -->
+            <div class="adv-opt editor-row" id="editorInline">
+              <div class="editor-inline" role="group" aria-label="Editor">
+                <img class="ico editor-ico" src="/icons/image-editor.svg" width="16" height="16" alt="" aria-hidden="true"/>
+
+                <div class="editor-inline-tools" role="toolbar" aria-label="Editor tools">
+                  <button data-testid="tool-picker" id="toolPicker" class="btn icon" aria-pressed="false" aria-label="${escapeHtml(t("Pick color","Пипетка","Піпетка"))}">
+                    <img class="ico" src="/icons/color-picker.svg" width="16" height="16" alt="" aria-hidden="true"/>
+                  </button>
+                  <button data-testid="tool-pencil" id="toolPencil" class="btn icon active" aria-pressed="true" aria-label="${escapeHtml(t("Pencil","Карандаш","Олівець"))}">
+                    <img class="ico" src="/icons/pencil.svg" width="16" height="16" alt="" aria-hidden="true"/>
+                  </button>
+
+                  <button data-testid="tool-grid" id="gridToggle" class="btn icon" aria-pressed="false" aria-label="${escapeHtml(t("Grid","Сетка","Сітка"))}">
+                    <img class="ico" src="/icons/grid.svg" width="16" height="16" alt="" aria-hidden="true"/>
+                  </button>
+
+                  <button data-testid="undo" id="undo" class="btn icon" disabled aria-label="${escapeHtml(t("Undo","Undo","Undo"))}">
+                    <img class="ico" src="/icons/undo-left.svg" width="16" height="16" alt="" aria-hidden="true"/>
+                  </button>
+                  <button data-testid="redo" id="redo" class="btn icon" disabled aria-label="${escapeHtml(t("Redo","Redo","Redo"))}">
+                    <img class="ico" src="/icons/undo-right.svg" width="16" height="16" alt="" aria-hidden="true"/>
+                  </button>
+                </div>
+                <div class="editor-inline-popular" aria-label="Popular colors" id="editorPopularColors"></div>
+
+                <div class="editor-inline-current" aria-label="Current color">
+                  <span id="editorColorSwatch" class="swatch" aria-hidden="true"></span>
+                  <span id="editorColorLabel" class="muted">#000000</span>
+                </div>
+              </div>
+            </div>
+
             <div class="adv-opt">
               <div class="opt-head">
                 <span class="opt-name">${escapeHtml(t("Cleanup pixels","Очистка пикселей","Очищення пікселів"))}</span>
@@ -318,7 +357,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
         <div class="grid">
           <div class="card">
             <div class="card-head">
-              <h3>${escapeHtml(t("Crop","Crop","Crop"))} ${ctx.cropLabel}</h3>
+              <h3 class="h3-with-ico"><img class="ico crop-ico" src="/icons/crop.svg" width="26" height="26" alt="${escapeHtml(t("Crop","Crop","Crop"))}"/> ${ctx.cropLabel}</h3>
               <label class="toggle compact">
                 <span>Use crop</span>
                 <input data-testid="use-crop" id="useCrop" type="checkbox" checked />
@@ -337,12 +376,22 @@ export function renderToolView(ctx: ToolViewCtx): string {
 
           <div class="card" id="debugCard24">
             <h3>Result 24×12 (zoom)</h3>
-            <canvas data-testid="canvas-result-24" id="dstZoom24" width="240" height="120"></canvas>
+            <div class="zoom-wrap" id="zoomWrap24">
+              <canvas data-testid="canvas-result-24" id="dstZoom24" width="240" height="120"></canvas>
+              <div class="zoom-cursor hidden" id="zoomCursor24" aria-hidden="true">
+                <img class="ico" id="zoomCursorImg24" src="/icons/pencil.svg" width="16" height="16" alt="" aria-hidden="true"/>
+              </div>
+            </div>
           </div>
 
           <div class="card" id="debugCard16">
             <h3>Result 16×12 (zoom)</h3>
-            <canvas data-testid="canvas-result-16" id="dstZoom16" width="160" height="120"></canvas>
+            <div class="zoom-wrap" id="zoomWrap16">
+              <canvas data-testid="canvas-result-16" id="dstZoom16" width="160" height="120"></canvas>
+              <div class="zoom-cursor hidden" id="zoomCursor16" aria-hidden="true">
+                <img class="ico" id="zoomCursorImg16" src="/icons/pencil.svg" width="16" height="16" alt="" aria-hidden="true"/>
+              </div>
+            </div>
           </div>
 
           <div class="card full" id="previewCard">

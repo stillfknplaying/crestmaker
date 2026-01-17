@@ -17,6 +17,7 @@ export type RenderController = {
 export type RenderControllerDeps = {
   getRefs: () => ToolRefs | null;
   getCurrentMode: () => CrestMode;
+  getEditorGrid: () => boolean;
 
   // Game preview
   getGameTemplate: () => GameTemplate;
@@ -50,6 +51,7 @@ export function createRenderController(deps: RenderControllerDeps): RenderContro
     getRefs: deps.getRefs,
     getCurrentMode: deps.getCurrentMode,
     renderPreview,
+    getEditorGrid: deps.getEditorGrid,
   });
 
   return {

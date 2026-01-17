@@ -6,6 +6,7 @@ export type ResultsRenderDeps = {
   getRefs: () => ToolRefs | null;
   getCurrentMode: () => CrestMode;
   renderPreview: () => void;
+  getEditorGrid: () => boolean;
 };
 
 export type ResultsRenderer = {
@@ -46,7 +47,8 @@ export function createResultsRenderer(deps: ResultsRenderDeps): ResultsRenderer 
     indices: Uint8Array,
     palette: Uint8Array,
     w: number,
-    h: number
+    h: number,
+    gridEnabled: boolean
   ) {
     const zoom = 10;
     const cw = w * zoom;
@@ -65,6 +67,28 @@ export function createResultsRenderer(deps: ResultsRenderDeps): ResultsRenderer 
         const bb = palette[idx * 3 + 2];
         ctx.fillStyle = `rgb(${rr},${gg},${bb})`;
         ctx.fillRect(x * zoom, y * zoom, zoom, zoom);
+      }
+    }
+
+
+    if (gridEnabled) {
+      // Grid must always be black (independent of theme) and must not affect export.
+      ctx.strokeStyle = "rgba(0,0,0,0.25)";
+      ctx.lineWidth = 1;
+      // Crisp 1px lines
+      for (let x = 0; x <= w; x++) {
+        const xx = x * zoom + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(xx, 0);
+        ctx.lineTo(xx, ch);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= h; y++) {
+        const yy = y * zoom + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(0, yy);
+        ctx.lineTo(cw, yy);
+        ctx.stroke();
       }
     }
   }
@@ -86,6 +110,8 @@ export function createResultsRenderer(deps: ResultsRenderDeps): ResultsRenderer 
 
       // Download button
       r.downloadBtn.disabled = !res?.canDownload;
+      // Share button mirrors download availability (fallback handled in events)
+      r.shareBtn.disabled = !res?.canDownload;
 
       // No output yet
       if (!res || !res.palette256) {
@@ -104,7 +130,7 @@ export function createResultsRenderer(deps: ResultsRenderDeps): ResultsRenderer 
       if (mode === "only_clan") {
         if (res.iconClan16x12Indexed) {
           drawTrueSize(r, res.iconClan16x12Indexed, palette, 16, 12);
-          drawZoomTo(r.dstZoom16Canvas, r.dstZoom16Ctx, res.iconClan16x12Indexed, palette, 16, 12);
+          drawZoomTo(r.dstZoom16Canvas, r.dstZoom16Ctx, res.iconClan16x12Indexed, palette, 16, 12, deps.getEditorGrid());
         } else {
           drawTrueSizeEmpty(r, 16, 12);
           r.dstZoom16Ctx.clearRect(0, 0, r.dstZoom16Canvas.width, r.dstZoom16Canvas.height);
@@ -113,14 +139,14 @@ export function createResultsRenderer(deps: ResultsRenderDeps): ResultsRenderer 
       } else {
         if (res.iconCombined24x12Indexed) {
           drawTrueSize(r, res.iconCombined24x12Indexed, palette, 24, 12);
-          drawZoomTo(r.dstZoom24Canvas, r.dstZoom24Ctx, res.iconCombined24x12Indexed, palette, 24, 12);
+          drawZoomTo(r.dstZoom24Canvas, r.dstZoom24Ctx, res.iconCombined24x12Indexed, palette, 24, 12, deps.getEditorGrid());
         } else {
           drawTrueSizeEmpty(r, 24, 12);
           r.dstZoom24Ctx.clearRect(0, 0, r.dstZoom24Canvas.width, r.dstZoom24Canvas.height);
         }
 
         if (res.iconClan16x12Indexed) {
-          drawZoomTo(r.dstZoom16Canvas, r.dstZoom16Ctx, res.iconClan16x12Indexed, palette, 16, 12);
+          drawZoomTo(r.dstZoom16Canvas, r.dstZoom16Ctx, res.iconClan16x12Indexed, palette, 16, 12, deps.getEditorGrid());
         } else {
           r.dstZoom16Ctx.clearRect(0, 0, r.dstZoom16Canvas.width, r.dstZoom16Canvas.height);
         }

@@ -27,7 +27,7 @@
   /* Keep the label/help column the same width in both rows so the "-" and "+"
      buttons align vertically (Brightness above Contrast). */
   #brightnessRow .opt-head,
-  #contrastRow .opt-head{ flex: 0 0 112px; width: 112px; min-width: 112px; }
+  #contrastRow .opt-head{ flex: 0 0 68px; width: 68px; min-width: 68px; }
   #brightnessRow .range-step,
   #contrastRow .range-step{ flex: 1 1 auto; min-width: 0; }
   #brightnessRow b,
@@ -59,6 +59,10 @@
     justify-content: center;
     padding: 12px 12px;
   }
+
+  /* Send button lives inside a wrapper; keep it identical to Upload/Download. */
+  .toolbar .share-wrap{ flex: 1 1 calc(50% - 5px); }
+  .toolbar .share-wrap .btn.primary{ width: 100%; justify-content: center; padding: 12px 12px; }
 
   /* Stack selects to full width */
   .toolbar .select{
@@ -102,9 +106,9 @@
     min-width: 0;
     white-space: nowrap;
   }
-  /* Same-width label column on phones too */
+  /* Same-width label column on phones too (shrink to bring -/+ closer to the label/help) */
   #brightnessRow .opt-head,
-  #contrastRow .opt-head{ flex: 0 0 112px; width: 112px; min-width: 112px; }
+  #contrastRow .opt-head{ flex: 0 0 86px; width: 86px; min-width: 86px; }
   #brightnessRow .range-step,
   #contrastRow .range-step{
     flex: 1 1 auto;
@@ -125,6 +129,14 @@
   /* Prevent + button from overlapping the value on tight widths */
   #brightnessRow .range-step input[type="range"],
   #contrastRow .range-step input[type="range"]{ min-width: 84px; }
+
+  /* Bigger sliders on mobile */
+  #brightnessRow input[type="range"],
+  #contrastRow input[type="range"]{ height: 34px; }
+  #brightnessRow input[type="range"]::-webkit-slider-thumb,
+  #contrastRow input[type="range"]::-webkit-slider-thumb{ width: 24px; height: 24px; }
+  #brightnessRow input[type="range"]::-moz-range-thumb,
+  #contrastRow input[type="range"]::-moz-range-thumb{ width: 24px; height: 24px; }
 
   /* Advanced: make controls fit phone width */
   .adv-top{ flex-direction: column; align-items: stretch; }

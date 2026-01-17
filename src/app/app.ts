@@ -10,6 +10,8 @@ import { guideHtml } from "../content/guide";
 import type { Lang } from "../i18n";
 import { currentLang, setLang as setLangCore, t } from "../i18n";
 import { downloadCurrentMode as downloadCurrentModeFromState, hasPalette as hasPaletteFromState } from "./downloads";
+import { webShareFromState } from "./share";
+import { createEditorController } from "../editor/editorController";
 import { initCookieConsentUI, renderCookieBannerIfNeeded, localizeCookieUI } from "../ui/cookieConsent";
 import { initDisplayCanvas, rebuildDisplayCanvas } from "../ui/displayCanvas";
 import { createRenderController } from "../ui/renderController";
@@ -62,8 +64,25 @@ export function createApp() {
 
     setLangCore(lang);
 
+    // Prevent tool UI init from triggering pipeline recompute which would overwrite editor progress.
+    state.suspendRecompute = true;
     // rerender current route
     renderRouteFn();
+    state.suspendRecompute = false;
+
+    // After tool page re-render, repaint the current result buffers (including editor changes).
+    if (state.palette256) {
+      renderController.renderAfterCompute({
+        palette256: state.palette256,
+        iconAlly8x12Indexed: state.iconAlly8x12Indexed,
+        iconClan16x12Indexed: state.iconClan16x12Indexed,
+        iconCombined24x12Indexed: state.iconCombined24x12Indexed,
+        baseW: currentMode === "only_clan" ? 16 : 24,
+        baseH: 12,
+        canDownload: true,
+      });
+      editorController.syncAvailability();
+    }
 
     // If tool page re-render rebuilt crop to default, restore the user's crop rect.
     if (prevCrop && state.sourceImage) {
@@ -120,6 +139,27 @@ export function createApp() {
     getPalette256: () => state.palette256,
     getIconClan16: () => state.iconClan16x12Indexed,
     getIconCombined24: () => state.iconCombined24x12Indexed,
+    getEditorGrid: () => state.editorGrid,
+  });
+
+  // Editor controller (Result canvas only)
+  const editorController = createEditorController({
+    getRefs: () => state.refs,
+    getState: () => state,
+    getCurrentMode: () => currentMode,
+    getAdvancedOpen: () => advancedOpen,
+    requestRender: () => {
+      // Re-render using current state buffers (palette + indices)
+      renderController.renderAfterCompute({
+        palette256: state.palette256 || new Uint8Array(256 * 3),
+        iconAlly8x12Indexed: state.iconAlly8x12Indexed,
+        iconClan16x12Indexed: state.iconClan16x12Indexed,
+        iconCombined24x12Indexed: state.iconCombined24x12Indexed,
+        baseW: currentMode === "only_clan" ? 16 : 24,
+        baseH: 12,
+        canDownload: !!state.palette256,
+      });
+    },
   });
 
   const engine = createPipelineEngine({
@@ -154,7 +194,12 @@ export function createApp() {
     setIconClan16: (v) => actions.setIconClan16(state, v),
     setIconCombined24: (v) => actions.setIconCombined24(state, v),
 
-    afterCompute: (res) => renderController.renderAfterCompute(res),
+    afterCompute: (res) => {
+      // New pipeline output invalidates editor history.
+      editorController.resetHistory();
+      renderController.renderAfterCompute(res);
+      editorController.syncAvailability();
+    },
   });
 
   const toolPage = createToolPage({
@@ -185,7 +230,10 @@ export function createApp() {
     rebuildDisplayCanvas,
 
     // compute
-    scheduleRecomputePipeline,
+    scheduleRecomputePipeline: () => {
+      if (state.suspendRecompute) return;
+      scheduleRecomputePipeline();
+    },
     recomputePipeline: async () => { await recomputePipeline(); },
 
     // preview/controller
@@ -204,6 +252,21 @@ export function createApp() {
     // downloads
     hasPalette: () => hasPaletteFromState(state),
     downloadCurrentMode: () => downloadCurrentModeFromState(state, currentMode),
+
+    // share
+    shareCurrentMode: async () => {
+      const shareText = t(
+        "I made a clan crest on CrestMaker: https://crestmaker.org",
+        "Я сделал клановую иконку на сайте CrestMaker: https://crestmaker.org",
+        "Я зробив кланову іконку на сайті CrestMaker: https://crestmaker.org"
+      );
+      const ok = await webShareFromState(state, currentMode, shareText);
+      if (!ok) downloadCurrentModeFromState(state, currentMode);
+      return ok;
+    },
+
+    // editor
+    onAfterRender: () => editorController.syncAvailability(),
   });
 
   // -------------------- SMALL UTIL --------------------
