@@ -1,0 +1,42 @@
+/* =====================================================================
+   CrestMaker CSS module: 00-reset.css
+   NOTE: Rule order preserved from original src/style.css.
+   Do not reorder selectors or media blocks unless intentionally changing UI.
+   ===================================================================== */
+
+/* ---------- THEME ---------- */
+:root{
+  --bg:#0b0e12;
+  --panel:#0f141b;
+  --panel2:#0c1016;
+  --text:#e8eef7;
+  --muted:#9aa8bb;
+  --border:rgba(255,255,255,.08);
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+  --primary:#22c55e;
+  --primary2:#16a34a;
+  --danger:#ef4444;
+}
+
+:root[data-theme="light"]{
+  --bg:#f5f7fb;
+  --panel:#ffffff;
+  --panel2:#ffffff;
+  --text:#101828;
+  --muted:#6b7280;
+  --border:rgba(16,24,40,.12);
+  --shadow:0 10px 30px rgba(16,24,40,.12);
+  --primary:#16a34a;
+  --primary2:#15803d;
+  --danger:#dc2626;
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+

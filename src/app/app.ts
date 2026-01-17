@@ -57,10 +57,20 @@ export function createApp() {
       settings.setAdvancedOpen(advancedOpen);
     }
 
+    // Preserve crop across language switches (re-render should not reset user's crop selection)
+    const prevCrop = state.cropRect ? { ...state.cropRect } : null;
+
     setLangCore(lang);
 
     // rerender current route
     renderRouteFn();
+
+    // If tool page re-render rebuilt crop to default, restore the user's crop rect.
+    if (prevCrop && state.sourceImage) {
+      // Only restore when cropRect exists and differs; safe no-op otherwise.
+      state.cropRect = prevCrop;
+      state.cropController?.drawCropUI();
+    }
 
     // re-render cookie banner text if visible
     renderCookieBannerIfNeeded();

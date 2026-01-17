@@ -13,6 +13,7 @@ export type ToolRefs = {
   pipelineSel: HTMLSelectElement;
   advancedChk: HTMLInputElement;
   resetBtn: HTMLButtonElement;
+  resetToolbarBtn: HTMLButtonElement | null;
   advancedPanel: HTMLDivElement;
 
   ditherSel: HTMLSelectElement;
@@ -23,8 +24,12 @@ export type ToolRefs = {
 
   brightness: HTMLInputElement;
   brightnessVal: HTMLSpanElement;
+  brightnessMinus: HTMLButtonElement;
+  brightnessPlus: HTMLButtonElement;
   contrast: HTMLInputElement;
   contrastVal: HTMLSpanElement;
+  contrastMinus: HTMLButtonElement;
+  contrastPlus: HTMLButtonElement;
 
   oklabChk: HTMLInputElement;
   noiseDitherChk: HTMLInputElement;
@@ -75,6 +80,7 @@ export function collectToolRefs(root: Document = document): ToolRefs {
     pipelineSel: root.querySelector<HTMLSelectElement>("#pipeline")!,
     advancedChk: root.querySelector<HTMLInputElement>("#advanced")!,
     resetBtn: root.querySelector<HTMLButtonElement>("#reset")!,
+    resetToolbarBtn: root.querySelector<HTMLButtonElement>("#resetToolbar"),
     advancedPanel: root.querySelector<HTMLDivElement>("#advancedPanel")!,
 
     ditherSel: root.querySelector<HTMLSelectElement>("#dither")!,
@@ -85,8 +91,12 @@ export function collectToolRefs(root: Document = document): ToolRefs {
 
     brightness: root.querySelector<HTMLInputElement>("#brightness")!,
     brightnessVal: root.querySelector<HTMLSpanElement>("#brightnessVal")!,
+    brightnessMinus: root.querySelector<HTMLButtonElement>("#brightnessMinus")!,
+    brightnessPlus: root.querySelector<HTMLButtonElement>("#brightnessPlus")!,
     contrast: root.querySelector<HTMLInputElement>("#contrast")!,
     contrastVal: root.querySelector<HTMLSpanElement>("#contrastVal")!,
+    contrastMinus: root.querySelector<HTMLButtonElement>("#contrastMinus")!,
+    contrastPlus: root.querySelector<HTMLButtonElement>("#contrastPlus")!,
 
     oklabChk: root.querySelector<HTMLInputElement>("#oklab")!,
     noiseDitherChk: root.querySelector<HTMLInputElement>("#noiseDither")!,

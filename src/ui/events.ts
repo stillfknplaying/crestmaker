@@ -44,6 +44,7 @@ function applyLoadedImageWithActiveDeps(img: HTMLImageElement) {
   deps.drawCropUI();
 
   r.resetBtn.disabled = false;
+  if (r.resetToolbarBtn) r.resetToolbarBtn.disabled = false;
   deps.scheduleRecomputePipeline(0);
 }
 
@@ -242,6 +243,7 @@ export function initToolUIEvents(deps: EventsDeps) {
   refs.debugCard24.classList.toggle("hidden", deps.getCurrentMode() !== "ally_clan");
   refs.debugCard16.classList.toggle("hidden", deps.getCurrentMode() !== "only_clan");
   refs.resetBtn.classList.toggle("hidden", !refs.advancedChk.checked);
+  refs.resetToolbarBtn?.classList.toggle("hidden", !refs.advancedChk.checked);
 
   // Advanced toggle
   refs.advancedChk.addEventListener("change", () => {
@@ -256,16 +258,26 @@ export function initToolUIEvents(deps: EventsDeps) {
     r.debugCard24.classList.toggle("hidden", deps.getCurrentMode() !== "ally_clan");
     r.debugCard16.classList.toggle("hidden", deps.getCurrentMode() !== "only_clan");
     r.resetBtn.classList.toggle("hidden", !on);
+    r.resetToolbarBtn?.classList.toggle("hidden", !on);
 
     deps.scheduleRecomputePipeline(0);
   });
 
   // Reset with confirm
   refs.resetBtn.addEventListener("click", () => {
+    // Desktop reset button
+
     const r = deps.getRefs();
     if (!r) return;
     r.confirmModal.classList.remove("hidden");
   });
+  // Toolbar reset button (mobile/tablet) mirrors desktop behavior
+  refs.resetToolbarBtn?.addEventListener("click", () => {
+    const r = deps.getRefs();
+    if (!r) return;
+    r.confirmModal.classList.remove("hidden");
+  });
+
   refs.confirmNo.addEventListener("click", () => deps.getRefs()?.confirmModal.classList.add("hidden"));
   refs.confirmYes.addEventListener("click", () => {
     const r = deps.getRefs();
@@ -321,6 +333,14 @@ export function initToolUIEvents(deps: EventsDeps) {
   refs.contrast.value = String(deps.getContrast());
   refs.contrastVal.textContent = String(deps.getContrast());
 
+  const clampInt = (v: number, min: number, max: number) => Math.max(min, Math.min(max, Math.round(v)));
+  const stepRange = (input: HTMLInputElement, delta: number) => {
+    const min = Number(input.min);
+    const max = Number(input.max);
+    const cur = Number(input.value) || 0;
+    return clampInt(cur + delta, min, max);
+  };
+
   refs.brightness.addEventListener("input", () => {
     const r = deps.getRefs();
     if (!r) return;
@@ -330,6 +350,26 @@ export function initToolUIEvents(deps: EventsDeps) {
     deps.scheduleRecomputePipeline(50);
   });
 
+  refs.brightnessMinus.addEventListener("click", () => {
+    const r = deps.getRefs();
+    if (!r) return;
+    const v = stepRange(r.brightness, -1);
+    r.brightness.value = String(v);
+    r.brightnessVal.textContent = String(v);
+    deps.setBrightness(v);
+    deps.scheduleRecomputePipeline(0);
+  });
+
+  refs.brightnessPlus.addEventListener("click", () => {
+    const r = deps.getRefs();
+    if (!r) return;
+    const v = stepRange(r.brightness, +1);
+    r.brightness.value = String(v);
+    r.brightnessVal.textContent = String(v);
+    deps.setBrightness(v);
+    deps.scheduleRecomputePipeline(0);
+  });
+
   refs.contrast.addEventListener("input", () => {
     const r = deps.getRefs();
     if (!r) return;
@@ -337,6 +377,26 @@ export function initToolUIEvents(deps: EventsDeps) {
     r.contrastVal.textContent = String(v);
     deps.setContrast(v);
     deps.scheduleRecomputePipeline(50);
+  });
+
+  refs.contrastMinus.addEventListener("click", () => {
+    const r = deps.getRefs();
+    if (!r) return;
+    const v = stepRange(r.contrast, -1);
+    r.contrast.value = String(v);
+    r.contrastVal.textContent = String(v);
+    deps.setContrast(v);
+    deps.scheduleRecomputePipeline(0);
+  });
+
+  refs.contrastPlus.addEventListener("click", () => {
+    const r = deps.getRefs();
+    if (!r) return;
+    const v = stepRange(r.contrast, +1);
+    r.contrast.value = String(v);
+    r.contrastVal.textContent = String(v);
+    deps.setContrast(v);
+    deps.scheduleRecomputePipeline(0);
   });
 
   refs.ditherAmt.addEventListener("input", () => {

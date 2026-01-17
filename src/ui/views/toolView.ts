@@ -41,7 +41,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
             <input data-testid="upload-input" id="file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
           </label>
 
-          <button data-testid="download" id="download" class="btn primary" disabled>${escapeHtml(t("Download BMPs","Скачать BMP","Завантажити BMP"))}</button>
+          <button data-testid="download" id="download" class="btn primary" disabled>${escapeHtml(t("Download BMPs","Скачать BMP","Зберегти BMP"))}</button>
 
           <div class="sep"></div>
 
@@ -101,7 +101,7 @@ export function renderToolView(ctx: ToolViewCtx): string {
             <span class="track"><span class="thumb"></span></span>
           </label>
 
-          <button data-testid="reset" id="reset" class="btn ${ctx.advancedOpen ? "" : "hidden"}" disabled>${escapeHtml(t("Reset","Сброс","Скинути"))}</button>
+          <button data-testid="reset-toolbar" id="resetToolbar" class="btn reset-toolbar ${ctx.advancedOpen ? "" : "hidden"}" disabled>${escapeHtml(t("Reset","Сброс","Скинути"))}</button>
 
           <div class="toolbar-right">
             <button class="btn ${ctx.currentLang === "en" ? "active" : ""}" data-lang="en">EN</button>
@@ -176,7 +176,11 @@ export function renderToolView(ctx: ToolViewCtx): string {
                   "Регулює яскравість перед конвертацією."
                 )}
               </div>
-              <input id="brightness" type="range" min="-50" max="50" value="0" />
+              <div class="range-step">
+                <button id="brightnessMinus" class="btn step" type="button" aria-label="${escapeHtml(t("Decrease brightness","Уменьшить яркость","Зменшити яскравість"))}">−</button>
+                <input id="brightness" type="range" min="-50" max="50" value="0" />
+                <button id="brightnessPlus" class="btn step" type="button" aria-label="${escapeHtml(t("Increase brightness","Увеличить яркость","Збільшити яскравість"))}">+</button>
+              </div>
               <b><span id="brightnessVal">0</span></b>
             </div>
 
@@ -189,14 +193,32 @@ export function renderToolView(ctx: ToolViewCtx): string {
                   "Регулює контраст перед конвертацією."
                 )}
               </div>
-              <input id="contrast" type="range" min="-50" max="50" value="0" />
+              <div class="range-step">
+                <button id="contrastMinus" class="btn step" type="button" aria-label="${escapeHtml(t("Decrease contrast","Уменьшить контраст","Зменшити контраст"))}">−</button>
+                <input id="contrast" type="range" min="-50" max="50" value="0" />
+                <button id="contrastPlus" class="btn step" type="button" aria-label="${escapeHtml(t("Increase contrast","Увеличить контраст","Збільшити контраст"))}">+</button>
+              </div>
               <b><span id="contrastVal">0</span></b>
             </div>
 
             <div class="btn-group adv-actions">
-              <button id="rotL" class="btn">${escapeHtml(t("Rotate","Повернуть","Повернути"))} ⟲</button>
-              <button id="rotR" class="btn">${escapeHtml(t("Rotate","Повернуть","Повернути"))} ⟳</button>
-              <button id="invert" class="btn">${escapeHtml(t("Invert","Инвертировать","Інвертувати"))}</button>
+              <button id="rotL" class="btn" aria-label="${escapeHtml(t("Rotate left","Повернуть влево","Повернути ліворуч"))}">
+                <span class="rot-label">${escapeHtml(t("Rotate","Повернуть","Повернути"))}</span>
+                <span class="rot-icon" aria-hidden="true">⟲</span>
+              </button>
+              <button id="rotR" class="btn" aria-label="${escapeHtml(t("Rotate right","Повернуть вправо","Повернути праворуч"))}">
+                <span class="rot-label">${escapeHtml(t("Rotate","Повернуть","Повернути"))}</span>
+                <span class="rot-icon" aria-hidden="true">⟳</span>
+              </button>
+              <button id="invert" class="btn invert-btn" aria-label="${escapeHtml(t("Invert colors","Инвертировать цвета","Інвертувати кольори"))}">
+                <span class="invert-label">${escapeHtml(t("Invert","Инвертировать","Інвертувати"))}</span>
+                <span class="invert-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" focusable="false" aria-hidden="true">
+                    <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20V2zm0 18a8 8 0 0 1 0-16v16z"/>
+                  </svg>
+                </span>
+              </button>
+              <button data-testid="reset" id="reset" class="btn reset-adv ${ctx.advancedOpen ? "" : "hidden"}" disabled>${escapeHtml(t("Reset","Сброс","Скинути"))}</button>
             </div>
           </div>
 
