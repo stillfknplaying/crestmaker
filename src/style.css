@@ -262,7 +262,7 @@ body{
   width: 100%;
 }
 .url-load.toolbar-bottom .url-row{
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .url-load.toolbar-bottom input{
   flex: 1 1 260px;
@@ -350,6 +350,32 @@ select option{
 .range b{ font-size: 12px; color: var(--muted); }
 .range input[type="range"]{ width: 140px; }
 
+/* Range step layout: - slider + */
+.range-step{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.range-step input[type="range"]{
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+.btn.step{
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 8px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+
 /* ---------- ADVANCED PANEL ---------- */
 .advanced{
   padding: 12px;
@@ -386,8 +412,50 @@ select option{
 }
 .opt-name{
   white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  overflow:visible;
+  text-overflow:clip;
+}
+
+/* Small +/- step buttons for range controls */
+.stepper{
+  display:inline-flex;
+  gap:4px;
+  margin-left: 2px;
+}
+.stepbtn{
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-weight: 700;
+  user-select: none;
+}
+.stepbtn:hover{ opacity: .92; }
+.stepbtn:active{ transform: translateY(0.5px); }
+.stepbtn:focus-visible{
+  outline: 2px solid rgba(34,197,94,.55);
+  outline-offset: 2px;
+}
+
+/* Row layout for range + step buttons */
+.range-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex: 1 1 auto;
+  min-width: 220px;
+}
+.range-row input[type="range"]{
+  width: 100%;
+  flex: 1 1 auto;
 }
 .toggle-switch{
   flex:0 0 auto;
@@ -455,12 +523,19 @@ select option{
   align-items:center;
   justify-content:center;
   min-height: 120px;
+  position: relative;
+  padding: 10px;
   background: rgba(255,255,255,.02);
-  border:1px dashed rgba(255,255,255,.10);
+  border:1px dashed rgba(255,255,255,.14);
 }
 #dstTrue{
   image-rendering: pixelated;
-  border: none;
+  border: 1px solid var(--border);
+}
+
+:root[data-theme="light"] .true-wrap{
+  background: rgba(16,24,40,.03);
+  border-color: rgba(16,24,40,.30);
 }
 
 /* Debug zoom */
@@ -533,6 +608,20 @@ select option{
   justify-content:space-between;
   gap: 10px;
   margin-bottom: 10px;
+}
+
+.page-actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.page-actions .lang-group{
+  display:flex;
+  gap:8px;
+}
+.page-actions .back-link{
+  margin-left:auto;
 }
 .md{
   color: var(--text);
@@ -671,9 +760,63 @@ select option{
   font-size: 12px;
 }
 
+
+/* ---------- TOAST ---------- */
+.toast{
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  color: var(--text);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  z-index: 9999;
+  max-width: calc(100vw - 24px);
+  text-align: center;
+}
+.toast.hidden{ display:none; }
+
+
+/* Reset button placement: toolbar for <=980, in adv-actions for desktop */
+.reset-adv{ display:none; }
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 980px){
   .grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+
+  /* URL loader: keep input+button on one line for tablets too */
+  .url-row{ flex-wrap: nowrap; }
+  .url-row input{ flex: 1 1 auto; min-width: 0; }
+  .url-row .btn{ margin-left: auto; white-space: nowrap; }
+
+  /* Policy pages: languages left, Back right (single row) */
+  .page-actions{ width: 100%; justify-content: space-between; flex-wrap: nowrap; }
+  .page-actions .btn{ width: auto; }
+
+  /* Brightness/Contrast: keep label + help + controls in one row */
+  #brightnessRow .opt-head,
+  #contrastRow .opt-head{ flex-direction: row; }
+  /* Keep the label/help column the same width in both rows so the "-" and "+"
+     buttons align vertically (Brightness above Contrast). */
+  #brightnessRow .opt-head,
+  #contrastRow .opt-head{ flex: 0 0 112px; width: 112px; min-width: 112px; }
+  #brightnessRow .range-step,
+  #contrastRow .range-step{ flex: 1 1 auto; min-width: 0; }
+  #brightnessRow b,
+  #contrastRow b{ flex: 0 0 32px; text-align: right; }
+
+  /* Reset: use toolbar button on <=980 */
+  #resetToolbar.reset-toolbar{ display: inline-flex; }
+  #reset.reset-adv{ display: none; }
+}
+
+@media (min-width: 981px){
+  .reset-adv{ display: inline-flex; }
+  #resetToolbar.reset-toolbar{ display: none; }
+  #reset.reset-adv{ display: inline-flex; }
 }
 @media (max-width: 640px){
   .grid{ grid-template-columns: 1fr; }
@@ -725,19 +868,36 @@ select option{
   .range{ width: 100%; }
   .range input[type="range"]{ flex: 1 1 auto; width: auto; min-width: 120px; }
 
-  /* Make brightness/contrast sliders always equal width (value text may differ: -20 vs 20) */
+  /* Brightness / Contrast: keep label + help + buttons in one row */
+  #brightnessRow,
+  #contrastRow{
+    flex-wrap: nowrap;
+  }
   #brightnessRow .opt-head,
   #contrastRow .opt-head{
-    display:flex;
-    flex-direction:column;
-    align-items:flex-start;
-    gap: 4px;
-    min-width: 92px;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    white-space: nowrap;
+  }
+  /* Same-width label column on phones too */
+  #brightnessRow .opt-head,
+  #contrastRow .opt-head{ flex: 0 0 112px; width: 112px; min-width: 112px; }
+  #brightnessRow .range-step,
+  #contrastRow .range-step{
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  #brightnessRow .btn.step,
+  #contrastRow .btn.step{
+    width: 30px;
+    height: 30px;
   }
   #brightnessRow b,
   #contrastRow b{
-    flex: 0 0 36px;
-    text-align:right;
+    flex: 0 0 32px;
+    text-align: right;
     font-variant-numeric: tabular-nums;
   }
 
@@ -757,6 +917,10 @@ select option{
   /* Pages: headers should use full width */
   .page-head{ flex-direction: column; align-items: stretch; }
   .page-head .btn{ width: 100%; justify-content: center; }
+
+  /* But keep language buttons + Back on one line (mobile/tablet) */
+  .page-actions{ flex-direction: row; justify-content: space-between; align-items: center; width: 100%; }
+  .page-actions .btn{ width: auto; }
 
   /* Footer: 2-column links, other blocks full width */
   .footer{
@@ -974,3 +1138,32 @@ details.spoiler > summary::marker { content: ""; }
 :root:not([data-theme="light"]) .brand-logo{
   filter: invert(1);
 }
+
+
+@media (min-width: 981px){
+  #resetToolbar.reset-toolbar{ display:none; }
+  #reset.reset-adv{ display:inline-flex; }
+}
+
+/* ================================
+   Desktop: unify Rotate / Invert / Reset button height
+   ================================ */
+@media (min-width: 1025px){
+  .adv-actions .btn,
+  .adv-actions button{
+    height: 36px;
+    min-height: 36px;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* иконки не должны раздувать высоту */
+  .adv-actions svg{
+    display: block;
+  }
+}
+

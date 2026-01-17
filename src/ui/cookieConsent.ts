@@ -2,6 +2,21 @@ import { t } from "../i18n";
 
 const SHARE_URL = "https://crestmaker.org";
 
+let toastTimer: number | null = null;
+function showToast(message: string) {
+  const el = document.getElementById("toast");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.remove("hidden");
+  el.classList.add("show");
+  if (toastTimer) window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => {
+    el.classList.remove("show");
+    el.classList.add("hidden");
+  }, 1400);
+}
+
+
 function getShareText(): string {
   return t(
     "CrestMaker is a free online tool for creating Lineage 2 clan and alliance crests. Convert images to BMP 256-color crests (24x12 / 16x12) directly in your browser - no install, no registration.",
@@ -211,6 +226,7 @@ export function initCookieConsentUI() {
         const prevTitle = btnEl.title;
         btnEl.classList.add("is-copied");
         btnEl.title = "Copied!";
+        showToast(t("Link copied","Ссылка скопирована","Посилання скопійовано"));
         window.setTimeout(() => {
           btnEl.classList.remove("is-copied");
           btnEl.title = prevTitle;
