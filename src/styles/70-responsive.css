@@ -1,4 +1,15 @@
+/* =====================================================================
+   CrestMaker CSS module: 70-responsive.css
+   NOTE: Rule order preserved from original src/style.css.
+   Do not reorder selectors or media blocks unless intentionally changing UI.
+   ===================================================================== */
+
 /* ---------- RESPONSIVE ---------- */
+@media (max-width: 860px){
+  .adv-grid{ grid-template-columns: 1fr; }
+  .adv-right{ justify-content:flex-start; }
+}
+
 @media (max-width: 980px){
   .grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
 
@@ -9,7 +20,6 @@
 
   /* Policy pages: languages left, Back right (single row) */
   .page-actions{ width: 100%; justify-content: space-between; flex-wrap: nowrap; }
-  .page-actions .btn{ width: auto; }
 
   /* Brightness/Contrast: keep label + help + controls in one row */
   #brightnessRow .opt-head,
@@ -74,9 +84,6 @@
 
   /* URL loader: input takes full row, button stays on the right */
   .url-load input{ width: 100%; max-width: 100%; }
-  .url-row{ flex-wrap: nowrap; }
-  .url-row input{ flex: 1 1 auto; min-width: 0; }
-  .url-row .btn{ margin-left: auto; white-space: nowrap; }
 
   /* Ranges: same sizing, input grows */
   .range{ width: 100%; }
@@ -138,7 +145,6 @@
 
   /* But keep language buttons + Back on one line (mobile/tablet) */
   .page-actions{ flex-direction: row; justify-content: space-between; align-items: center; width: 100%; }
-  .page-actions .btn{ width: auto; }
 
   /* Footer: 2-column links, other blocks full width */
   .footer{
@@ -192,16 +198,13 @@
     text-align: center;
     font-size: 14px;
   }
-  .footer-share a,
-  .footer-share button{
-    flex: 1 1 0;
-  }
   .footer-share img{
     width: 32px;
     height: 32px;
   }
   .footer-share a,
   .footer-share button{
+    flex: 1 1 0;
     justify-content: center;
   }
 
@@ -356,7 +359,6 @@ details.spoiler > summary::marker { content: ""; }
 :root:not([data-theme="light"]) .brand-logo{
   filter: invert(1);
 }
-
 
 @media (min-width: 981px){
   #resetToolbar.reset-toolbar{ display:none; }

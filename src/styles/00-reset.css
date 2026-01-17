@@ -1,3 +1,9 @@
+/* =====================================================================
+   CrestMaker CSS module: 00-reset.css
+   NOTE: Rule order preserved from original src/style.css.
+   Do not reorder selectors or media blocks unless intentionally changing UI.
+   ===================================================================== */
+
 /* ---------- THEME ---------- */
 :root{
   --bg:#0b0e12;
