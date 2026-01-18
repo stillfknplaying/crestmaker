@@ -21,6 +21,7 @@ import { createInitialState } from "./state";
 import * as actions from "./actions";
 import { initPipelineController, scheduleRecomputePipeline, recomputePipeline } from "./pipelineController";
 import { createPipelineEngine } from "./engineFactory";
+import { buildPipelineSettings } from "./pipelineSettings";
 import * as settings from "./settings";
 import { loadImageFromClipboardEvent, loadImageFromDataTransfer, loadImageFromFile, loadImageFromUrl as loadExternalImageFromUrl } from "./fileLoader";
 import type { CrestMode, CropAspect } from "../types/types";
@@ -173,19 +174,32 @@ export function createApp() {
     cleanupIndicesMajoritySafe,
   });
 
+  // Ensure engines that allocate resources (e.g., Worker) are cleaned up.
+  window.addEventListener("beforeunload", () => {
+    try {
+      engine.terminate?.();
+    } catch {
+      // ignore
+    }
+  });
+
   // Compute pipeline controller (separates compute from render)
   initPipelineController({
-    getRefs: () => state.refs,
-
     engine,
 
-    getSourceImage: () => state.sourceImage,
-    getCurrentMode: () => currentMode,
-    getInvertColors: () => state.invertColors,
-
-    getPixelPreset: () => settings.getPixelPreset(),
-    getBrightness: () => settings.getBrightness(),
-    getContrast: () => settings.getContrast(),
+    getSettings: () => {
+      const refs = state.refs;
+      if (!refs) return null;
+      if (!state.sourceImage) return null;
+      return buildPipelineSettings({
+        refs,
+        crestMode: currentMode,
+        invertColors: state.invertColors,
+        pixelPreset: settings.getPixelPreset(),
+        brightness: settings.getBrightness(),
+        contrast: settings.getContrast(),
+      });
+    },
 
     getCroppedSource: () => state.cropController?.getCroppedSource() ?? null,
 

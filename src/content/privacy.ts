@@ -18,6 +18,9 @@ export function privacyPolicyHtml(lang: Lang): string {
 </ul>
 
 <p>No tracking, analytics, or third-party cookies are used.</p>
+
+<h3>Loading images by URL</h3>
+<p>If you use the “Load by URL” feature, your browser will request the image directly from the website you provide. That website may receive your IP address and standard request headers. CrestMaker does not proxy or store these requests.</p>
 `;
 
   const ru = `<p>Мы уважаем вашу конфиденциальность. Этот инструмент полностью работает в вашем браузере.</p>
@@ -37,6 +40,9 @@ export function privacyPolicyHtml(lang: Lang): string {
 </ul>
 
 <p>Мы не используем аналитику, трекеры или сторонние cookies.</p>
+
+<h3>Загрузка по ссылке (URL)</h3>
+<p>Если вы используете функцию “Load by URL”, ваш браузер запрашивает изображение напрямую у указанного сайта. Этот сайт может получить ваш IP и стандартные заголовки запроса. CrestMaker не проксирует и не хранит такие запросы.</p>
 `;
 
   const ua = `<p>Ми поважаємо вашу конфіденційність. Цей інструмент повністю працює у вашому браузері.</p>
@@ -56,6 +62,9 @@ export function privacyPolicyHtml(lang: Lang): string {
 </ul>
 
 <p>Ми не використовуємо аналітику, трекери або сторонні cookies.</p>
+
+<h3>Завантаження за посиланням (URL)</h3>
+<p>Якщо ви використовуєте функцію “Load by URL”, ваш браузер запитує зображення напряму з вказаного сайту. Цей сайт може отримати ваш IP та стандартні заголовки запиту. CrestMaker не проксує і не зберігає такі запити.</p>
 `;
 
   return lang === "ru" ? ru : lang === "ua" ? ua : en;

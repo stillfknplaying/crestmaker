@@ -99,11 +99,42 @@ export async function loadImageFromUrl(url: string): Promise<HTMLImageElement> {
 
   // Use fetch -> blob -> objectURL so the resulting canvas is not tainted.
   // This still requires CORS from the remote server (otherwise fetch will fail).
-  const res = await fetch(resolved.toString(), { mode: "cors" });
+  //
+  // Guardrails:
+  // - timeout to avoid hanging requests
+  // - size cap to avoid OOM on very large images
+  const timeoutMs = 15000;
+  const maxBytes = 25 * 1024 * 1024; // 25MB
+  const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const to = window.setTimeout(() => {
+    try { ac?.abort(); } catch { /* ignore */ }
+  }, timeoutMs);
+
+  let res: Response;
+  try {
+    res = await fetch(resolved.toString(), { mode: "cors", signal: ac?.signal });
+  } catch (e) {
+    // AbortController will surface as a DOMException in most browsers.
+    if (ac?.signal?.aborted) {
+      throw new Error("Request timed out");
+    }
+    throw e;
+  } finally {
+    window.clearTimeout(to);
+  }
   if (!res.ok) {
     throw new Error(`Failed to fetch image (${res.status})`);
   }
+
+  // If the server provides a length, fail early.
+  const len = Number(res.headers.get("content-length") || "0") || 0;
+  if (len && len > maxBytes) {
+    throw new Error("Image is too large");
+  }
   const blob = await res.blob();
+  if (blob.size > maxBytes) {
+    throw new Error("Image is too large");
+  }
   if (!blob.type.startsWith("image/")) {
     throw new Error("URL did not return an image");
   }

@@ -52,6 +52,7 @@ export type LocalPipelineEngineDeps = {
  * without algorithm changes.
  */
 export class LocalPipelineEngine implements PipelineEngine {
+  readonly needsImageBitmap = false;
   private readonly deps: LocalPipelineEngineDeps;
 
   constructor(deps: LocalPipelineEngineDeps) {
