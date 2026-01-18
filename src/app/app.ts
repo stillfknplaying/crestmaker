@@ -1,6 +1,5 @@
 import { renderToSize, edgeAwareSharpen, softNormalizeLevels, clampDitherStrength, quantizeTo256 } from "../pipeline/modern";
 import { cleanupIndicesMajoritySafe, quantizePixel256 } from "../pipeline/pixel";
-import { initPolicyLangEvents } from "./policyEvents";
 import { privacyPolicyHtml } from "../content/privacy";
 import { termsHtml } from "../content/terms";
 import { gdprHtml } from "../content/gdpr";
@@ -16,11 +15,12 @@ import { initCookieConsentUI, renderCookieBannerIfNeeded, localizeCookieUI } fro
 import { initDisplayCanvas, rebuildDisplayCanvas } from "../ui/displayCanvas";
 import { createRenderController } from "../ui/renderController";
 import { escapeHtml } from "./dom";
-import { initRoutes } from "./routes";
+import { initAppRouter } from "./init/initRouter";
 import { createInitialState } from "./state";
 import * as actions from "./actions";
-import { initPipelineController, scheduleRecomputePipeline, recomputePipeline } from "./pipelineController";
-import { createPipelineEngine } from "./engineFactory";
+import { scheduleRecomputePipeline, recomputePipeline } from "./pipelineController";
+import { createEngineWithLifecycle } from "./init/initEngine";
+import { initComputePipeline } from "./init/initPipeline";
 import { buildPipelineSettings } from "./pipelineSettings";
 import * as settings from "./settings";
 import { loadImageFromClipboardEvent, loadImageFromDataTransfer, loadImageFromFile, loadImageFromUrl as loadExternalImageFromUrl } from "./fileLoader";
@@ -98,13 +98,10 @@ export function createApp() {
   }
 
   // -------------------- ROUTES --------------------
-
-  // policy page language buttons (delegated)
-  initPolicyLangEvents({ routeRoot, setLang });
-
   // init router (single source of truth)
-  const router = initRoutes({
+  const router = initAppRouter({
     routeRoot,
+    setLang,
     getLang: () => currentLang,
     t,
     escapeHtml,
@@ -118,8 +115,6 @@ export function createApp() {
     },
     renderToolPage: () => toolPage.renderToolPage(),
   });
-
-  // expose route renderer to the rest of the app
   renderRouteFn = router.renderRoute;
 
   // -------------------- TOOL UI + STATE --------------------
@@ -163,7 +158,7 @@ export function createApp() {
     },
   });
 
-  const engine = createPipelineEngine({
+  const engine = createEngineWithLifecycle({
     renderToSize,
     edgeAwareSharpen,
     softNormalizeLevels,
@@ -174,19 +169,11 @@ export function createApp() {
     cleanupIndicesMajoritySafe,
   });
 
-  // Ensure engines that allocate resources (e.g., Worker) are cleaned up.
-  window.addEventListener("beforeunload", () => {
-    try {
-      engine.terminate?.();
-    } catch {
-      // ignore
-    }
-  });
-
   // Compute pipeline controller (separates compute from render)
-  initPipelineController({
+  initComputePipeline({
     engine,
-
+    state,
+    getCurrentMode: () => currentMode,
     getSettings: () => {
       const refs = state.refs;
       if (!refs) return null;
@@ -200,16 +187,12 @@ export function createApp() {
         contrast: settings.getContrast(),
       });
     },
-
     getCroppedSource: () => state.cropController?.getCroppedSource() ?? null,
-
     setPalette256: (p) => actions.setPalette256(state, p),
     setIconAlly8: (v) => actions.setIconAlly8(state, v),
     setIconClan16: (v) => actions.setIconClan16(state, v),
     setIconCombined24: (v) => actions.setIconCombined24(state, v),
-
     afterCompute: (res) => {
-      // New pipeline output invalidates editor history.
       editorController.resetHistory();
       renderController.renderAfterCompute(res);
       editorController.syncAvailability();

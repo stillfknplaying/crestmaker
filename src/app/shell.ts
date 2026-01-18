@@ -64,7 +64,6 @@ export function renderShell(app: HTMLElement): ShellRefs {
         </nav>
 
         <div class="footer-share" aria-label="Share CrestMaker">
-          <img class="ico" src="/icons/share.svg" width="16" height="16" alt="Share"/>
           <a id="shareTelegramLink" href="#" target="_blank" rel="noopener noreferrer" title="Share on Telegram" aria-label="Share on Telegram">
             <img src="/icons/telegram.svg" alt="Telegram" width="16" height="16" loading="lazy" />
           </a>
@@ -74,9 +73,9 @@ export function renderShell(app: HTMLElement): ShellRefs {
           <a href="https://www.facebook.com/sharer/sharer.php?u=https://crestmaker.org" target="_blank" rel="noopener noreferrer" title="Share on Facebook" aria-label="Share on Facebook">
             <img src="/icons/facebook.svg" alt="Facebook" width="16" height="16" loading="lazy" />
           </a>
-          <button type="button" id="shareDiscordBtn" title="Copy link for Discord" aria-label="Copy link for Discord">
-            <img src="/icons/discord.svg" alt="Discord" width="16" height="16" loading="lazy" />
-          </button>
+          <a id="shareWhatsAppLink" href="#" target="_blank" rel="noopener noreferrer" title="Share on WhatsApp" aria-label="Share on WhatsApp">
+            <img src="/icons/whatsapp.svg" alt="WhatsApp" width="16" height="16" loading="lazy" />
+          </a>
         </div>
 
         <div class="footer-contact">
