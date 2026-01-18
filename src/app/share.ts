@@ -7,9 +7,13 @@ function makeFile(blob: Blob, name: string): File {
   return new File([blob], name, { type: blob.type || "image/bmp" });
 }
 
-export function canWebShareFiles(): boolean {
-  // navigator.share exists on many desktop browsers too, but file sharing support varies.
+export function canWebShare(): boolean {
   return typeof navigator !== "undefined" && typeof navigator.share === "function";
+}
+
+export function canShareFiles(files: File[]): boolean {
+  // Some browsers expose share() but cannot share files.
+  return typeof (navigator as any).canShare === "function" ? (navigator as any).canShare({ files }) : true;
 }
 
 export async function webShareFromState(
@@ -38,12 +42,8 @@ export async function webShareFromState(
     files.push(makeFile(combinedBmp, "combined_24x12_256.bmp"));
   }
 
-  if (!canWebShareFiles()) return false;
-
-  // Best-effort compatibility check.
-  const canShare =
-    typeof (navigator as any).canShare === "function" ? (navigator as any).canShare({ files }) : true;
-  if (!canShare) return false;
+  if (!canWebShare()) return false;
+  if (!canShareFiles(files)) return false;
 
   try {
     await navigator.share({

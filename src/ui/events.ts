@@ -595,6 +595,20 @@ export function initToolUIEvents(deps: EventsDeps) {
             "Не вдалося завантажити зображення. Сайт може блокувати доступ (CORS) або сталася мережева помилка."
           );
         }
+        if (m.includes("request timed out") || m.includes("timed out") || m.includes("timeout")) {
+          return t(
+            "Request timed out. Try another URL or upload the file.",
+            "Слишком долго загружается. Попробуйте другую ссылку или загрузите файл.",
+            "Занадто довго завантажується. Спробуйте інше посилання або завантажте файл."
+          );
+        }
+        if (m.includes("image is too large") || m.includes("too large")) {
+          return t(
+            "Image is too large. Please use a smaller file.",
+            "Слишком большое изображение. Используйте файл поменьше.",
+            "Занадто велике зображення. Використайте менший файл."
+          );
+        }
         if (m.includes("failed to fetch image")) {
           const match = m.match(/failed to fetch image \((\d+)\)/);
           if (match) {
@@ -628,6 +642,11 @@ export function initToolUIEvents(deps: EventsDeps) {
         m.includes("not an image") ||
         m.includes("failed to fetch") ||
         m.includes("network") ||
+        m.includes("request timed out") ||
+        m.includes("timed out") ||
+        m.includes("timeout") ||
+        m.includes("image is too large") ||
+        m.includes("too large") ||
         m.includes("failed to fetch image") ||
         err instanceof TypeError;
 

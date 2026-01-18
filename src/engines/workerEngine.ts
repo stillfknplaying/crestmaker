@@ -18,6 +18,7 @@ type WorkerResponse =
  * Note: compute is async by nature.
  */
 export class WorkerPipelineEngine implements PipelineEngine {
+  readonly needsImageBitmap = true;
   private readonly worker: Worker;
   private nextId = 1;
   private readonly pending = new Map<number, { resolve: (r: PipelineResult) => void; reject: (e: Error) => void }>();

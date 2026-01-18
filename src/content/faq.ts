@@ -29,6 +29,17 @@ export function faqHtml(lang: Lang): string {
   <li>Load an image from a direct <b>image URL</b></li>
 </ul>
 
+<h3>Why does “Load by URL” sometimes fail?</h3>
+<p>CrestMaker loads URLs directly in your browser. Many sites block such requests (CORS). If a URL fails, try:</p>
+<ul>
+  <li>Download the image and use <b>Upload image</b></li>
+  <li>Copy the image and paste with <b>Ctrl+V</b></li>
+  <li>Use a direct link to the image file (not a web page)</li>
+</ul>
+
+<h3>What does the Share button do?</h3>
+<p>On supported devices/browsers it can share the generated BMP file to another app. If file sharing is not supported, it falls back to a normal download.</p>
+
 <h3>Is my image uploaded to a server?</h3>
 <p>No. CrestMaker processes images locally in your browser. Your images are not uploaded or stored on any server.</p>
 
@@ -67,6 +78,28 @@ export function faqHtml(lang: Lang): string {
   <li>Загрузите по прямой <b>ссылке на изображение</b></li>
 </ul>
 
+<h3>Почему “загрузка по ссылке” иногда не работает?</h3>
+<p>CrestMaker загружает URL напрямую в вашем браузере. Многие сайты блокируют такие запросы (CORS). Если ссылка не работает, попробуйте:</p>
+<ul>
+  <li>Скачать картинку и использовать <b>Upload image</b></li>
+  <li>Скопировать картинку и вставить через <b>Ctrl+V</b></li>
+  <li>Использовать прямую ссылку на файл (а не на страницу)</li>
+</ul>
+
+<h3>Что делает кнопка Share?</h3>
+<p>На поддерживаемых устройствах/браузерах она может отправлять готовый BMP в другое приложение. Если отправка файлов не поддерживается, срабатывает обычное скачивание.</p>
+
+<h3>Почему “загрузка по ссылке” иногда не работает?</h3>
+<p>CrestMaker загружает ссылку напрямую в вашем браузере. Многие сайты блокируют такие запросы (CORS). Если ссылка не грузится, попробуйте:</p>
+<ul>
+  <li>Скачать изображение и использовать <b>Upload image</b></li>
+  <li>Скопировать изображение и вставить через <b>Ctrl+V</b></li>
+  <li>Использовать прямую ссылку на файл картинки (а не на страницу)</li>
+</ul>
+
+<h3>Что делает кнопка Share?</h3>
+<p>В поддерживаемых браузерах/на устройствах можно поделиться готовым BMP в другое приложение. Если отправка файлов не поддерживается, кнопка работает как обычная загрузка.</p>
+
 <h3>Загружается ли изображение на сервер?</h3>
 <p>Нет. CrestMaker обрабатывает изображения локально в браузере. Ваши изображения не отправляются и не сохраняются на сервере.</p>
 
@@ -104,6 +137,17 @@ export function faqHtml(lang: Lang): string {
   <li>Вставте зображення через <b>Ctrl+V</b></li>
   <li>Завантажте за прямим <b>посиланням на зображення</b></li>
 </ul>
+
+<h3>Чому “завантаження за посиланням” інколи не працює?</h3>
+<p>CrestMaker завантажує URL напряму у вашому браузері. Багато сайтів блокують такі запити (CORS). Якщо посилання не працює, спробуйте:</p>
+<ul>
+  <li>Завантажити картинку як файл і використати <b>Upload image</b></li>
+  <li>Скопіювати картинку та вставити через <b>Ctrl+V</b></li>
+  <li>Використовувати пряме посилання на файл зображення (а не на веб‑сторінку)</li>
+</ul>
+
+<h3>Що робить кнопка Share?</h3>
+<p>У підтримуваних браузерах/на пристроях вона може надіслати згенерований BMP файл в інший застосунок. Якщо шерингу файлів немає — кнопка використовує звичайне завантаження.</p>
 
 <h3>Чи надсилається зображення на сервер?</h3>
 <p>Ні. CrestMaker обробляє зображення локально у браузері. Ваші зображення не надсилаються та не зберігаються на сервері.</p>

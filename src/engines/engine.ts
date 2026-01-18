@@ -60,4 +60,15 @@ export type PipelineResult = {
 export interface PipelineEngine {
   // Local engine may be synchronous; worker engine will be async.
   compute(input: PipelineInput): PipelineResult | Promise<PipelineResult>;
+
+  /**
+   * Whether this engine requires an ImageBitmap input.
+   *
+   * - Local engine: false (can use HTMLCanvasElement directly, avoids createImageBitmap cost)
+   * - Worker engine: true (needs transferable ImageBitmap)
+   */
+  readonly needsImageBitmap: boolean;
+
+  /** Optional cleanup for engines that allocate resources (e.g., Web Worker). */
+  terminate?(): void;
 }
