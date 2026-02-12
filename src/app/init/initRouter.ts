@@ -15,13 +15,20 @@ type RouterDeps = {
     gdpr: (lang: Lang) => string;
     faq: (lang: Lang) => string;
     guide: (lang: Lang) => string;
+    cookies: (lang: Lang) => string;
+    icons: (lang: Lang) => string;
+    seo: {
+      lineage2CrestMaker: (lang: Lang) => string;
+      createClanCrest: (lang: Lang) => string;
+      requirements16x12: (lang: Lang) => string;
+      alliance24x12: (lang: Lang) => string;
+    };
   };
   renderToolPage: () => void;
 };
 
 /**
- * Initializes static routes (policies, guide, faq, etc.) and language switching on policy pages.
- * Returns the router with its renderRoute function.
+ * Initializes routes (policies, guide, faq, SEO landings) and language switching.
  */
 export function initAppRouter(deps: RouterDeps) {
   initPolicyLangEvents({ routeRoot: deps.routeRoot as HTMLDivElement, setLang: deps.setLang });
@@ -29,6 +36,7 @@ export function initAppRouter(deps: RouterDeps) {
   const router = initRoutes({
     routeRoot: deps.routeRoot as HTMLDivElement,
     getLang: deps.getLang,
+    setLangFromRouter: deps.setLang,
     t: deps.t,
     escapeHtml: deps.escapeHtml,
     pages: deps.pages,

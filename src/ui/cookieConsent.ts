@@ -1,4 +1,4 @@
-import { t } from "../i18n";
+import { t, currentLang } from "../i18n";
 
 const SHARE_URL = "https://crestmaker.org";
 
@@ -128,29 +128,20 @@ export function renderCookieBannerIfNeeded() {
   if (!root) return;
 
   root.innerHTML = `
-    <div data-testid="cookie-banner" style="
-      position:fixed;
-      left:0; right:0; bottom:0;
-      padding: 12px 12px 14px;
-      background: var(--panel);
-      border-top: 1px solid var(--border);
-      box-shadow: 0 -10px 30px rgba(0,0,0,.25);
-      z-index: 1200;
-    ">
-      <div style="max-width:1200px; margin:0 auto; display:flex; gap:12px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;">
-        <div style="min-width:240px; max-width:820px;">
-          <div style="font-weight:700; margin-bottom:4px;">${escapeHtml(t("Cookies", "Cookies", "Cookies"))}</div>
-          <div class="muted" style="font-size:13px; line-height:1.35;">
+    <div data-testid="cookie-banner" class="cookie-banner">
+      <div class="cookie-banner-inner">
+        <div class="cookie-banner-text">
+          <div class="cookie-banner-title">${escapeHtml(t("Cookies", "Cookies", "Cookies"))}</div>
+          <div class="cookie-banner-desc muted">
             ${escapeHtml(t(
               "We use cookies to remember your preferences and to improve the tool. You can accept all cookies or manage optional ones.",
               "Мы используем cookies, чтобы запоминать ваши настройки и улучшать инструмент. Вы можете принять все cookies или настроить необязательные.",
               "Ми використовуємо cookies, щоб запамʼятовувати ваші налаштування та покращувати інструмент. Ви можете прийняти всі cookies або налаштувати необов’язкові."
-            ))}
-            <a href="#/privacy" style="margin-left:8px; text-decoration:underline;">${escapeHtml(t("Learn more", "Подробнее", "Детальніше"))}</a>
+            ))} <a href="/${currentLang}/privacy" class="cookie-banner-link">${escapeHtml(t("Learn more", "Подробнее", "Детальніше"))}</a>
           </div>
         </div>
 
-        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <div class="cookie-banner-actions">
           <button data-testid="cookie-manage" class="btn" id="cookieManage">${escapeHtml(t("Manage options", "Настроить", "Налаштувати"))}</button>
           <button data-testid="cookie-reject" class="btn" id="cookieReject">${escapeHtml(t("Reject optional", "Отклонить необязательные", "Відхилити необов’язкові"))}</button>
           <button data-testid="cookie-accept" class="btn primary" id="cookieAccept">${escapeHtml(t("Accept all", "Принять все", "Прийняти все"))}</button>
@@ -170,15 +161,6 @@ export function initCookieConsentUI() {
   document.addEventListener("click", async (e) => {
     const target = e.target as HTMLElement | null;
     if (!target) return;
-
-    // Footer "Cookies" link
-    const footerLink = target.closest("#cookieSettingsLink");
-    if (footerLink) {
-      e.preventDefault();
-      openCookieModal();
-      return;
-    }
-
     // Footer "Share" links (Telegram / X)
     const shareTelegramLink = target.closest("#shareTelegramLink");
     if (shareTelegramLink) {
@@ -196,6 +178,16 @@ export function initCookieConsentUI() {
       const text = encodeURIComponent(getShareText());
       const url = encodeURIComponent(SHARE_URL);
       const shareUrl = `https://x.com/intent/post?url=${url}&text=${text}`;
+      window.open(shareUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+
+    const shareFacebookLink = target.closest("#shareFacebookLink");
+    if (shareFacebookLink) {
+      e.preventDefault();
+      const url = encodeURIComponent(SHARE_URL);
+      const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
       window.open(shareUrl, "_blank", "noopener,noreferrer");
       return;
     }

@@ -5,19 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Free online tool to create Lineage 2 clan and alliance crests. Convert images to BMP 256-color crests (24x12, 16x12, 8x12) directly in your browser."
+      content="Lineage 2 crest maker online. Create clan and alliance crests and convert images to BMP 256-color crests (16x12, 24x12, 8x12) directly in your browser."
     />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://crestmaker.org/" />
+
+    <link rel="canonical" href="https://crestmaker.org/en/" />
+    <link rel="alternate" href="https://crestmaker.org/en/" hreflang="en" />
+    <link rel="alternate" href="https://crestmaker.org/ru/" hreflang="ru" />
+    <link rel="alternate" href="https://crestmaker.org/ua/" hreflang="uk" />
+    <link rel="alternate" href="https://crestmaker.org/en/" hreflang="x-default" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="CrestMaker" />
     <meta property="og:url" content="https://crestmaker.org/" />
-    <meta property="og:title" content="CrestMaker — Lineage 2 Clan Crest BMP 256 Converter (24x12 / 16x12)" />
+    <meta property="og:title" content="Lineage 2 Crest Maker Online — Clan & Alliance Crest BMP (16x12 / 24x12)" />
     <meta
       property="og:description"
-      content="Create Lineage 2 clan and alliance crests online. Convert images to BMP 256-color crests (24x12, 16x12, 8x12). No install, no registration."
+      content="Create Lineage 2 clan and alliance crests online. Export BMP 256-color crests (16x12, 24x12, 8x12). No install, no registration."
     />
     <meta property="og:image" content="https://crestmaker.org/og/crestmaker-preview.png" />
     <meta property="og:image:width" content="1200" />
@@ -25,20 +30,68 @@
 
     <!-- X -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="CrestMaker — Lineage 2 Clan Crest Converter" />
+    <meta name="twitter:title" content="Lineage 2 Crest Maker Online — CrestMaker" />
     <meta
       name="twitter:description"
-      content="Free online tool to convert images into Lineage 2 BMP 256 clan and alliance crests (24x12, 16x12, 8x12)."
+      content="Convert images into Lineage 2 BMP 256 clan and alliance crests (16x12, 24x12, 8x12) online."
     />
     <meta name="twitter:image" content="https://crestmaker.org/og/crestmaker-preview.png" />
 
-    <title>CrestMaker — Lineage 2 Clan Crest BMP 256 Converter (24x12 / 16x12)</title>
+    <title>Lineage 2 Crest Maker Online — Create Clan & Alliance Crest BMP (16x12 / 24x12)</title>
     <link rel="icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Lineage 2 Crest Maker (CrestMaker)",
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Web",
+  "url": "https://crestmaker.org/",
+  "description": "Create Lineage 2 clan and alliance crests online. Convert images to BMP 256-color crests (16x12, 24x12, 8x12) directly in your browser."
+}
+    </script>
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What size is a Lineage 2 clan crest?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Most servers use 16x12 pixels for the clan crest in BMP (256 colors). Some also use 8x12 for small crests. Alliance crests are commonly 24x12." }
+    },
+    {
+      "@type": "Question",
+      "name": "What BMP format does Lineage 2 require?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Typically an 8-bit (256-color) BMP. This tool converts and dither-optimizes images for that format." }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I create a crest without Photoshop?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Yes. Use the online crest maker: upload an image, crop/resize to 16x12 or 24x12, then export BMP 256." }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does my crest look blurry or noisy?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Downscaling to 16x12 is extreme. Use simple shapes, high contrast, and try dithering/smoothing options." }
+    },
+    {
+      "@type": "Question",
+      "name": "Where do I upload the crest in Lineage 2?",
+      "acceptedAnswer": { "@type": "Answer", "text": "In the clan UI (commonly Alt+N), choose the emblem option and select the exported BMP file. Exact steps vary by server." }
+    }
+  ]
+}
+    </script>
+
+    
+
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+<script type="module" src="/src/main.ts"></script>
   </body>
 </html>

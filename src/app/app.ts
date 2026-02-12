@@ -6,6 +6,9 @@ import { gdprHtml } from "../content/gdpr";
 import { aboutHtml } from "../content/about";
 import { faqHtml } from "../content/faq";
 import { guideHtml } from "../content/guide";
+import { cookiesHtml } from "../content/cookies";
+import { iconsHtml } from "../content/icons";
+import { seoAlliance24x12Html, seoCreateClanCrestHtml, seoLineage2CrestMakerHtml, seoPromoShortsBlock, seoRequirements16x12Html } from "../content/seo";
 import type { Lang } from "../i18n";
 import { currentLang, setLang as setLangCore, t } from "../i18n";
 import { downloadCurrentMode as downloadCurrentModeFromState, hasPalette as hasPaletteFromState } from "./downloads";
@@ -45,12 +48,24 @@ export function createApp() {
 
   const app = document.querySelector<HTMLDivElement>("#app")!;
 
-  const { routeRoot } = renderShell(app);
+  const { routeRoot, applyLinks } = renderShell(app);
 
   // Centralized runtime state (keeps main.ts glue-only as we refactor)
   const state = createInitialState();
 
   // -------------------- I18N (EN/RU/UA) --------------------
+  function detectLangFromPath(): Lang | null {
+    const m = window.location.pathname.match(/^\/(en|ru|ua)(\/|$)/);
+    if (!m) return null;
+    return m[1] as Lang;
+  }
+
+  // If URL contains locale prefix, prefer it over persisted language.
+  const urlLang = detectLangFromPath();
+  if (urlLang && urlLang !== currentLang) {
+    setLangCore(urlLang);
+  }
+
   let renderRouteFn: () => void = () => {}; // будет назначено после initRoutes()
 
   function setLang(lang: Lang) {
@@ -64,6 +79,11 @@ export function createApp() {
     const prevCrop = state.cropRect ? { ...state.cropRect } : null;
 
     setLangCore(lang);
+    // Update URL locale prefix for current route
+    try { (router as any).setLangInUrl?.(lang); } catch { /* noop */ }
+    // Update shell navigation hrefs
+    applyLinks(lang);
+
 
     // Prevent tool UI init from triggering pipeline recompute which would overwrite editor progress.
     state.suspendRecompute = true;
@@ -112,10 +132,21 @@ export function createApp() {
       gdpr: gdprHtml,
       faq: faqHtml,
       guide: guideHtml,
+      cookies: cookiesHtml,
+      icons: iconsHtml,
+      seo: {
+        lineage2CrestMaker: (lang) => seoLineage2CrestMakerHtml(lang) + seoPromoShortsBlock(lang),
+        createClanCrest: (lang) => seoCreateClanCrestHtml(lang) + seoPromoShortsBlock(lang),
+        requirements16x12: (lang) => seoRequirements16x12Html(lang) + seoPromoShortsBlock(lang),
+        alliance24x12: (lang) => seoAlliance24x12Html(lang) + seoPromoShortsBlock(lang),
+      },
     },
     renderToolPage: () => toolPage.renderToolPage(),
   });
   renderRouteFn = router.renderRoute;
+  // Apply localized navigation links (history routes with /{lang}/ prefix)
+  applyLinks(currentLang);
+
 
   // -------------------- TOOL UI + STATE --------------------
   initDisplayCanvas({

@@ -6,6 +6,7 @@ import { t, tipAttr, helpHtml } from "../i18n";
 import { initHelpTooltips } from "../ui/helpTooltips";
 import { createCropController, initCropToAspect } from "../ui/crop";
 import { initToolUIEvents } from "../ui/events";
+import { initDeferredMedia } from "../ui/deferredMedia";
 import { renderToolView } from "../ui/views/toolView";
 
 import { collectToolRefs, escapeHtml } from "./dom";
@@ -265,6 +266,10 @@ export function createToolPage(deps: ToolPageDeps) {
       // share
       shareCurrentMode: deps.shareCurrentMode,
     });
+
+    // Lazy media in spoilers (SEO block, promo videos)
+    initDeferredMedia(routeRoot);
+
 
     deps.onAfterRender?.();
   }
