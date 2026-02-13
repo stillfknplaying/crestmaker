@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 const fixturePath = path.resolve(__dirname, "../fixtures/sample.png");
 
 test("reset restores brightness/contrast to 0", async ({ page }) => {
-  await page.goto("/#/");
+  await page.goto("/en/");
 
   // Load an image so controls become available.
   await page.getByTestId("upload-input").setInputFiles(fixturePath);

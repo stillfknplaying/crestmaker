@@ -23,7 +23,7 @@ test("load image by URL renders results", async ({ page }) => {
     });
   });
 
-  await page.goto("/#/");
+  await page.goto("/en/");
 
   await page.getByTestId("url-input").fill(url);
   await page.getByTestId("load-url").click();

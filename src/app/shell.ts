@@ -93,6 +93,47 @@ export function renderShell(app: HTMLElement): ShellRefs {
           <span>2026 © CrestMaker. All rights reserved.</span>
         </div>
       </footer>
+
+      <!-- Cookie consent -->
+      <div id="cookieRoot"></div>
+
+      <div id="cookieModal" data-testid="cookie-modal" class="modal hidden" aria-hidden="true">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="cookieModalTitle">
+          <h3 id="cookieModalTitle">Cookie preferences</h3>
+          <p id="cookieModalDesc" class="muted"></p>
+
+          <div class="cookie-prefs">
+            <div class="cookie-pref">
+              <div class="cookie-pref-head">
+                <strong id="cookieEssentialTitle">Essential</strong>
+                <span id="cookieEssentialAlways" class="muted"></span>
+              </div>
+              <div id="cookieEssentialDesc" class="muted"></div>
+            </div>
+
+            <label class="cookie-pref">
+              <div class="cookie-pref-head">
+                <strong id="cookieAnalyticsTitle">Analytics</strong>
+                <input id="cookieAnalytics" type="checkbox" />
+              </div>
+              <div id="cookieAnalyticsDesc" class="muted"></div>
+            </label>
+
+            <label class="cookie-pref">
+              <div class="cookie-pref-head">
+                <strong id="cookieAdsTitle">Advertising</strong>
+                <input id="cookieAds" type="checkbox" />
+              </div>
+              <div id="cookieAdsDesc" class="muted"></div>
+            </label>
+          </div>
+
+          <div class="modal-actions">
+            <button data-testid="cookie-cancel" class="btn" id="cookieCancel">Cancel</button>
+            <button data-testid="cookie-save" class="btn primary" id="cookieSave">Save</button>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 

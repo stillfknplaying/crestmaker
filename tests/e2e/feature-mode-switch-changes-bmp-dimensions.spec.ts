@@ -26,7 +26,7 @@ async function downloadBmpDims(page: import("@playwright/test").Page, outPath: s
 }
 
 test("switching Mode changes exported BMP dimensions when alternative modes exist", async ({ page }, testInfo) => {
-  await page.goto("/#/");
+  await page.goto("/en/");
 
   await page.getByTestId("upload-input").setInputFiles(fixturePath);
   await expect(page.getByTestId("download")).toBeEnabled({ timeout: 15000 });
