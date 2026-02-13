@@ -12,7 +12,7 @@ function readBmpWidthHeight(buf: Buffer): { width: number; height: number } {
 }
 
 test("download 24x12 produces 3 BMPs with expected dimensions", async ({ page }, testInfo) => {
-  await page.goto("/#/");
+  await page.goto("/en/");
   await page.getByTestId("upload-input").setInputFiles(fixturePath);
   await expect(page.getByTestId("download")).toBeEnabled({ timeout: 15000 });
 

@@ -20,7 +20,7 @@ async function pickDifferentSelectValue(page: import("@playwright/test").Page, t
 }
 
 test("download still works after changing mode/pipeline/preset and toggling crop", async ({ page }, testInfo) => {
-  await page.goto("/#/");
+  await page.goto("/en/");
 
   await page.getByTestId("upload-input").setInputFiles(fixturePath);
   await expect(page.getByTestId("download")).toBeEnabled({ timeout: 15000 });

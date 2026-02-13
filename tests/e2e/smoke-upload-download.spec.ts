@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 const fixturePath = path.resolve(__dirname, "../fixtures/sample.png");
 
 test("upload renders results and allows downloading BMP", async ({ page }, testInfo) => {
-  await page.goto("/#/");
+  await page.goto("/en/");
 
   // File input is intentionally hidden in UI; Playwright can still set files.
   await page.getByTestId("upload-input").setInputFiles(fixturePath);

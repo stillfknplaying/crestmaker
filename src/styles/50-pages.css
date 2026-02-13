@@ -7,8 +7,7 @@
 /* ---------- PAGES ---------- */
 .page{
   background: var(--panel);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+    box-shadow: var(--shadow);
   padding: 14px;
 }
 .page-head{
@@ -43,8 +42,7 @@
   margin-top: auto;
   padding: 14px 12px;
   background: var(--panel2);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+    box-shadow: var(--shadow);
   display:flex;
   flex-wrap:wrap;
   align-items:center;
@@ -177,18 +175,163 @@
   bottom: 18px;
   transform: translateX(-50%);
   padding: 10px 12px;
-  border: 1px solid var(--border);
-  background: var(--panel2);
+    background: var(--panel2);
   color: var(--text);
   border-radius: 12px;
   box-shadow: var(--shadow);
   font-size: 12px;
   z-index: 9999;
   max-width: calc(100vw - 24px);
-  text-align: center;
 }
 .toast.hidden{ display:none; }
 
 
 /* Reset button placement: toolbar for <=980, in adv-actions for desktop */
 .reset-adv{ display:none; }
+
+
+/* ---------- SPOILERS (lazy media blocks) ---------- */
+details.spoiler{
+  margin: 10px 0;
+    border-radius: 12px;
+  background: rgba(255,255,255,0.02);
+  padding: 8px 10px;
+}
+details.spoiler > summary{
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  list-style: none;
+  display: inline-flex;
+  margin: 0 auto;
+}
+details.spoiler > summary::-webkit-details-marker{ display:none; }
+
+
+/* SEO info block (homepage) */
+.md .seo-block{
+  margin: 10px 0;
+    border-radius: 12px;
+  background: rgba(255,255,255,0.02);
+  padding: 12px 12px;
+}
+
+
+.md .seo-title{
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+}
+/* Doc-page link styling (avoid default browser purple/blue) */
+.md a{
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.md a:visited{ color: var(--primary); }
+.md a:hover{ text-decoration-thickness: 2px; }
+.md a:focus-visible{
+  outline: 2px solid rgba(255,255,255,.30);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+/* Keep "button" links looking like buttons */
+.md a.btn,
+.md a.linkbtn,
+.md a.crest-card{
+  text-decoration: none;
+}
+
+/* Inline nav links block used on SEO pages */
+.md .navlinks{ line-height: 1.65; }
+
+
+
+/* Spoiler link buttons (used in tool SEO block and doc pages) */
+.spoiler-links{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.spoiler-links .linkbtn{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(34,197,94,.35);
+  background: rgba(34,197,94,.08);
+  text-decoration: none;
+  font-size: 12px;
+  color: var(--primary);
+  opacity: .9;
+}
+.spoiler-links .linkbtn::after{
+  content: "↗";
+  font-size: 12px;
+  opacity: .9;
+}
+.spoiler-links .linkbtn:hover{ opacity: 1; }
+.spoiler-links .linkbtn:focus-visible{
+  outline: 2px solid rgba(255,255,255,.30);
+  outline-offset: 2px;
+}
+
+
+/* Guide: crest gallery */
+.crest-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.crest-card{
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+    background: rgba(255,255,255,0.02);
+  text-decoration:none;
+  color: var(--text);
+}
+.crest-card:hover{ background: rgba(255,255,255,0.04); }
+.crest-card .crest{
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  border-radius: 10px;
+    background: rgba(0,0,0,0.25);
+}
+.crest-name{
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-word;
+}
+
+/* Short (9:16) media embeds */
+.md .media.short{
+  display:flex;
+  justify-content:flex-start;
+}
+.md .media.short iframe{
+  max-width: 420px;
+  aspect-ratio: 9 / 16;
+}
+
+.md .media{
+  margin-top: 10px;
+  width: 100%;
+}
+.md .media iframe{
+  width: 100%;
+  max-width: 860px;
+  aspect-ratio: 16 / 9;
+  height: auto;
+    border-radius: 12px;
+  background: #000;
+}
+
+/* Button-style links: add outbound arrow */
+.btn.btnlink::after{ content: " ↗"; opacity: .85; }

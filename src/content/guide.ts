@@ -32,7 +32,7 @@ const COPY: Record<Lang, Copy> = {
   en: {
     title: "How to Use CrestMaker",
     intro1:
-      "CrestMaker is a small web tool for creating Lineage 2 clan & alliance icons (BMP 256 colors). It works directly in your browser — no install, no registration.",
+      "CrestMaker is a small web tool for creating Lineage 2 clan & alliance icons (BMP 256 colors). It works directly in your browser - no install, no registration.",
     intro2:
       "Workflow: add an image → choose a crop → pick a mode/preset → fine‑tune → download BMPs.",
     hUpload: "1) Add an image",
@@ -67,7 +67,7 @@ const COPY: Record<Lang, Copy> = {
   ru: {
     title: "Мини‑гайд: как пользоваться CrestMaker",
     intro1:
-      "CrestMaker — небольшой веб‑инструмент для создания клановых/альянсовых иконок Lineage 2 (BMP 256 цветов). Работает прямо в браузере — без установки и регистрации.",
+      "CrestMaker - небольшой веб‑инструмент для создания клановых/альянсовых иконок Lineage 2 (BMP 256 цветов). Работает прямо в браузере - без установки и регистрации.",
     intro2: "Схема простая: добавить картинку → выбрать кроп → подобрать режим/пресет → докрутить → скачать BMP.",
     hUpload: "1) Добавить картинку",
     uploadText:
@@ -75,7 +75,7 @@ const COPY: Record<Lang, Copy> = {
     spoilerUpload: "Спойлер: Перетащить картинку из вкладки браузера (самый быстрый способ)",
     hCrop: "2) Crop (самое важное)",
     cropText:
-      "Размер иконки очень маленький (24×12 или 16×12), поэтому кроп решает всё. Сдвинули кроп на пару пикселей — результат уже другой. Двигайте кроп, меняйте масштаб и всегда проверяйте True Size и Zoom.",
+      "Размер иконки очень маленький (24×12 или 16×12), поэтому кроп решает всё. Сдвинули кроп на пару пикселей - результат уже другой. Двигайте кроп, меняйте масштаб и всегда проверяйте True Size и Zoom.",
     spoilerCrop: "Спойлер: Хороший кроп vs плохой кроп",
     hModes: "3) Режим",
     modesText: "Выберите режим под исходную картинку:",
@@ -85,23 +85,23 @@ const COPY: Record<Lang, Copy> = {
     pixelText: "Лучше для пиксель‑арта и простых форм. Чётче края.",
     hPresets: "4) Пресеты",
     presetsText:
-      "Пресеты — не “волшебная кнопка”. Одна и та же картинка может выглядеть лучше в другом пресете, с другим кропом, яркостью/контрастом или доп. опциями. Сравнивайте результат в True Size и Zoom.",
+      "Пресеты - не “волшебная кнопка”. Одна и та же картинка может выглядеть лучше в другом пресете, с другим кропом, яркостью/контрастом или доп. опциями. Сравнивайте результат в True Size и Zoom.",
     spoilerPresets: "Спойлер: Сравнение пресетов",
     hTune: "5) Доработка результата",
     tuneText:
       "Подкрутите Brightness/Contrast и дополнительные переключатели (например sharpen), чтобы повысить читаемость. Обычно лучше работают небольшие изменения.",
     hDownload: "6) Скачать",
     downloadText:
-      "Когда результат устраивает — нажмите Download BMPs. Файлы сразу готовы для Lineage 2.",
+      "Когда результат устраивает - нажмите Download BMPs. Файлы сразу готовы для Lineage 2.",
     hExamples: "Примеры",
     examplesText:
-      "Ниже — несколько готовых иконок.",
+      "Ниже - несколько готовых иконок.",
     spoilerExamples: "Спойлер: Примеры",
   },
   ua: {
     title: "Міні‑гайд: як користуватися CrestMaker",
     intro1:
-      "CrestMaker — невеликий веб‑інструмент для створення кланових/альянсових іконок Lineage 2 (BMP 256 кольорів). Працює прямо в браузері — без встановлення та реєстрації.",
+      "CrestMaker - невеликий веб‑інструмент для створення кланових/альянсових іконок Lineage 2 (BMP 256 кольорів). Працює прямо в браузері - без встановлення та реєстрації.",
     intro2: "Схема проста: додати зображення → вибрати кроп → підібрати режим/пресет → підкрутити → завантажити BMP.",
     hUpload: "1) Додати зображення",
     uploadText:
@@ -109,7 +109,7 @@ const COPY: Record<Lang, Copy> = {
     spoilerUpload: "Спойлер: Перетягнути зображення з вкладки браузера (найшвидше)",
     hCrop: "2) Crop (найважливіше)",
     cropText:
-      "Іконка дуже маленька (24×12 або 16×12), тому кроп вирішує все. Зсунули кроп на пару пікселів — результат уже інший. Рухайте кроп, міняйте масштаб і завжди перевіряйте True Size та Zoom.",
+      "Іконка дуже маленька (24×12 або 16×12), тому кроп вирішує все. Зсунули кроп на пару пікселів - результат уже інший. Рухайте кроп, міняйте масштаб і завжди перевіряйте True Size та Zoom.",
     spoilerCrop: "Спойлер: Хороший кроп vs поганий кроп",
     hModes: "3) Режим",
     modesText: "Оберіть режим під ваше зображення:",
@@ -119,17 +119,17 @@ const COPY: Record<Lang, Copy> = {
     pixelText: "Краще для піксель‑арту та простих форм. Чіткі краї.",
     hPresets: "4) Пресети",
     presetsText:
-      "Пресети — не “магічна кнопка”. Те саме зображення може виглядати краще з іншим пресетом, кропом, яскравістю/контрастом або додатковими опціями. Порівнюйте результат у True Size та Zoom.",
+      "Пресети - не “магічна кнопка”. Те саме зображення може виглядати краще з іншим пресетом, кропом, яскравістю/контрастом або додатковими опціями. Порівнюйте результат у True Size та Zoom.",
     spoilerPresets: "Спойлер: Порівняння пресетів",
     hTune: "5) Дотюн",
     tuneText:
       "Підкрутіть Brightness/Contrast та додаткові перемикачі (наприклад sharpen), щоб підвищити читабельність. Зазвичай краще працюють невеликі зміни.",
     hDownload: "6) Завантаження",
     downloadText:
-      "Коли результат подобається — натисніть Download BMPs. Файли одразу готові для Lineage 2.",
+      "Коли результат подобається - натисніть Download BMPs. Файли одразу готові для Lineage 2.",
     hExamples: "Приклади",
     examplesText:
-      "Нижче — кілька готових іконок.",
+      "Нижче - кілька готових іконок.",
     spoilerExamples: "Спойлер: Приклади",
   },
 };
@@ -203,7 +203,10 @@ export function guideHtml(lang: Lang): string {
         <div class="crest-grid">
           ${Array.from({ length: 9 }, (_, i) => {
             const n = String(i + 1).padStart(2, "0");
-            return `<img class="crest" loading="lazy" decoding="async" data-src="/guide/crest_${n}.bmp" alt="crest ${n}" />`;
+            return `<a class="crest-card" href="/guide/crest_${n}.bmp" download="crest_${n}.bmp" title="Download crest_${n}.bmp">
+              <img class="crest" loading="lazy" decoding="async" src="/guide/crest_${n}.bmp" alt="crest ${n} preview" />
+              <span class="crest-name">crest_${n}.bmp</span>
+            </a>`;
           }).join("\n")}
         </div>
       </div>

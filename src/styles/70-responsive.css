@@ -97,6 +97,7 @@
   #brightnessRow,
   #contrastRow{
     flex-wrap: nowrap;
+    gap: 6px;
   }
   #brightnessRow .opt-head,
   #contrastRow .opt-head{
@@ -108,7 +109,7 @@
   }
   /* Same-width label column on phones too (shrink to bring -/+ closer to the label/help) */
   #brightnessRow .opt-head,
-  #contrastRow .opt-head{ flex: 0 0 86px; width: 86px; min-width: 86px; }
+  #contrastRow .opt-head{ flex: 0 0 72px; width: 72px; min-width: 72px; }
   #brightnessRow .range-step,
   #contrastRow .range-step{
     flex: 1 1 auto;
@@ -181,8 +182,8 @@
     grid-area: links;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-auto-flow: column;
-    grid-template-rows: repeat(3, auto);
+    grid-auto-flow: row;
+    grid-auto-rows: auto;
     justify-items: center;
     align-items: center;
     text-align: center;
@@ -399,3 +400,41 @@ details.spoiler > summary::marker { content: ""; }
   }
 }
 
+
+/* ================================
+   Phones: small layout fixes (tooltips, advanced toggles, cookie banner)
+   ================================ */
+@media (max-width: 640px){
+  /* Match Invert + Reset button size with Rotate on mobile */
+  #invert,
+  #reset{ padding: 10px 12px; }
+
+  /* Force Sharpen edges to start on a new line on phones (prevents UA layout difference) */
+  #optSharpenEdges{ flex-basis: 100%; width: 100%; }
+
+  /* Help tooltips: prevent overflow outside the viewport on phones */
+  .helptip{
+    min-width: 0;
+    max-width: calc(100vw - 24px);
+  }
+  .range .helpwrap .helptip,
+  .adv-opt .helpwrap .helptip{
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  /* Cookie banner: center content and avoid ragged wrapping */
+  .cookie-banner-inner{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cookie-banner-text{
+    min-width: 0;
+    max-width: none;
+  }
+  .cookie-banner-title,
+  .cookie-banner-desc{ text-align: center; }
+  .cookie-banner-actions{ justify-content: center; }
+  .cookie-banner-actions .btn{ flex: 1 1 180px; justify-content: center; }
+}

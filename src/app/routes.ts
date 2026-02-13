@@ -1,9 +1,11 @@
 // src/app/routes.ts
 import type { Lang } from "../i18n";
+import { initDeferredMedia } from "../ui/deferredMedia";
 
 export type RouterInit = {
   routeRoot: HTMLDivElement;
   getLang: () => Lang;
+  setLangFromRouter: (lang: Lang) => void;
   t: (en: string, ru: string, ua: string) => string;
   escapeHtml: (s: string) => string;
   pages: {
@@ -13,128 +15,186 @@ export type RouterInit = {
     gdpr: (lang: Lang) => string;
     faq: (lang: Lang) => string;
     guide: (lang: Lang) => string;
+    cookies: (lang: Lang) => string;
+    icons: (lang: Lang) => string;
+    seo: {
+      lineage2CrestMaker: (lang: Lang) => string;
+      createClanCrest: (lang: Lang) => string;
+      requirements16x12: (lang: Lang) => string;
+      alliance24x12: (lang: Lang) => string;
+    };
   };
   renderToolPage: () => void;
 };
 
-export function initRoutes(cfg: RouterInit) {
-  function initDeferredMedia(root: HTMLElement) {
-    // Loads heavy media only when a spoiler is opened.
-    const spoilers = Array.from(root.querySelectorAll<HTMLDetailsElement>("details.spoiler"));
-    for (const d of spoilers) {
-      d.addEventListener("toggle", () => {
-        if (!d.open) return;
+type ParsedPath = { lang: Lang; route: string };
 
-        // Images
-        for (const img of Array.from(d.querySelectorAll<HTMLImageElement>("img[data-src]"))) {
-          if (!img.getAttribute("src")) {
-            const src = img.dataset.src;
-            if (src) img.setAttribute("src", src);
-          }
-        }
+const LANGS: Lang[] = ["en", "ru", "ua"];
 
-        // Video (single src)
-        for (const v of Array.from(d.querySelectorAll<HTMLVideoElement>("video[data-src]"))) {
-          if (!v.getAttribute("src")) {
-            const src = v.dataset.src;
-            if (src) v.setAttribute("src", src);
-          }
-          // Encourage the browser to start fetching metadata once opened.
-          if (v.preload === "none") v.preload = "metadata";
-          // Ensure the browser re-evaluates sources after we assign src.
-          try { v.load(); } catch { /* noop */ }
-        }
-
-        // <source data-src="..."> inside video (supported as well)
-        for (const s of Array.from(d.querySelectorAll<HTMLSourceElement>("source[data-src]"))) {
-          if (!s.getAttribute("src")) {
-            const src = (s as any).dataset?.src as string | undefined;
-            if (src) s.setAttribute("src", src);
-          }
-          const video = s.closest("video");
-          if (video) {
-            if (video.preload === "none") video.preload = "metadata";
-            try { video.load(); } catch { /* noop */ }
-          }
-        }
-      });
-    }
+function parsePathname(pathname: string, fallbackLang: Lang): ParsedPath {
+  const clean = pathname.replace(/\/+$/, "") || "/";
+  const parts = clean.split("/").filter(Boolean); // no empty
+  const first = parts[0] as Lang | undefined;
+  if (first && (LANGS as string[]).includes(first)) {
+    const rest = "/" + parts.slice(1).join("/");
+    return { lang: first, route: rest === "/" ? "/" : rest };
   }
+  return { lang: fallbackLang, route: clean };
+}
 
-  function renderPolicyPage(title: string, html: string) {
-    const currentLang = cfg.getLang();
+function buildPath(lang: Lang, route: string) {
+  const r = route.startsWith("/") ? route : "/" + route;
+  if (r === "/") return `/${lang}/`;
+  return `/${lang}${r}`;
+}
 
+export function initRoutes(cfg: RouterInit) {
+
+  function renderDocPage(title: string, html: string, lang: Lang, route: string) {
     cfg.routeRoot.innerHTML = `
       <section class="page">
         <div class="page-head">
           <h2>${cfg.escapeHtml(title)}</h2>
           <div class="page-actions">
             <div class="btn-group lang-group">
-              <button class="btn ${currentLang === "en" ? "active" : ""}" data-lang="en">EN</button>
-              <button class="btn ${currentLang === "ru" ? "active" : ""}" data-lang="ru">RU</button>
-              <button class="btn ${currentLang === "ua" ? "active" : ""}" data-lang="ua">UA</button>
+              <button class="btn ${lang === "en" ? "active" : ""}" data-lang="en" data-route="${cfg.escapeHtml(route)}">EN</button>
+              <button class="btn ${lang === "ru" ? "active" : ""}" data-lang="ru" data-route="${cfg.escapeHtml(route)}">RU</button>
+              <button class="btn ${lang === "ua" ? "active" : ""}" data-lang="ua" data-route="${cfg.escapeHtml(route)}">UA</button>
             </div>
-            <a class="btn back-link" href="#/">← ${cfg.escapeHtml(cfg.t("Back","Назад","Назад"))}</a>
+            <a class="btn back-link" href="${buildPath(lang, "/")}">← ${cfg.escapeHtml(cfg.t("Back","Назад","Назад"))}</a>
           </div>
         </div>
 
         <article class="md">${html}</article>
       </section>
     `;
-    // Важно: здесь НЕТ addEventListener для кнопок языка.
-    // Это делается делегированием в src/app/policyEvents.ts (initPolicyLangEvents).
-
-    // If the page contains deferred media (guide), activate handlers.
     initDeferredMedia(cfg.routeRoot);
   }
 
+  function ensureLangInUrl(parsed: ParsedPath) {
+    // If URL doesn't have locale prefix, normalize it to /{lang}/...
+    const hasPrefix = /^\/(en|ru|ua)(\/|$)/.test(window.location.pathname);
+    if (!hasPrefix) {
+      const target = buildPath(parsed.lang, parsed.route);
+      window.history.replaceState({}, "", target + window.location.search + window.location.hash);
+    }
+  }
+
   function renderRoute() {
-    // When navigating between routes in SPA, always reset viewport.
     window.scrollTo(0, 0);
 
-    const hash = (location.hash || "#/").replace(/^#/, "");
-    const path = hash.startsWith("/") ? hash : "/" + hash;
+    const fallback = cfg.getLang();
+    const parsed = parsePathname(window.location.pathname, fallback);
 
-    const lang = cfg.getLang();
+    // Keep i18n state aligned with URL locale (without re-pushing history).
+    if (parsed.lang !== cfg.getLang()) {
+      cfg.setLangFromRouter(parsed.lang);
+    }
 
-    if (path === "/privacy") {
-      return renderPolicyPage(
+    ensureLangInUrl(parsed);
+
+    const lang = parsed.lang;
+    const route = parsed.route || "/";
+
+    // Static docs pages
+    if (route === "/privacy") {
+      return renderDocPage(
         cfg.t("Privacy Policy", "Политика конфиденциальности", "Політика конфіденційності"),
-        cfg.pages.privacy(lang)
+        cfg.pages.privacy(lang),
+        lang,
+        route
       );
     }
-    if (path === "/terms") {
-      return renderPolicyPage(
+    if (route === "/terms") {
+      return renderDocPage(
         cfg.t("Terms of Service", "Пользовательское соглашение", "Умови користування"),
-        cfg.pages.terms(lang)
+        cfg.pages.terms(lang),
+        lang,
+        route
       );
     }
-    if (path === "/about") {
-      return renderPolicyPage(
+    if (route === "/about") {
+      return renderDocPage(
         cfg.t("About", "О проекте", "Про проєкт"),
-        cfg.pages.about(lang)
+        cfg.pages.about(lang),
+        lang,
+        route
       );
     }
-    if (path === "/gdpr") {
-      return renderPolicyPage("GDPR", cfg.pages.gdpr(lang));
+    if (route === "/gdpr") {
+      return renderDocPage("GDPR", cfg.pages.gdpr(lang), lang, route);
     }
-
-    if (path === "/faq") {
-      return renderPolicyPage(
-        cfg.t("FAQ", "FAQ", "FAQ"),
-        cfg.pages.faq(lang)
+    if (route === "/cookies") {
+      return renderDocPage(
+        cfg.t("Cookies", "Cookies", "Cookies"),
+        cfg.pages.cookies(lang),
+        lang,
+        route
       );
     }
-
-    if (path === "/guide" || path === "/how-to-use") {
-      return renderPolicyPage(
+    if (route === "/icons") {
+      return renderDocPage(
+        cfg.t("Ready crests", "Готовые эмблемы", "Готові емблеми"),
+        cfg.pages.icons(lang),
+        lang,
+        route
+      );
+    }
+    if (route === "/faq") {
+      return renderDocPage(cfg.t("FAQ", "FAQ", "FAQ"), cfg.pages.faq(lang), lang, route);
+    }
+    if (route === "/guide" || route === "/how-to-use") {
+      return renderDocPage(
         cfg.t("How to use", "Как пользоваться", "Як користуватися"),
-        cfg.pages.guide(lang)
+        cfg.pages.guide(lang),
+        lang,
+        "/guide"
       );
     }
 
+    // SEO landing routes (same layout + localized content)
+    if (route === "/lineage-2-crest-maker") {
+      return renderDocPage(
+        cfg.t("Lineage 2 Crest Maker", "Lineage 2 Crest Maker", "Lineage 2 Crest Maker"),
+        cfg.pages.seo.lineage2CrestMaker(lang),
+        lang,
+        route
+      );
+    }
+    if (route === "/create-lineage-2-clan-crest") {
+      return renderDocPage(
+        cfg.t("Create Lineage 2 clan crest", "Создать клановый значок Lineage 2", "Створити клановий значок Lineage 2"),
+        cfg.pages.seo.createClanCrest(lang),
+        lang,
+        route
+      );
+    }
+    if (route === "/l2-crest-16x12-bmp-requirements") {
+      return renderDocPage(
+        cfg.t("16x12 BMP requirements", "Требования 16x12 BMP", "Вимоги 16x12 BMP"),
+        cfg.pages.seo.requirements16x12(lang),
+        lang,
+        route
+      );
+    }
+    if (route === "/l2-alliance-crest-24x12-bmp") {
+      return renderDocPage(
+        cfg.t("Alliance crest 24x12", "Эмблема союза 24x12", "Емблема альянсу 24x12"),
+        cfg.pages.seo.alliance24x12(lang),
+        lang,
+        route
+      );
+    }
+
+    // Default: tool page
     return cfg.renderToolPage();
   }
 
-  return { renderRoute };
+  function setLangInUrl(nextLang: Lang) {
+    const parsed = parsePathname(window.location.pathname, cfg.getLang());
+    const next = buildPath(nextLang, parsed.route);
+    window.history.replaceState({}, "", next + window.location.search + window.location.hash);
+  }
+
+  return { renderRoute, setLangInUrl, buildPath };
 }

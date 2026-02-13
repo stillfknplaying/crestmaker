@@ -19,7 +19,7 @@ async function downloadBmp(page: import("@playwright/test").Page, testInfo: impo
 
 test("local and worker engines produce identical BMP output for the same input", async ({ page }, testInfo) => {
   // 1) Local (default)
-  await page.goto("/#/");
+  await page.goto("/en/");
   await page.getByTestId("upload-input").setInputFiles(fixturePath);
   await expect(page.getByTestId("download")).toBeEnabled({ timeout: 15000 });
   const localBuf = await downloadBmp(page, testInfo, "local.bmp");
@@ -33,7 +33,7 @@ test("local and worker engines produce identical BMP output for the same input",
     }
   });
 
-  await page.goto("/#/");
+  await page.goto("/en/");
   await page.getByTestId("upload-input").setInputFiles(fixturePath);
   await expect(page.getByTestId("download")).toBeEnabled({ timeout: 15000 });
   const workerBuf = await downloadBmp(page, testInfo, "worker.bmp");

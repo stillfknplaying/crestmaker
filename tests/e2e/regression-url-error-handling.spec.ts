@@ -14,7 +14,7 @@ test("load by URL shows error state for non-image response", async ({ page }) =>
     });
   });
 
-  await page.goto("/#/");
+  await page.goto("/en/");
 
   await page.getByTestId("url-input").fill(url);
   await page.getByTestId("load-url").click();

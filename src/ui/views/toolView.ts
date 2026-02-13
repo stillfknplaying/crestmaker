@@ -234,8 +234,8 @@ export function renderToolView(ctx: ToolViewCtx): string {
                 <span class="opt-name">${escapeHtml(t("Smoother resize","Плавное уменьшение","Плавне зменшення"))}</span>
                 ${helpHtml(
                   "Resizes in two steps so the 24×12 icon keeps cleaner pixels.",
-                  "Уменьшает в два шага — меньше артефактов на 24×12.",
-                  "Зменшує у два кроки — менше артефактів на 24×12."
+                  "Уменьшает в два шага - меньше артефактов на 24×12.",
+                  "Зменшує у два кроки - менше артефактів на 24×12."
                 )}
               </div>
               <label class="toggle compact toggle-switch">
@@ -294,8 +294,8 @@ export function renderToolView(ctx: ToolViewCtx): string {
                 <span class="opt-name">${escapeHtml(t("Sharpen edges","Чёткие границы","Чіткі межі"))}</span>
                 ${helpHtml(
                   "Slightly sharpens edges so the crest outline stays crisp at 24×12.",
-                  "Слегка подчёркивает границы — контур герба остаётся чётким на 24×12.",
-                  "Трохи підкреслює межі — контур герба лишається чітким на 24×12."
+                  "Слегка подчёркивает границы - контур герба остаётся чётким на 24×12.",
+                  "Трохи підкреслює межі - контур герба лишається чітким на 24×12."
                 )}
               </div>
               <label class="toggle compact toggle-switch">
@@ -416,5 +416,42 @@ export function renderToolView(ctx: ToolViewCtx): string {
           </div>
         </div>
       </section>
+        <section class="page tool-seo">
+          <article class="md">
+            <div class="seo-block">
+              <h2 class="seo-title">${escapeHtml(t("Lineage 2 crest info (sizes, BMP 256, upload)", "Lineage 2: эмблемы (размеры, BMP 256, загрузка)", "Lineage 2: емблеми (розміри, BMP 256, завантаження"))}</h2>
+
+              <p class="muted">
+                ${escapeHtml(t(
+                  "Quick reference for clan and alliance crests. Full details are on dedicated pages.",
+                  "Короткая справка по эмблемам клана и альянса. Полные детали - на отдельных страницах.",
+                  "Коротка довідка по емблемах клану та альянсу. Повні деталі - на окремих сторінках."
+                ))}
+              </p>
+
+              <ul>
+                <li><strong>${escapeHtml(t("Clan crest", "Клан", "Клан"))}:</strong> 16×12 BMP (8-bit / 256 colors)</li>
+                <li><strong>${escapeHtml(t("Alliance crest", "Альянс", "Альянс"))}:</strong> 8×12 BMP (8-bit / 256 colors)</li>
+                <li><strong>${escapeHtml(t("Full alliance image", "Полная эмблема альянса", "Повна емблема альянсу"))}:</strong> 24×12 BMP (16×12 clan + 8×12 alliance)</li>
+              </ul>
+
+              <p class="muted">
+                ${escapeHtml(t(
+                  "Want ready-made crests? Download a few examples from the gallery.",
+                  "Нужны готовые эмблемы? Скачай несколько примеров из галереи.",
+                  "Потрібні готові емблеми? Завантаж кілька прикладів з галереї."
+                ))}
+              </p>
+
+              <div class="spoiler-links">
+                <a class="linkbtn" href="/${ctx.currentLang}/lineage-2-crest-maker">${escapeHtml(t("Crest maker landing", "Страница crest maker", "Сторінка crest maker"))}</a>
+                <a class="linkbtn" href="/${ctx.currentLang}/l2-crest-16x12-bmp-requirements">${escapeHtml(t("16×12 requirements", "Требования 16×12", "Вимоги 16×12"))}</a>
+                <a class="linkbtn" href="/${ctx.currentLang}/l2-alliance-crest-24x12-bmp">${escapeHtml(t("24×12 alliance crest", "Эмблема альянса 24×12", "Емблема альянсу 24×12"))}</a>
+                <a class="linkbtn" href="/${ctx.currentLang}/icons">${escapeHtml(t("Ready crests gallery", "Галерея эмблем", "Галерея емблем"))}</a>
+              </div>
+            </div>
+          </article>
+        </section>
+
   `;
 }

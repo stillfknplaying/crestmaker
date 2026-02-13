@@ -24,7 +24,7 @@ async function hashCanvas(page: Page, testId: string): Promise<string> {
 }
 
 test("changing preset updates the rendered result", async ({ page }) => {
-  await page.goto("/#/");
+  await page.goto("/en/");
   await page.getByTestId("upload-input").setInputFiles(fixturePath);
   await expect(page.getByTestId("download")).toBeEnabled({ timeout: 15000 });
 

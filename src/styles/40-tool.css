@@ -519,7 +519,7 @@ select option{
 /* Crop canvas */
 #crop{
   width: 100%;
-  touch-action: none;
+  touch-action: pan-y;
   height: auto;
   display:block;
   border: 1px solid var(--border);
@@ -641,3 +641,68 @@ select option{
 }
 .zoom-cursor img{display:none;}
 .editor-ico{width:28px; height:28px;}
+
+
+/* ---------- COOKIE BANNER ---------- */
+.cookie-banner{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px 12px 14px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -10px 30px rgba(0,0,0,.25);
+  z-index: 1200;
+}
+
+.cookie-banner-inner{
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap; /* mobile-first */
+}
+
+.cookie-banner-text{
+  min-width: 240px;
+  max-width: 820px;
+}
+
+.cookie-banner-title{font-weight:700; margin-bottom:4px;}
+.cookie-banner-desc{font-size:13px; line-height:1.35;}
+
+/* no visual "double-space" before the link */
+.cookie-banner-link{margin-left:0; text-decoration: underline;}
+
+.cookie-banner-actions{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Desktop layout: text left, buttons pinned right on any language */
+@media (min-width: 900px){
+  .cookie-banner-inner{
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  .cookie-banner-text{
+    flex: 1 1 auto;
+    min-width: 0; /* allow text to shrink instead of pushing actions down */
+    max-width: none;
+  }
+  .cookie-banner-actions{
+    flex: 0 0 auto;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+}
+
+
+/* Tool page: SEO / info panel */
+.tool-seo{ margin-top: 12px; }
