@@ -57,9 +57,9 @@ export function renderToolView(ctx: ToolViewCtx): string {
           <div class="sep"></div>
 
           <div class="select" ${tipAttr(
-            "Select output size: 24×12 (full) or 16×12 (clan only).",
-            "Выберите размер: 24×12 (полный) или 16×12 (только клан).",
-            "Оберіть розмір: 24×12 (повний) або 16×12 (лише клан)."
+            "Select layout: 24×12 (clan+alliance) or 16×12 (clan only). Download includes upload‑ready BMP files.",
+            "Выберите разметку: 24×12 (клан+альянс) или 16×12 (только клан). При скачивании будут файлы, готовые для загрузки.",
+            "Оберіть розмітку: 24×12 (клан+альянс) або 16×12 (лише клан). При завантаженні будуть файли, готові для завантаження."
           )}>
             <span class="lbl-ico"><img class="ico" src="/icons/size.svg" width="18" height="18" alt="" aria-hidden="true"/></span>
             <select data-testid="mode" id="mode">
@@ -419,35 +419,49 @@ export function renderToolView(ctx: ToolViewCtx): string {
         <section class="page tool-seo">
           <article class="md">
             <div class="seo-block">
-              <h2 class="seo-title">${escapeHtml(t("Lineage 2 crest info (sizes, BMP 256, upload)", "Lineage 2: эмблемы (размеры, BMP 256, загрузка)", "Lineage 2: емблеми (розміри, BMP 256, завантаження"))}</h2>
+              <h1 class="seo-title">${escapeHtml(t(
+                "Lineage 2 crest / emblem / icon maker (BMP 256)",
+                "Lineage 2: эмблема / значок / иконка (BMP 256)",
+                "Lineage 2: емблема / значок / іконка (BMP 256)"
+              ))}</h1>
 
               <p class="muted">
                 ${escapeHtml(t(
-                  "Quick reference for clan and alliance crests. Full details are on dedicated pages.",
-                  "Короткая справка по эмблемам клана и альянса. Полные детали - на отдельных страницах.",
-                  "Коротка довідка по емблемах клану та альянсу. Повні деталі - на окремих сторінках."
+                  "Create clan crests and alliance emblems/icons directly in your browser. No install, no registration.",
+                  "Создавай клановые эмблемы и альянсовые значки/иконки прямо в браузере. Без установки и регистрации.",
+                  "Створюй кланові емблеми та альянсові значки/іконки прямо в браузері. Без встановлення та реєстрації."
                 ))}
               </p>
 
+              <h2>${escapeHtml(t("Sizes & requirements", "Размеры и требования", "Розміри та вимоги"))}</h2>
               <ul>
-                <li><strong>${escapeHtml(t("Clan crest", "Клан", "Клан"))}:</strong> 16×12 BMP (8-bit / 256 colors)</li>
-                <li><strong>${escapeHtml(t("Alliance crest", "Альянс", "Альянс"))}:</strong> 8×12 BMP (8-bit / 256 colors)</li>
-                <li><strong>${escapeHtml(t("Full alliance image", "Полная эмблема альянса", "Повна емблема альянсу"))}:</strong> 24×12 BMP (16×12 clan + 8×12 alliance)</li>
+                <li><strong>${escapeHtml(t("Clan crest", "Клан (crest)", "Клан (crest)"))}:</strong> 16×12 BMP (8‑bit / 256 colors) - ${escapeHtml(t("upload in-game", "загрузка в игре", "завантаження в грі"))}</li>
+                <li><strong>${escapeHtml(t("Alliance emblem", "Альянс (emblem)", "Альянс (emblem)"))}:</strong> 8×12 BMP (8‑bit / 256 colors) - ${escapeHtml(t("upload in-game", "загрузка в игре", "завантаження в грі"))}</li>
+                <li><strong>${escapeHtml(t("24×12 layout", "Разметка 24×12", "Розмітка 24×12"))}:</strong> ${escapeHtml(t(
+                  "design clan+alliance together and download 3 BMPs (24×12 preview + 16×12 + 8×12)",
+                  "делайте клан+альянс вместе и скачивайте 3 BMP (превью 24×12 + 16×12 + 8×12)",
+                  "робіть клан+альянс разом і завантажуйте 3 BMP (превʼю 24×12 + 16×12 + 8×12)"
+                ))}</li>
               </ul>
 
-              <p class="muted">
-                ${escapeHtml(t(
-                  "Want ready-made crests? Download a few examples from the gallery.",
-                  "Нужны готовые эмблемы? Скачай несколько примеров из галереи.",
-                  "Потрібні готові емблеми? Завантаж кілька прикладів з галереї."
-                ))}
-              </p>
+              <h2>${escapeHtml(t("FAQ", "FAQ", "FAQ"))}</h2>
 
+              <h3>${escapeHtml(t("Why does crop matter so much?", "Почему кроп решает всё?", "Чому кроп вирішує все?"))}</h3>
+              <p class="muted">${escapeHtml(t(
+                "Because the final icon is tiny (16×12 / 8×12). A small shift changes readability a lot.",
+                "Потому что итоговые иконки крошечные (16×12 / 8×12). Сдвиг на пару пикселей сильно меняет читаемость.",
+                "Бо підсумкові іконки крихітні (16×12 / 8×12). Зсув на кілька пікселів сильно змінює читабельність."
+              ))}</p>
+
+              <h3>${escapeHtml(t("What format do Lineage 2 servers usually need?", "Какой формат обычно нужен на серверах Lineage 2?", "Який формат зазвичай потрібен на серверах Lineage 2?"))}</h3>
+              <p class="muted">${escapeHtml(t(
+                "Most servers accept BMP 8‑bit (256 colors). In Lineage 2 you upload 16×12 (clan) and 8×12 (alliance) separately; use 24×12 layout mode to export both in one click.",
+                "В большинстве случаев подходит BMP 8‑bit (256 цветов). В Lineage 2 загружается отдельно 16×12 (клан) и 8×12 (альянс); режим 24×12 - это разметка, он выгружает оба файла одним кликом.",
+                "У більшості випадків підходить BMP 8‑bit (256 кольорів). У Lineage 2 завантажується окремо 16×12 (клан) та 8×12 (альянс); режим 24×12 - це розмітка, він вивантажує обидва файли одним кліком."
+              ))}</p>
               <div class="spoiler-links">
-                <a class="linkbtn" href="/${ctx.currentLang}/lineage-2-crest-maker">${escapeHtml(t("Crest maker landing", "Страница crest maker", "Сторінка crest maker"))}</a>
-                <a class="linkbtn" href="/${ctx.currentLang}/l2-crest-16x12-bmp-requirements">${escapeHtml(t("16×12 requirements", "Требования 16×12", "Вимоги 16×12"))}</a>
-                <a class="linkbtn" href="/${ctx.currentLang}/l2-alliance-crest-24x12-bmp">${escapeHtml(t("24×12 alliance crest", "Эмблема альянса 24×12", "Емблема альянсу 24×12"))}</a>
-                <a class="linkbtn" href="/${ctx.currentLang}/icons">${escapeHtml(t("Ready crests gallery", "Галерея эмблем", "Галерея емблем"))}</a>
+                <a class="linkbtn" href="/${ctx.currentLang}/guide">${escapeHtml(t("Guide (tips + requirements)", "Гайд (советы + требования)", "Гайд (поради + вимоги)"))}</a>
+                <a class="linkbtn" href="/${ctx.currentLang}/icons">${escapeHtml(t("Gallery", "Галерея", "Галерея"))}</a>
               </div>
             </div>
           </article>

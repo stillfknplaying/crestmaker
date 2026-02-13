@@ -12,17 +12,11 @@ const LANGS = ["en", "ru", "ua"];
 const ROUTES = [
   "/",
   "/guide",
-  "/faq",
   "/privacy",
   "/terms",
   "/gdpr",
   "/cookies",
   "/icons",
-  "/about",
-  "/lineage-2-crest-maker",
-  "/create-lineage-2-clan-crest",
-  "/l2-crest-16x12-bmp-requirements",
-  "/l2-alliance-crest-24x12-bmp",
 ];
 
 function distFileFor(urlPath) {

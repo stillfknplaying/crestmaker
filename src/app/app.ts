@@ -3,12 +3,9 @@ import { cleanupIndicesMajoritySafe, quantizePixel256 } from "../pipeline/pixel"
 import { privacyPolicyHtml } from "../content/privacy";
 import { termsHtml } from "../content/terms";
 import { gdprHtml } from "../content/gdpr";
-import { aboutHtml } from "../content/about";
-import { faqHtml } from "../content/faq";
 import { guideHtml } from "../content/guide";
 import { cookiesHtml } from "../content/cookies";
 import { iconsHtml } from "../content/icons";
-import { seoAlliance24x12Html, seoCreateClanCrestHtml, seoLineage2CrestMakerHtml, seoPromoShortsBlock, seoRequirements16x12Html } from "../content/seo";
 import type { Lang } from "../i18n";
 import { currentLang, setLang as setLangCore, t } from "../i18n";
 import { downloadCurrentMode as downloadCurrentModeFromState, hasPalette as hasPaletteFromState } from "./downloads";
@@ -31,6 +28,8 @@ import type { CrestMode, CropAspect } from "../types/types";
 import { getGameTemplate } from "./templates";
 import { renderShell } from "./shell";
 import { createToolPage } from "./toolPage";
+import { initThemeToggle } from "./theme";
+import { initIconsGallery } from "../ui/iconsGallery";
 
 export function createApp() {
 
@@ -44,11 +43,13 @@ export function createApp() {
   let currentMode: CrestMode = settings.getMode();
   let currentCropAspect: CropAspect = settings.getCropAspect();
 
-  document.documentElement.setAttribute("data-theme", "dark");
-
   const app = document.querySelector<HTMLDivElement>("#app")!;
 
   const { routeRoot, applyLinks } = renderShell(app);
+  initThemeToggle();
+
+  // Icons gallery downloads (24×12 -> 24×12 + 16×12 + 8×12)
+  initIconsGallery();
 
   // Centralized runtime state (keeps main.ts glue-only as we refactor)
   const state = createInitialState();
@@ -128,18 +129,10 @@ export function createApp() {
     pages: {
       privacy: privacyPolicyHtml,
       terms: termsHtml,
-      about: aboutHtml,
       gdpr: gdprHtml,
-      faq: faqHtml,
       guide: guideHtml,
       cookies: cookiesHtml,
       icons: iconsHtml,
-      seo: {
-        lineage2CrestMaker: (lang) => seoLineage2CrestMakerHtml(lang) + seoPromoShortsBlock(lang),
-        createClanCrest: (lang) => seoCreateClanCrestHtml(lang) + seoPromoShortsBlock(lang),
-        requirements16x12: (lang) => seoRequirements16x12Html(lang) + seoPromoShortsBlock(lang),
-        alliance24x12: (lang) => seoAlliance24x12Html(lang) + seoPromoShortsBlock(lang),
-      },
     },
     renderToolPage: () => toolPage.renderToolPage(),
   });

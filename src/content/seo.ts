@@ -34,10 +34,10 @@ export function seoLineage2CrestMakerHtml(lang: Lang): string {
 
   const intro =
     lang === "ru"
-      ? `Онлайн <b>crest maker</b> для Lineage 2: сделай клановый значок <b>16×12 BMP (256 цветов)</b> и эмблему альянса <b>8×12</b> (или полный <b>24×12</b>) прямо в браузере.`
+      ? `Онлайн <b>crest maker</b> для Lineage 2: сделай клановый значок <b>16×12 BMP (256 цветов)</b> и эмблему альянса <b>8×12</b> прямо в браузере. Разметка <b>24×12</b> - это удобный режим: скачиваешь отдельные <b>16×12</b> и <b>8×12</b> одним кликом.`
       : lang === "ua"
-      ? `Онлайн <b>crest maker</b> для Lineage 2: створи клановий значок <b>16×12 BMP (256 кольорів)</b> і емблему альянсу <b>8×12</b> (або повний <b>24×12</b>) прямо в браузері.`
-      : `A <b>Lineage 2 crest maker</b> to create <b>16×12 BMP (256 colors)</b> clan crests and <b>8×12</b> alliance crests (or a full <b>24×12</b> image) directly in the browser.`;
+      ? `Онлайн <b>crest maker</b> для Lineage 2: створи клановий значок <b>16×12 BMP (256 кольорів)</b> і емблему альянсу <b>8×12</b> прямо в браузері. Розмітка <b>24×12</b> - це зручний режим: завантажуєш окремі <b>16×12</b> та <b>8×12</b> одним кліком.`
+      : `A <b>Lineage 2 crest maker</b> to create <b>16×12 BMP (256 colors)</b> clan crests and <b>8×12</b> alliance emblems directly in the browser. The <b>24×12</b> layout mode is just a convenience - it downloads separate <b>16×12</b> and <b>8×12</b> files for in-game upload.`;
 
   const steps =
     lang === "ru"
@@ -45,7 +45,7 @@ export function seoLineage2CrestMakerHtml(lang: Lang): string {
         <ol>
           <li>Загрузи картинку (PNG/JPG/GIF).</li>
           <li>Обрежь и уменьши до <b>16×12</b> (клан) или <b>8×12</b> (альянс).</li>
-          <li>Если “мылит” — покрути настройки (контраст, резкость), пока не станет чётко.</li>
+          <li>Если “мылит” - покрути настройки (контраст, резкость), пока не станет чётко.</li>
           <li>Скачай <b>BMP 256 цветов</b>.</li>
           <li>В игре: окно клана (часто <b>Alt+N</b>) → «Эмблема» → выбери BMP.</li>
         </ol>
@@ -55,7 +55,7 @@ export function seoLineage2CrestMakerHtml(lang: Lang): string {
         <ol>
           <li>Завантаж зображення (PNG/JPG/GIF).</li>
           <li>Обріж і зменш до <b>16×12</b> (клан) або <b>8×12</b> (альянс).</li>
-          <li>Якщо “мило” — покрути налаштування (контраст, різкість), поки не стане чітко.</li>
+          <li>Якщо “мило” - покрути налаштування (контраст, різкість), поки не стане чітко.</li>
           <li>Завантаж <b>BMP 256 кольорів</b>.</li>
           <li>У грі: вікно клану (часто <b>Alt+N</b>) → «Емблема» → вибери BMP.</li>
         </ol>
@@ -72,9 +72,7 @@ export function seoLineage2CrestMakerHtml(lang: Lang): string {
 
   const links = `
     <p class="muted navlinks">
-      <a href="${p}/create-lineage-2-clan-crest">${lang === "ru" ? "Как сделать клановый значок" : lang === "ua" ? "Як зробити клановий значок" : "How to create a clan crest"}</a>
-      · <a href="${p}/l2-crest-16x12-bmp-requirements">${lang === "ru" ? "Требования 16×12 BMP" : lang === "ua" ? "Вимоги 16×12 BMP" : "16×12 BMP requirements"}</a>
-      · <a href="${p}/l2-alliance-crest-24x12-bmp">${lang === "ru" ? "Эмблема альянса 24×12" : lang === "ua" ? "Емблема альянсу 24×12" : "Alliance crest 24×12"}</a>
+      <a href="${p}/guide">${lang === "ru" ? "Гайд" : lang === "ua" ? "Гайд" : "Guide"}</a>
       · <a href="${p}/icons">${lang === "ru" ? "Готовые эмблемы" : lang === "ua" ? "Готові емблеми" : "Ready crests"}</a>
     </p>
   `;

@@ -1,6 +1,7 @@
 // src/app/routes.ts
 import type { Lang } from "../i18n";
 import { initDeferredMedia } from "../ui/deferredMedia";
+import { applySeoHead } from "./seoHead";
 
 export type RouterInit = {
   routeRoot: HTMLDivElement;
@@ -11,18 +12,10 @@ export type RouterInit = {
   pages: {
     privacy: (lang: Lang) => string;
     terms: (lang: Lang) => string;
-    about: (lang: Lang) => string;
     gdpr: (lang: Lang) => string;
-    faq: (lang: Lang) => string;
     guide: (lang: Lang) => string;
     cookies: (lang: Lang) => string;
     icons: (lang: Lang) => string;
-    seo: {
-      lineage2CrestMaker: (lang: Lang) => string;
-      createClanCrest: (lang: Lang) => string;
-      requirements16x12: (lang: Lang) => string;
-      alliance24x12: (lang: Lang) => string;
-    };
   };
   renderToolPage: () => void;
 };
@@ -94,7 +87,28 @@ export function initRoutes(cfg: RouterInit) {
     ensureLangInUrl(parsed);
 
     const lang = parsed.lang;
-    const route = parsed.route || "/";
+    let route = parsed.route || "/";
+
+    // Client-side safety redirects for legacy thin pages.
+    // Server-side 301 is handled via public/_redirects, but keep this to avoid duplicates in dev/preview.
+    const legacyTo: Record<string, string> = {
+      "/how-to-use": "/guide",
+      "/faq": "/guide",
+      "/about": "/guide",
+      "/lineage-2-crest-maker": "/guide",
+      "/create-lineage-2-clan-crest": "/guide",
+      "/l2-crest-16x12-bmp-requirements": "/guide",
+      "/l2-alliance-crest-24x12-bmp": "/guide",
+    };
+    const mapped = legacyTo[route];
+    if (mapped) {
+      const target = buildPath(lang, mapped);
+      window.history.replaceState({}, "", target + window.location.search + window.location.hash);
+      route = mapped;
+    }
+
+    // Update <title>, meta, canonical and hreflang for current route.
+    applySeoHead(lang, route);
 
     // Static docs pages
     if (route === "/privacy") {
@@ -113,14 +127,6 @@ export function initRoutes(cfg: RouterInit) {
         route
       );
     }
-    if (route === "/about") {
-      return renderDocPage(
-        cfg.t("About", "О проекте", "Про проєкт"),
-        cfg.pages.about(lang),
-        lang,
-        route
-      );
-    }
     if (route === "/gdpr") {
       return renderDocPage("GDPR", cfg.pages.gdpr(lang), lang, route);
     }
@@ -134,55 +140,18 @@ export function initRoutes(cfg: RouterInit) {
     }
     if (route === "/icons") {
       return renderDocPage(
-        cfg.t("Ready crests", "Готовые эмблемы", "Готові емблеми"),
+        cfg.t("Gallery", "Галерея", "Галерея"),
         cfg.pages.icons(lang),
         lang,
         route
       );
     }
-    if (route === "/faq") {
-      return renderDocPage(cfg.t("FAQ", "FAQ", "FAQ"), cfg.pages.faq(lang), lang, route);
-    }
-    if (route === "/guide" || route === "/how-to-use") {
+    if (route === "/guide") {
       return renderDocPage(
         cfg.t("How to use", "Как пользоваться", "Як користуватися"),
         cfg.pages.guide(lang),
         lang,
         "/guide"
-      );
-    }
-
-    // SEO landing routes (same layout + localized content)
-    if (route === "/lineage-2-crest-maker") {
-      return renderDocPage(
-        cfg.t("Lineage 2 Crest Maker", "Lineage 2 Crest Maker", "Lineage 2 Crest Maker"),
-        cfg.pages.seo.lineage2CrestMaker(lang),
-        lang,
-        route
-      );
-    }
-    if (route === "/create-lineage-2-clan-crest") {
-      return renderDocPage(
-        cfg.t("Create Lineage 2 clan crest", "Создать клановый значок Lineage 2", "Створити клановий значок Lineage 2"),
-        cfg.pages.seo.createClanCrest(lang),
-        lang,
-        route
-      );
-    }
-    if (route === "/l2-crest-16x12-bmp-requirements") {
-      return renderDocPage(
-        cfg.t("16x12 BMP requirements", "Требования 16x12 BMP", "Вимоги 16x12 BMP"),
-        cfg.pages.seo.requirements16x12(lang),
-        lang,
-        route
-      );
-    }
-    if (route === "/l2-alliance-crest-24x12-bmp") {
-      return renderDocPage(
-        cfg.t("Alliance crest 24x12", "Эмблема союза 24x12", "Емблема альянсу 24x12"),
-        cfg.pages.seo.alliance24x12(lang),
-        lang,
-        route
       );
     }
 

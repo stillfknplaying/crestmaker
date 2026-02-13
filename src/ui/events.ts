@@ -1,5 +1,5 @@
 /**
- * IMPORTANT: No algorithms/pipeline/crop/preview logic is modified here — only wiring.
+ * IMPORTANT: No algorithms/pipeline/crop/preview logic is modified here - only wiring.
  */
 
 import { t } from "../i18n";
@@ -225,14 +225,6 @@ export function initToolUIEvents(deps: EventsDeps) {
     deps.setCropRectNull();
 
     deps.renderRoute();
-  });
-
-  // Theme
-  refs.themeToggle.checked = false;
-  refs.themeToggle.addEventListener("change", () => {
-    const r = deps.getRefs();
-    if (!r) return;
-    document.documentElement.setAttribute("data-theme", r.themeToggle.checked ? "light" : "dark");
   });
 
   // Template load

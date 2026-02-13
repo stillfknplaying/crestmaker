@@ -27,7 +27,7 @@ export function renderShell(app: HTMLElement): ShellRefs {
               />
             </h1>
           </a>
-          <p class="muted hidden">BMP 8-bit (256-color) emblem converter — 24×12 (ally 8×12 + clan 16×12).</p>
+          <p class="muted hidden">BMP 8-bit (256-color) emblem converter - 24×12 (ally 8×12 + clan 16×12).</p>
         </div>
 
         <div class="top-actions">
@@ -59,7 +59,6 @@ export function renderShell(app: HTMLElement): ShellRefs {
         <nav class="footer-links">
           <a data-testid="footer-guide" href="/guide">Guide</a>
           <a data-testid="footer-icons" href="/icons">Icons</a>
-          <a data-testid="footer-faq" href="/faq">FAQ</a>
           <a data-testid="footer-privacy" href="/privacy">Privacy</a>
           <a data-testid="footer-terms" href="/terms">Terms</a>
           <a data-testid="footer-gdpr" href="/gdpr">GDPR</a>
@@ -103,29 +102,45 @@ export function renderShell(app: HTMLElement): ShellRefs {
           <p id="cookieModalDesc" class="muted"></p>
 
           <div class="cookie-prefs">
-            <div class="cookie-pref">
-              <div class="cookie-pref-head">
-                <strong id="cookieEssentialTitle">Essential</strong>
-                <span id="cookieEssentialAlways" class="muted"></span>
+            <div class="cookie-pref cookie-pref-essential">
+              <div class="cookie-pref-top">
+                <div class="cookie-pref-title">
+                  <strong id="cookieEssentialTitle">Essential</strong>
+                  <div id="cookieEssentialAlways" class="muted cookie-pref-note"></div>
+                </div>
+                <label class="toggle cookie-toggle" aria-label="Essential cookies">
+                  <input id="cookieEssential" type="checkbox" checked disabled />
+                  <span class="track"><span class="thumb"></span></span>
+                </label>
               </div>
-              <div id="cookieEssentialDesc" class="muted"></div>
+              <div id="cookieEssentialDesc" class="muted cookie-pref-desc"></div>
             </div>
 
-            <label class="cookie-pref">
-              <div class="cookie-pref-head">
-                <strong id="cookieAnalyticsTitle">Analytics</strong>
-                <input id="cookieAnalytics" type="checkbox" />
+            <div class="cookie-pref">
+              <div class="cookie-pref-top">
+                <div class="cookie-pref-title">
+                  <strong id="cookieAnalyticsTitle">Analytics</strong>
+                </div>
+                <label class="toggle cookie-toggle" aria-label="Analytics cookies">
+                  <input id="cookieAnalytics" type="checkbox" />
+                  <span class="track"><span class="thumb"></span></span>
+                </label>
               </div>
-              <div id="cookieAnalyticsDesc" class="muted"></div>
-            </label>
+              <div id="cookieAnalyticsDesc" class="muted cookie-pref-desc"></div>
+            </div>
 
-            <label class="cookie-pref">
-              <div class="cookie-pref-head">
-                <strong id="cookieAdsTitle">Advertising</strong>
-                <input id="cookieAds" type="checkbox" />
+            <div class="cookie-pref">
+              <div class="cookie-pref-top">
+                <div class="cookie-pref-title">
+                  <strong id="cookieAdsTitle">Advertising</strong>
+                </div>
+                <label class="toggle cookie-toggle" aria-label="Advertising cookies">
+                  <input id="cookieAds" type="checkbox" />
+                  <span class="track"><span class="thumb"></span></span>
+                </label>
               </div>
-              <div id="cookieAdsDesc" class="muted"></div>
-            </label>
+              <div id="cookieAdsDesc" class="muted cookie-pref-desc"></div>
+            </div>
           </div>
 
           <div class="modal-actions">
@@ -151,7 +166,7 @@ export function renderShell(app: HTMLElement): ShellRefs {
 
     const map: Array<[string, string]> = [
       ["footer-guide", "/guide"],
-      ["footer-faq", "/faq"],
+      ["footer-icons", "/icons"],
       ["footer-privacy", "/privacy"],
       ["footer-terms", "/terms"],
       ["footer-gdpr", "/gdpr"],
