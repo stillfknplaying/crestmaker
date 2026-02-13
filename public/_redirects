@@ -1,0 +1,42 @@
+# Cloudflare Pages redirects (Netlify-style)
+
+# Default root -> default locale
+/ /en/ 301
+
+# Legacy thin pages (no-locale fallbacks)
+/how-to-use /en/guide 301
+/faq /en/guide 301
+/about /en/guide 301
+/lineage-2-crest-maker /en/guide 301
+/create-lineage-2-clan-crest /en/guide 301
+/l2-crest-16x12-bmp-requirements /en/guide 301
+/l2-alliance-crest-24x12-bmp /en/guide 301
+
+# Legacy thin pages (locale versions)
+/en/how-to-use /en/guide 301
+/ru/how-to-use /ru/guide 301
+/ua/how-to-use /ua/guide 301
+
+/en/faq /en/guide 301
+/ru/faq /ru/guide 301
+/ua/faq /ua/guide 301
+
+/en/about /en/guide 301
+/ru/about /ru/guide 301
+/ua/about /ua/guide 301
+
+/en/lineage-2-crest-maker /en/guide 301
+/ru/lineage-2-crest-maker /ru/guide 301
+/ua/lineage-2-crest-maker /ua/guide 301
+
+/en/create-lineage-2-clan-crest /en/guide 301
+/ru/create-lineage-2-clan-crest /ru/guide 301
+/ua/create-lineage-2-clan-crest /ua/guide 301
+
+/en/l2-crest-16x12-bmp-requirements /en/guide 301
+/ru/l2-crest-16x12-bmp-requirements /ru/guide 301
+/ua/l2-crest-16x12-bmp-requirements /ua/guide 301
+
+/en/l2-alliance-crest-24x12-bmp /en/guide 301
+/ru/l2-alliance-crest-24x12-bmp /ru/guide 301
+/ua/l2-alliance-crest-24x12-bmp /ua/guide 301

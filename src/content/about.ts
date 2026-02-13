@@ -5,11 +5,11 @@ export function aboutHtml(lang: Lang): string {
 <p>All processing is done locally in your browser.</p>
 `;
 
-  const ru = `<p>CrestMaker — это клиентский инструмент для конвертации изображений в BMP 256 цветов для клановых значков Lineage II.</p>
+  const ru = `<p>CrestMaker - это клиентский инструмент для конвертации изображений в BMP 256 цветов для клановых значков Lineage II.</p>
 <p>Вся обработка выполняется локально в браузере.</p>
 `;
 
-  const ua = `<p>CrestMaker — це клієнтський інструмент для конвертації зображень у BMP 256 кольорів для кланових значків Lineage II.</p>
+  const ua = `<p>CrestMaker - це клієнтський інструмент для конвертації зображень у BMP 256 кольорів для кланових значків Lineage II.</p>
 <p>Уся обробка виконується локально у браузері.</p>
 `;
 

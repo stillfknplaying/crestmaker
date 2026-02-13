@@ -4,11 +4,12 @@ const SHARE_URL = "https://crestmaker.org";
 
 function getShareText(): string {
   return t(
-    "CrestMaker is a free online tool for creating Lineage 2 clan and alliance crests. Convert images to BMP 256-color crests (24x12 / 16x12) directly in your browser - no install, no registration.",
-    "CrestMaker - бесплатный онлайн-инструмент для создания клановых и альянс-иконок Lineage 2. Конвертирует изображения в BMP 256 цветов (24x12 / 16x12) прямо в браузере, без установки и регистрации.",
-    "CrestMaker - безкоштовний онлайн-інструмент для створення кланових та альянс-іконок Lineage 2. Конвертація зображень у BMP 256 кольорів (24x12 / 16x12) прямо в браузері, без встановлення та реєстрації."
+    "CrestMaker is a free online tool for Lineage 2 crests/emblems/icons. Export BMP 8‑bit (256 colors): 16×12 for clan and 8×12 for alliance. Use 24×12 layout mode to design both and download separate files.",
+    "CrestMaker - бесплатный онлайн-инструмент для эмблем/значков/иконок Lineage 2. Экспорт в BMP 8‑bit (256 цветов): 16×12 для клана и 8×12 для альянса. Режим 24×12 - это разметка, он выгружает отдельные файлы.",
+    "CrestMaker - безкоштовний онлайн-інструмент для емблем/значків/іконок Lineage 2. Експорт у BMP 8‑bit (256 кольорів): 16×12 для клану та 8×12 для альянсу. Режим 24×12 - це розмітка, він вивантажує окремі файли."
   );
 }
+
 
 type ConsentState = {
   essential: true;
@@ -58,6 +59,7 @@ function openCookieModal() {
   const modal = document.querySelector<HTMLDivElement>("#cookieModal");
   if (!modal) return;
   modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
   syncCookieModalFromState();
   localizeCookieUI();
 }
@@ -66,12 +68,18 @@ function closeCookieModal() {
   const modal = document.querySelector<HTMLDivElement>("#cookieModal");
   if (!modal) return;
   modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
 }
 
 function syncCookieModalFromState() {
   const state = getConsent();
+  const essential = document.querySelector<HTMLInputElement>("#cookieEssential");
   const analytics = document.querySelector<HTMLInputElement>("#cookieAnalytics");
   const ads = document.querySelector<HTMLInputElement>("#cookieAds");
+  if (essential) {
+    essential.checked = true;
+    essential.disabled = true;
+  }
   if (analytics) analytics.checked = state ? state.analytics : false;
   if (ads) ads.checked = state ? state.ads : false;
 }
@@ -199,6 +207,14 @@ export function initCookieConsentUI() {
       const payload = encodeURIComponent(`${getShareText()}\n\n${SHARE_URL}`);
       const shareUrl = `https://wa.me/?text=${payload}`;
       window.open(shareUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    // /cookies page button
+    const cookieOpenPrefs = target.closest('#cookieOpenPrefs');
+    if (cookieOpenPrefs) {
+      e.preventDefault();
+      openCookieModal();
       return;
     }
 

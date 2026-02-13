@@ -11,18 +11,10 @@ type RouterDeps = {
   pages: {
     privacy: (lang: Lang) => string;
     terms: (lang: Lang) => string;
-    about: (lang: Lang) => string;
     gdpr: (lang: Lang) => string;
-    faq: (lang: Lang) => string;
     guide: (lang: Lang) => string;
     cookies: (lang: Lang) => string;
     icons: (lang: Lang) => string;
-    seo: {
-      lineage2CrestMaker: (lang: Lang) => string;
-      createClanCrest: (lang: Lang) => string;
-      requirements16x12: (lang: Lang) => string;
-      alliance24x12: (lang: Lang) => string;
-    };
   };
   renderToolPage: () => void;
 };

@@ -603,6 +603,52 @@ select option{
   margin-top: 14px;
 }
 
+/* Cookie preferences modal */
+#cookieModal .modal-card{
+  border-radius: 16px;
+}
+#cookieModal .cookie-prefs{
+  margin-top: 12px;
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#cookieModal .cookie-pref{
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,.04);
+}
+
+/* Essential is always ON - make it look locked, but still readable */
+#cookieModal .cookie-pref-essential{
+  opacity: .86;
+}
+#cookieModal .cookie-pref-essential .cookie-toggle{
+  cursor: not-allowed;
+}
+#cookieModal .cookie-pref-essential .toggle input:disabled + .track{
+  opacity: .85;
+}
+:root[data-theme="light"] #cookieModal .cookie-pref{
+  background: rgba(0,0,0,.03);
+}
+#cookieModal .cookie-pref-top{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+}
+#cookieModal .cookie-pref-title{ min-width: 0; }
+#cookieModal .cookie-pref-note{ font-size: 12px; margin-top: 2px; }
+#cookieModal .cookie-pref-desc{ margin-top: 6px; font-size: 13px; line-height: 1.35; }
+#cookieModal .cookie-toggle{ flex: 0 0 auto; }
+
+/* Keep "Essential" toggle readable even when disabled */
+#cookieModal .toggle input:disabled + .track{
+  opacity: 1;
+}
+
 
 
 /* --- Editor zoom helpers --- */
